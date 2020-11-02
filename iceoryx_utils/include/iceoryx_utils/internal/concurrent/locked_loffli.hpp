@@ -33,7 +33,7 @@ class LockedLoFFLi
     uint32_t* m_freeIndices{nullptr};
 
     using mutex_t = posix::mutex;
-    mutable mutex_t m_accessMutex{false};
+    mutable mutex_t m_accessMutex{mutex_t::Recursive::OFF, mutex_t::Robust::OFF};
 
     uint32_t m_invalidIndex{0};
 

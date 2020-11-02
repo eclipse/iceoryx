@@ -51,7 +51,7 @@ struct ReceiverPortData : public BasePortData
 
     // event callback related
     mutable std::atomic_bool m_chunkSendCallbackActive{false};
-    mutable mutex_t m_chunkSendCallbackMutex{false};
+    mutable mutex_t m_chunkSendCallbackMutex{mutex_t::Recursive::OFF, mutex_t::Robust::ON};
     iox::relative_ptr<posix::Semaphore> m_chunkSendSemaphore{nullptr};
 
     // offer semaphore that is stored in shared memory

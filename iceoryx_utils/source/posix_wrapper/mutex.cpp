@@ -23,7 +23,7 @@ namespace iox
 {
 namespace posix
 {
-mutex::mutex(bool f_isRecursive)
+mutex::mutex(const Recursive recursive, const Robust robust)
 {
     pthread_mutexattr_t attr;
     bool isInitialized{true};
@@ -41,7 +41,7 @@ mutex::mutex(bool f_isRecursive)
                                       {0},
                                       {},
                                       &attr,
-                                      f_isRecursive ? PTHREAD_MUTEX_RECURSIVE_NP : PTHREAD_MUTEX_FAST_NP)
+                                      recursive == Recursive::ON ? PTHREAD_MUTEX_RECURSIVE_NP : PTHREAD_MUTEX_FAST_NP)
                           .hasErrors();
     isInitialized &= !cxx::makeSmartC(pthread_mutexattr_setprotocol,
                                       cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE,
@@ -50,6 +50,16 @@ mutex::mutex(bool f_isRecursive)
                                       &attr,
                                       PTHREAD_PRIO_NONE)
                           .hasErrors();
+    if (robust == Robust::ON)
+    {
+        isInitialized &= !cxx::makeSmartC(pthread_mutexattr_setrobust,
+                                          cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE,
+                                          {0},
+                                          {},
+                                          &attr,
+                                          PTHREAD_MUTEX_ROBUST)
+                              .hasErrors();
+    }
 
     isInitialized &=
         !cxx::makeSmartC(pthread_mutex_init, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0}, {}, &m_handle, &attr)
@@ -69,10 +79,8 @@ mutex::~mutex()
 
     if (destroyCall.hasErrors())
     {
-        std::cerr << "could not destroy mutex ::: pthread_mutex_destroy returned " << destroyCall.getReturnValue()
-                  << " "
-                  << "( " << strerror(destroyCall.getReturnValue()) << ") " << std::endl;
-        std::terminate();
+        std::cerr << "Could not destroy mutex ::: pthread_mutex_destroy returned " << destroyCall.getReturnValue()
+                  << " (error: " << destroyCall.getErrorString() << "). This is a resource leak." << std::endl;
     }
 }
 
@@ -83,8 +91,21 @@ pthread_mutex_t mutex::get_native_handle() const noexcept
 
 bool mutex::lock()
 {
-    return !cxx::makeSmartC(pthread_mutex_lock, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0}, {}, &m_handle)
-                .hasErrors();
+    auto lockMutex =
+        cxx::makeSmartC(pthread_mutex_lock, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0, EOWNERDEAD}, {}, &m_handle);
+    if (lockMutex.getReturnValue() == EOWNERDEAD)
+    {
+        auto consistent =
+            cxx::makeSmartC(pthread_mutex_consistent, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0}, {}, &m_handle);
+        if (consistent.hasErrors())
+        {
+            std::cerr << "Could not make robust mutex consistent ::::  "
+                      << "pthread_mutex_consistent returned " << consistent.getReturnValue()
+                      << " (error: " << consistent.getErrorString() << ")." << std::endl;
+            return false;
+        }
+    }
+    return !lockMutex.hasErrors();
 }
 
 bool mutex::unlock()

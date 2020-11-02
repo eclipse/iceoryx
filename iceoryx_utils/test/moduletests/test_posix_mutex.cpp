@@ -24,11 +24,12 @@ using namespace iox::units::duration_literals;
 class Mutex_test : public Test
 {
   public:
-    class MutexMock : public iox::posix::mutex
+    using mutex_t = iox::posix::mutex;
+    class MutexMock : public mutex_t
     {
       public:
-        MutexMock(const bool isRecursive)
-            : iox::posix::mutex(isRecursive)
+        MutexMock(const Recursive recursive, const Robust robust)
+            : mutex_t(recursive, robust)
         {
         }
     };
@@ -47,7 +48,7 @@ class Mutex_test : public Test
         }
     }
 
-    iox::posix::mutex sut{false};
+    mutex_t sut{mutex_t::Recursive::OFF, mutex_t::Robust::OFF};
 };
 
 TEST_F(Mutex_test, TryLockWithNoLock)
@@ -67,34 +68,4 @@ TEST_F(Mutex_test, LockAndUnlock)
 {
     EXPECT_THAT(sut.lock(), Eq(true));
     EXPECT_THAT(sut.unlock(), Eq(true));
-}
-
-// in qnx you can destroy a locked mutex, without error if the thread holding the lock is destructing it.
-TEST_F(Mutex_test, DestructorFailsOnLockedMutex)
-{
-    std::string output = internal::GetCapturedStderr();
-    std::set_terminate([]() { std::cout << "", std::abort(); });
-
-    EXPECT_DEATH(
-        {
-            std::thread* t;
-            {
-                iox::posix::mutex mtx{false};
-                iox::posix::Timer hold(1000_ms);
-                t = new std::thread([&] {
-                    mtx.lock();
-                    iox::posix::Timer ct(5000_ms);
-                    while (!ct.hasExpiredComparedToCreationTime()) // come back in any case!
-                        ;
-                });
-
-                while (!hold.hasExpiredComparedToCreationTime())
-                    ;
-            }
-            t->join();
-            delete t;
-        },
-        ".*");
-
-    internal::CaptureStderr();
 }
