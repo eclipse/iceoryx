@@ -2,7 +2,7 @@ module Mempool
 {
     struct Chunk
     {
-    	sequence<octet> payload;
+        sequence<octet> payload;
     };
     #pragma keylist Chunk
 };

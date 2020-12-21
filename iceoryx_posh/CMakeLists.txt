@@ -291,6 +291,7 @@ if(TOML_CONFIG)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated/iceoryx/include>
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/dependencies/install/include>
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/../cpptoml_vendor/cpptoml_install/include>
         $<INSTALL_INTERFACE:include/${PREFIX}>
     )
 

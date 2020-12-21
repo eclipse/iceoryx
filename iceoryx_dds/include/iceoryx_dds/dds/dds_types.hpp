@@ -18,6 +18,9 @@
 #ifdef USE_CYCLONE_DDS
 #include "iceoryx_dds/dds/cyclone_data_reader.hpp"
 #include "iceoryx_dds/dds/cyclone_data_writer.hpp"
+#elif USE_FAST_DDS
+#include "iceoryx_dds/dds/fastdds_data_reader.hpp"
+#include "iceoryx_dds/dds/fastdds_data_writer.hpp"
 #else
 #error "A DDS implementation must be provided."
 #endif
@@ -30,6 +33,9 @@ namespace dds
 #ifdef USE_CYCLONE_DDS
 using data_reader_t = iox::dds::CycloneDataReader;
 using data_writer_t = iox::dds::CycloneDataWriter;
+#elif USE_FAST_DDS
+using data_reader_t = iox::dds::FastDDSDataReader;
+using data_writer_t = iox::dds::FastDDSDataWriter;
 #else
 #error "A DDS implementation must be set."
 #endif

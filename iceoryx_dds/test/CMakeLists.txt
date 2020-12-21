@@ -13,15 +13,26 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.5)
-project(test_iox_to_dds VERSION 0)
+# project(test_iox_to_dds VERSION 0)
 
 find_package(iceoryx_utils_testing REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
 set(PROJECT_PREFIX "dds_gateway")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PREFIX}/test)
+# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PREFIX}/test)
 
-file(GLOB_RECURSE MODULETESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/*.cpp")
+set(MODULETESTS_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/main.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/test_dds_to_iox.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/test_iox_to_dds.cpp"
+)
+
+if(USE_CYCLONE_DDS)
+    list(APPEND MODULETESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/test_cyclone_data_reader.cpp")
+elseif(USE_FAST_DDS)
+    list(APPEND MODULETESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/test_fastdds.cpp")
+endif()
+
 
 set(TEST_LINK_LIBS
     ${CODE_COVERAGE_LIBS}
@@ -55,3 +66,4 @@ set_property(TARGET ${PROJECT_PREFIX}_moduletests PROPERTY CXX_STANDARD ${ICEORY
 target_include_directories(${PROJECT_PREFIX}_moduletests PRIVATE .)
 target_compile_options(${PROJECT_PREFIX}_moduletests PUBLIC -fPIC PRIVATE ${TEST_CXX_FLAGS})
 target_link_libraries(${PROJECT_PREFIX}_moduletests ${TEST_LINK_LIBS})
+add_test(NAME iceoryx_dds_test COMMAND ${PROJECT_PREFIX}_moduletests)

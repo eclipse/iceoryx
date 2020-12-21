@@ -38,12 +38,17 @@ setup_package_name_and_create_files(
 #
 ########## feature flags ##########
 #
-option(USE_CYCLONE_DDS "Bind to CycloneDDS implementation" on)
+option(USE_FAST_DDS "Bind to Fast DDS implementation" on)
+option(USE_CYCLONE_DDS "Bind to CycloneDDS implementation" off)
 
 if(USE_CYCLONE_DDS)
-    message(INFO " Using CycloneDDS stack")
-    find_package(CycloneDDS CONFIG REQUIRED)
-    find_package(CycloneDDS-CXX CONFIG REQUIRED)
+    message(STATUS "Using CycloneDDS stack")
+    find_package(CycloneDDS REQUIRED)
+    find_package(CycloneDDS-CXX REQUIRED)
+elseif(USE_FAST_DDS)
+    message(STATUS "Using Fast DDS stack")
+    find_package(fastrtps REQUIRED)
+    find_package(fastcdr REQUIRED)
 endif()
 
 #
@@ -55,7 +60,7 @@ add_library(iceoryx_dds
 )
 add_library(${PROJECT_NAMESPACE}::iceoryx_dds ALIAS iceoryx_dds)
 
-set_target_properties(iceoryx_utils PROPERTIES
+set_target_properties(iceoryx_dds PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD ${ICEORYX_CXX_STANDARD}
     POSITION_INDEPENDENT_CODE ON
@@ -65,6 +70,7 @@ target_include_directories(iceoryx_dds
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/dependencies/install/include>
+    $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/../cpptoml_vendor/cpptoml_install/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 target_link_libraries(iceoryx_dds
@@ -109,6 +115,21 @@ if(USE_CYCLONE_DDS)
         CycloneDDS-CXX::ddscxx
         ${IDLPP_GENERATE_DIR}/libiceoryx_dds_messages.a
     )
+elseif(USE_FAST_DDS)
+    target_sources(iceoryx_dds
+        PRIVATE
+        # source/iceoryx_dds/dds/fastdds_context.cpp
+        source/iceoryx_dds/dds/fastdds_data_reader.cpp
+        source/iceoryx_dds/dds/fastdds_data_writer.cpp
+        source/iceoryx_dds/dds/MempoolPubSubTypes.cxx
+    )
+
+    target_compile_definitions(iceoryx_dds PUBLIC -DUSE_FAST_DDS)
+    target_link_libraries(iceoryx_dds
+        PUBLIC
+        fastcdr
+        fastrtps
+    )
 endif()
 
 target_compile_options(iceoryx_dds PRIVATE ${ICEORYX_WARNINGS})
@@ -126,10 +147,10 @@ target_link_libraries(iox-gw-iceoryx2dds
 
 target_compile_options(iox-gw-iceoryx2dds PRIVATE ${ICEORYX_WARNINGS})
 
-add_executable(iox-gw-dds2iceoryx 
+add_executable(iox-gw-dds2iceoryx
     source/dds2iceoryx_app/main.cpp
 )
-target_link_libraries(iox-gw-dds2iceoryx 
+target_link_libraries(iox-gw-dds2iceoryx
     iceoryx_posh::iceoryx_posh
     ${PROJECT_NAMESPACE}::iceoryx_dds
 )
@@ -146,6 +167,8 @@ set_target_properties(iox-gw-iceoryx2dds iox-gw-dds2iceoryx iceoryx_dds
 ########## build test executables ##########
 #
 if(test)
+    enable_testing()
+    include(CTest)
     add_subdirectory(test)
 endif(test)
 
@@ -156,4 +179,3 @@ setup_install_directories_and_export_package(
     TARGETS iceoryx_dds iox-gw-iceoryx2dds iox-gw-dds2iceoryx
     INCLUDE_DIRECTORY include/
 )
-
