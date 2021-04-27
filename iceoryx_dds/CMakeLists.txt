@@ -94,17 +94,17 @@ if(USE_CYCLONE_DDS)
     )
 
     # Generate IDL at configure time
-    set(IDLPP_GENERATE_DIR ${CMAKE_BINARY_DIR}/iceoryx_dds_messages)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/idlpp-cxx-generate.cmake.in ${IDLPP_GENERATE_DIR}/CMakeLists.txt COPYONLY)
-    execute_process(COMMAND ${CMAKE_COMMAND} "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" -DMESSAGE_DEFINITION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/msg/ "${IDLPP_GENERATE_DIR}"
+    set(IDLCXX_GENERATE_DIR ${CMAKE_BINARY_DIR}/iceoryx_dds_messages)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/idlcxx-generate.cmake.in ${IDLCXX_GENERATE_DIR}/CMakeLists.txt COPYONLY)
+    execute_process(COMMAND ${CMAKE_COMMAND} "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" -DMESSAGE_DEFINITION_DIR=${CMAKE_CURRENT_SOURCE_DIR}/msg/ "${IDLCXX_GENERATE_DIR}"
         RESULT_VARIABLE result
-        WORKING_DIRECTORY ${IDLPP_GENERATE_DIR} )
+        WORKING_DIRECTORY ${IDLCXX_GENERATE_DIR} )
     if(result)
         message(FATAL_ERROR "Unable to configure IDL.")
     endif()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
         RESULT_VARIABLE result
-        WORKING_DIRECTORY ${IDLPP_GENERATE_DIR})
+        WORKING_DIRECTORY ${IDLCXX_GENERATE_DIR})
     if(result)
         message(FATAL_ERROR "Unable to generate IDL.")
     endif()
@@ -117,7 +117,7 @@ if(USE_CYCLONE_DDS)
     target_link_libraries(iceoryx_dds
         PUBLIC
         CycloneDDS-CXX::ddscxx
-        ${IDLPP_GENERATE_DIR}/libiceoryx_dds_messages.a
+        ${IDLCXX_GENERATE_DIR}/libiceoryx_dds_messages.a
     )
 endif()
 

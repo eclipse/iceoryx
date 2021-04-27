@@ -1,4 +1,5 @@
 # Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,8 +91,7 @@ function(fetch_and_install name)
     endif()
 endfunction()
 
-# ===== Install 
+# ===== Install
 
-fetch_and_install(idlpp-cxx)
-fetch_and_install(cyclonedds)
-fetch_and_install(cyclonedds-cxx -DBUILD_TESTING=OFF)
+fetch_and_install(cyclonedds -DBUILD_IDLC=OFF)
+fetch_and_install(cyclonedds-cxx)

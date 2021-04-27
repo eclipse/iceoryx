@@ -23,7 +23,7 @@ if [[ ! -f "$GATEWAY_CONF_PATH" ]]; then
     cat <<EOF >> /etc/iceoryx/gateway_config.toml
 	[[services]]
 	service = "Radar"
-	instance = "FrontRight"
+	instance = "FrontLeft"
 	event = "Counter"
 EOF
 fi

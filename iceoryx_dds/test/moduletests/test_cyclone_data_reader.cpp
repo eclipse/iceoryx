@@ -19,7 +19,7 @@
 #include "iceoryx_posh/testing/mocks/chunk_mock.hpp"
 #include "test.hpp"
 
-#include <Mempool_DCPS.hpp>
+#include <Mempool.hpp>
 #include <dds/dds.hpp>
 
 namespace
