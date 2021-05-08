@@ -31,7 +31,7 @@ class ThreadSafePolicy
     bool tryLock() const noexcept;
 
   private:
-    mutable posix::mutex m_mutex{true}; // recursive lock
+    mutable posix::mutex m_mutex{false};
 };
 
 class SingleThreadedPolicy

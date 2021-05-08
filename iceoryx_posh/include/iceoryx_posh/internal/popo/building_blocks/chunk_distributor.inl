@@ -256,12 +256,7 @@ inline void ChunkDistributor<ChunkDistributorDataType>::clearHistory() noexcept
 template <typename ChunkDistributorDataType>
 inline void ChunkDistributor<ChunkDistributorDataType>::cleanup() noexcept
 {
-    if (getMembers()->tryLock())
-    {
-        clearHistory();
-        getMembers()->unlock();
-    }
-    else
+    if (!getMembers()->tryLock())
     {
         /// @todo currently we have a deadlock / mutex destroy vulnerability if the ThreadSafePolicy is used
         /// and a sending application dies when having the lock for sending. If the RouDi daemon wants to
@@ -271,6 +266,10 @@ inline void ChunkDistributor<ChunkDistributorDataType>::cleanup() noexcept
                      nullptr,
                      ErrorLevel::FATAL);
     }
+
+    getMembers()->unlock();
+    // the mutex is locked in this method
+    clearHistory();
 }
 
 } // namespace popo
