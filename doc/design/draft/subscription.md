@@ -121,8 +121,9 @@ The subscriber cache contains two samples.
 | P1        | 51        | K      |
 | P2        | 42        | J      |
 
-The sample K will not be delivered by the publisher since it is already
-present in the cache.
+The sample K will not be delivered by the publisher since the _DeliveryTime_
+is defined as exactly the timepoint after the sample is placed into the ChunkHistory
+and the subscriber cache is based on that ChunkHistory.
 
 ### Subscribing After Publisher Stops Offering
 
@@ -139,6 +140,8 @@ The subscriber cache contains the four samples ordered after _DeliveryTime_.
 | P1        | 41        | E      |
 | P2        | 40        | I      |
 | P1        | 31        | D      |
+
+
 
 ## Design
 
@@ -159,6 +162,8 @@ The subscriber cache contains the four samples ordered after _DeliveryTime_.
 #### Open Points
 
 - Many chunks will not be released even when no susbcriber is using them.
+  - This might be solvable by having the ring-buffer size as the maximum of
+    history size and subscriber queue capacity?!
 - ring-buffer size? Since the ring-buffer is shared between multiple publishers
   the size has to be defined via some service subscription options.
 - Who owns the ring-buffer? Since it is shared between multiple publishers and
