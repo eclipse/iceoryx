@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +18,8 @@
 #include "iceoryx_utils/cxx/serialization.hpp"
 #include "test.hpp"
 
-
+namespace
+{
 using namespace ::testing;
 
 class Serialization_test : public Test
@@ -148,3 +150,4 @@ TEST_F(Serialization_test, SerializeSerializableClass)
     auto serial = iox::cxx::Serialization::create(obj, "asd");
     EXPECT_THAT(serial.toString(), Eq("7:5:asdgg3:asd"));
 }
+} // namespace

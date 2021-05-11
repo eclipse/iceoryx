@@ -24,21 +24,21 @@
 
 bool killswitch = false;
 
-static void sigHandler(int f_sig [[gnu::unused]])
+static void sigHandler(int f_sig IOX_MAYBE_UNUSED)
 {
     killswitch = true;
 }
 
 void sending()
 {
-    iox::runtime::PoshRuntime::initRuntime("iox-ex-publisher-waitset");
+    iox::runtime::PoshRuntime::initRuntime("iox-cpp-publisher-waitset");
     iox::popo::Publisher<CounterTopic> myPublisher({"Radar", "FrontLeft", "Counter"});
-    myPublisher.offer();
 
     for (uint32_t counter = 0U; !killswitch; ++counter)
     {
-        myPublisher.publishCopyOf(CounterTopic{counter});
-        std::cout << "Sending: " << counter << std::endl;
+        myPublisher.publishCopyOf(CounterTopic{counter})
+            .and_then([&] { std::cout << "Sending: " << counter << std::endl; })
+            .or_else([&](auto) { std::cout << "Failed sending: " << counter << std::endl; });
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }

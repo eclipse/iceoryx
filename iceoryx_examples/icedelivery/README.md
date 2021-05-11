@@ -5,45 +5,32 @@
 This example showcases a data transmission setup with zero-copy inter-process communication (IPC) on iceoryx.
 It provides publisher and subscriber applications. They come in two C++ API flavours (untyped and typed).
 
-## Expected output
+## Expected Output
 
-Create different terminals and run one command in each of them. Choose at least one publisher and one subscriber for having a data communication. You can also mix the typed and untyped versions. And if you feel like crazy today you start several publishers and subscribers from icedelivery and icedelivery_in_c (needs the default n:m communication, not possible if you build with the ONE_TO_MANY option)
+Create three terminals and start RouDi, a publisher and a subscriber. You can also mix the typed and untyped versions.
 
-```sh
-# If installed and available in PATH environment variable
-iox-roudi
-# If build from scratch with script in tools
-$ICEORYX_ROOT/build/iox-roudi
-
-
-build/iceoryx_examples/icedelivery/iox-ex-publisher
-# The untyped publisher is an alternative
-build/iceoryx_examples/icedelivery/iox-ex-publisher-untyped
-
-
-build/iceoryx_examples/icedelivery/iox-ex-subscriber
-# The untyped subscriber is an alternative
-build/iceoryx_examples/icedelivery/iox-ex-subscriber-untyped
-```
-
-[![asciicast](https://asciinema.org/a/382036.svg)](https://asciinema.org/a/382036)
+[![asciicast](https://asciinema.org/a/407359.svg)](https://asciinema.org/a/407359)
 
 ## Code walkthrough
 
-This example makes use of two kind of API flavours. With the untyped API you have the most flexibility. It enables you
-to put higher level APIs with different look and feel on top of iceoryx. E.g. the ara::com API of AUTOSAR Adaptive or
-the ROS2 API. It is not meant to be used by developers in daily life, the assumption is that there will always be a higher
-abstraction. A simple example how such an abstraction could look like is given in the second step with the typed example.
+This example makes use of two kinds of API flavors. With the untyped API, you have the most flexibility. It enables you
+to put APIs on a higher level with a different look and feel on top of iceoryx. E.g. the ara::com API of AUTOSAR Adaptive or
+the ROS 2 API. It is not meant to be used by developers in daily life, the assumption is that there will always be a higher
+abstraction. A simple example how such an abstraction could look like is given in the second step with the typed
+example. The typed API provides type safety combined with [RAII](https://en.cppreference.com/w/cpp/language/raii).
 
 ### Publisher application (untyped)
 
-First off, let's include the publisher and the runtime:
+First off, let's include the publisher, the runtime and the signal handler:
+
 ```cpp
 #include "iceoryx_posh/popo/untyped_publisher.hpp"
 #include "iceoryx_posh/runtime/posh_runtime.hpp"
+#include "iceoryx_utils/posix_wrapper/signal_handler.hpp"
 ```
 
 You might be wondering what the publisher application is sending? It's this struct.
+
 ```cpp
 struct RadarObject
 {
@@ -63,91 +50,66 @@ struct RadarObject
 ```
 
 It is included by:
+
 ```cpp
 #include "topic_data.hpp"
 ```
 
 For the communication with RouDi a runtime object is created. The parameter of the method `initRuntime()` contains a
 unique string identifier for this publisher.
+
 ```cpp
-iox::runtime::PoshRuntime::initRuntime("iox-ex-publisher");
+constexpr char APP_NAME[] = "iox-cpp-publisher-untyped";
+iox::runtime::PoshRuntime::initRuntime(APP_NAME);
 ```
 
-Now that RouDi knows our publisher application is existing, let's create a publisher instance and offer our charming struct
-to everyone:
-```cpp
-iox::popo::UntypedPublisher untypedPublisher({"Radar", "FrontLeft", "Object"});
-untypedPublisher.offer();
-```
+Now that RouDi knows our publisher application is existing, let's create a publisher instance for sending our charming
+struct to everyone:
 
-The strings inside the first parameter of the constructor of `iox::popo::Publisher` are of the type
-`capro::ServiceDescription`. `capro` stands for **ca**nionical **pro**tocol and is used to abstract different
-[SoA](https://en.wikipedia.org/wiki/Service-oriented_architecture) protocols. `Radar` is the service name, `FrontLeft`
-an instance of the service `Radar` and the third string the specific event `Object` of the instance.
-In iceoryx a publisher and a subscriber only match if all the three IDs match.
+```cpp
+iox::popo::UntypedPublisher publisher({"Radar", "FrontLeft", "Object"});
+```
 
 Now comes the work mode. Data needs to be created. But hang on.. we need memory first! Let's reserve a memory chunk
-which fits our RadarObject struct
-```cpp
-auto result = untypedPublisher.loan(sizeof(RadarObject));
-```
+which fits our RadarObject struct.
 
-Two different ways of handling the returned `cxx::expected` are possible. Either you save the result in a variable and
-do the error check with an if-condition (#1):
 ```cpp
-auto result = untypedPublisher.loan(sizeof(RadarObject));
-if (!result.has_error())
-{
-    // ...
-}
-else
-{
-    // ...
-}
-```
-
-Or try the functional way (#2) by concatenating `and_then` and `or_else`. Read it like a story in a book: "Loan memory
-and then if it succeeds, fill it with some data or else if it fails, handle the error"
-```cpp
-untypedPublisher.loan(sizeof(RadarObject))
-    .and_then([&](auto& sample)
+publisher.loan(sizeof(RadarObject))
+    .and_then([&](auto& userPayload)
     {
         // ...
-    }
+    })
     .or_else([&](iox::popo::AllocationError error)
     {
         // ...
     });
 ```
 
-If choosing #1, please mind the additional step to unwrap the `cxx::expected` with `value()`
+The call to `loan()` returns a `cxx::expected`. By concatenating `and_then` and `or_else` branches are implicitly taken
+and your code becomes less error-prone compared to using `if() { .. } else { .. }`. Well, it's a bit of a
+[lambda](https://en.wikipedia.org/wiki/Anonymous_function#C++_(since_C++11)) jungle. Read it like a story in a book:
+"Loan memory and then if it succeeds, fill it with some data or else if it fails, handle the error".
+
+Remember, the untyped API will always be bare-metal!
+
+Hence, the `RadarObject` needs to be constructed with a placement new:
+
 ```cpp
-if (!result.has_error())
-{
-    auto& sample = result.value();
-    // ...
-}
+RadarObject* data = new (userPayload) RadarObject(ct, ct, ct);
 ```
 
-One might wonder what the type of the variable `sample` is? It is `iox::popo::Sample<void>`. This class behaves
-similar to a [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr) and makes sure that the ownership
-handling is done automatically and memory is freed when going out of scope on subscriber side. One slight difference
-is, if you want to take the ownership of the pointer, `Sample::release()` does not return the pointer.
+Then, we can write some values:
 
-Whichever way you choose, the untyped API will be bare-metal! A `void*` is contained inside the `iox::popo::Sample`.
-Hence, the pointer needs to be casted to `RadarObject*`
 ```cpp
-auto object = static_cast<RadarObject*>(sample.get());
+data->x = 1.0;
+data->y = 2.0;
+data->z = 3.0;
 ```
 
-Then we can write a new RadarObject value with an incremented counter in the shared memory
-```cpp
-*object = RadarObject(ct, ct, ct);
-```
+And finally, in both ways, the value is made available to other subscribers with
 
-Finanlly, in both ways, the value is made available to other subscribers with
 ```cpp
-sample.publish();
+publisher.publish(userPayload);
 ```
 
 The incrementation and sending of the data is done in a loop every second till the user pressed `Ctrl-C`. It is
@@ -157,159 +119,200 @@ captured with the signal handler and stops the loop.
 
 How can the subscriber application receive the data the publisher application just transmitted?
 
-Similar to the publisher we need to include the runtime and the subscriber as well as the topic data header:
+Similar to the publisher, we include the topic data, the subscriber, the runtime as well as the signal handler header:
+
 ```cpp
+#include "topic_data.hpp"
+
 #include "iceoryx_posh/popo/untyped_subscriber.hpp"
 #include "iceoryx_posh/runtime/posh_runtime.hpp"
-#include "topic_data.hpp"
+#include "iceoryx_utils/posix_wrapper/signal_handler.hpp"
 ```
 
-To make RouDi aware of the subscriber an runtime object is created, once again with a unique identifier string:
-```cpp
-iox::runtime::PoshRuntime::initRuntime("iox-ex-subscriber-untyped");
-```
+To make RouDi aware of the subscriber a runtime object is created, once again with a unique identifier string:
 
-For quality of service a `popo::SubscriberOptions` object is created and the `queueCapacity` is set. This parameter
-specifies how many samples the queue of the subscriber object can hold. If the queue would encounter an overflow,
-the oldest sample is released to create space for the newest one, which is then stored.
 ```cpp
-iox::popo::SubscriberOptions subscriberOptions;
-subscriberOptions.queueCapacity = 10U;
+constexpr char APP_NAME[] = "iox-cpp-subscriber-untyped";
+iox::runtime::PoshRuntime::initRuntime(APP_NAME);
 ```
 
 In the next step a subscriber object is created, matching exactly the `capro::ServiceDescription` that the publisher
-offered. Additionally, the previously created subscriber options are passed to the constructor. If no subscriber options
-are created, a default value will be used which sets the queueCapacity to the maximum value:
-```cpp
-iox::popo::UntypedSubscriber untypedSubscriber({"Radar", "FrontLeft", "Object"}, subscriberOptions);
-```
+offered:
 
-After the creation, the subscriber object subscribes to the offered data
 ```cpp
-untypedSubscriber.subscribe();
+iox::popo::UntypedSubscriber subscriber({"Radar", "FrontLeft", "Object"});
 ```
 
 When using the default n:m communication philosophy, the `SubscriptionState` is immediately `SUBSCRIBED`.
-However, when restricting iceoryx to the 1:n communication philosophy before being in the state `SUBSCRIBED`, the state is change to `SUBSCRIBE_REQUESTED`.
+However, when restricting iceoryx to the 1:n communication philosophy before being in the state `SUBSCRIBED`, the state is changed to `SUBSCRIBE_REQUESTED`.
 
-Again in a while-loop we do the following: First check for the `SubscriptionState`
+Again in a while-loop we do the following:
+
 ```cpp
 while (!killswitch)
 {
-    if (untypedSubscriber.getSubscriptionState() == iox::SubscribeState::SUBSCRIBED)
-    {
-
+    subscriber.take()
+        .and_then([](const void* userPayload)
+        {
+            // ...
+        })
+        .or_else([](auto& result)
+        {
+            if (result != iox::popo::ChunkReceiveResult::NO_CHUNK_AVAILABLE)
+            {
+                std::cout << "Error receiving chunk." << std::endl;
+            }
+        });
 ```
 
-The `killswitch` will be used to stop the programm execution.
+The `killswitch` will be used to stop the program execution.
 
-Once the publisher has sent data, we can receive the data
-```cpp
-untypedSubscriber.take()
-    .and_then([](iox::cxx::optional<iox::popo::Sample<const void>>& sample)
-    {
-        // ...
-    })
-    .if_empty([]
-    {
-        // ...
-    })
-    .or_else([](iox::popo::ChunkReceiveResult error)
-    {
-        std::cout << "Error receiving chunk." << std::endl;
-    });
-```
-
-Well, that's a bit of a [lambda](https://en.wikipedia.org/wiki/Anonymous_function#C++_(since_C++11)) jungle. Let's
-translate it into a story again: "Take the data and then if this succeeds, work with the sample, if the sample is empty
-do something different, or else if an error occured, print the string 'Error receiving chunk.'" Of course you don't
-need to take care about all cases, but it is advised to do so.
+Let's translate it into a story again: "Take the data and then if this succeeds, work with the sample, or else if an
+error other than `NO_CHUNK_AVAILABLE` occurred, print the string 'Error receiving chunk.'" Of course, you don't need to
+take care of all cases, but we advise doing so.
 
 In the `and_then` case the content of the sample is printed to the command line:
+
 ```cpp
-auto object = static_cast<const RadarObject*>(sample->get());
-std::cout << "Got value: " << object->x << std::endl;
+auto object = static_cast<const RadarObject*>(userPayload);
+std::cout << APP_NAME << " got value: " << object->x << std::endl;
 ```
 
-Please note the `static_cast` before reading out the data. It is necessary, because the untyped subscriber is unaware
+Please note the `static_cast` before reading out the data. It is necessary because the untyped subscriber is unaware
 of the type of the transmitted data.
 
-If the `untypedSubscriber` was not yet subscribed
+After accessing the value, the chunk of memory needs to be explicitly released by calling:
+
 ```cpp
-std::cout << "Not subscribed!" << std::endl;
+subscriber.release(userPayload);
 ```
-is printed.
 
 The subscriber runs 10x times faster than the publisher, to make sure that all data samples are received.
 
 ### Publisher application (typed)
 
-The typed publisher application is an example for a high-level user API and does the same thing as the publisher
-described before. In this summary, just the differences to the prior publisher application are described.
+The typed publisher application is an example for a high-level user API and does the same thing as the untyped
+publisher described before. In this summary, just the differences to the prior publisher application are described.
 
 Starting again with the includes, there is now a different one:
+
 ```cpp
 #include "iceoryx_posh/popo/publisher.hpp"
 ```
 
 When it comes to the runtime, things are the same as in the untyped publisher. However, a typed publisher object is
-created
+created and the transmitted data type is provided as template parameter:
+
 ```cpp
 iox::popo::Publisher<RadarObject> publisher({"Radar", "FrontLeft", "Object"});
 ```
 
 A similar while-loop is used to send the data to the subscriber. In contrast to the untyped publisher the typed one
-offers two additional possibilities
+offers three additional possibilities.
+
+#### #1 Loan and publish
+
+Usage #1 default constructs the data type in-place:
+
 ```cpp
-// #3
+publisher.loan()
+        .and_then([&](auto& sample) {
+            sample->x = ct;
+            sample->y = ct;
+            sample->z = ct;
+            sample.publish();
+        })
+        .or_else([](auto& error) {
+            // Do something with error
+            std::cerr << "Unable to loan sample, error code: " << static_cast<uint64_t>(error)
+                    << std::endl;
+        });
+```
+
+#### #2 Loan, construct in-place and publish
+
+Usage #2 constructs the data type with the values provided in loan:
+
+```cpp
+publisher.loan(ct, ct, ct).and_then([](auto& sample) { sample.publish(); }).or_else([](auto& error) {
+    // Do something with error
+    std::cerr << "Unable to loan sample, error code: " << static_cast<uint64_t>(error) << std::endl;
+});
+```
+
+One might wonder what the type of the variable `sample` is? It is `iox::popo::Sample<RadarObject>`. This class behaves
+similar to a [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr) and makes sure that the ownership
+handling is done automatically and memory is freed when going out of scope on subscriber side.
+
+#### #3 Publish by copy
+
+Usage #3 does a copy-and-publish in one call. This should only be used for small data types, as otherwise copies can
+lead to a larger runtime.
+
+```cpp
 auto object = RadarObject(ct, ct, ct);
-publisher.publishCopyOf(object);
+publisher.publishCopyOf(object).or_else([](auto& error) {
+    // Do something with error.
+    std::cerr << "Unable to publishCopyOf, error code: " << static_cast<uint64_t>(error) << std::endl;
+});
 ```
 
-\#3 should only be used for small data types, as otherwise copies can lead to a larger runtime.
+#### #4 Publish the result of a computation
+
+Usage #4 can be useful if you have a callable e.g. a function or
+[functor](https://en.wikipedia.org/wiki/Function_object#In_C_and_C++) should be always called. The callable needs
+to have the signature `void(SampleType*)`.  What then happens, is the following: The publisher loans a sample from
+shared memory and if loaning was successful the callable is called with a pointer to the `SampleType` as first
+argument. If loaning was unsuccessful, the callable is not called, but instead the `or_else` branch is taken.
 
 ```cpp
-// #4
-publisher.publishResultOf(getRadarObject, ct);
-// OR
-publisher.publishResultOf([&ct](RadarObject* object) { new (object) RadarObject(ct, ct, ct); });
+publisher.publishResultOf(getRadarObject, ct).or_else([](auto& error) {
+    // Do something with error.
+    std::cerr << "Unable to publishResultOf, error code: " << static_cast<uint64_t>(error) << std::endl;
+});
+publisher.publishResultOf([&ct](RadarObject* object) { *object = RadarObject(ct, ct, ct); })
+    .or_else([](auto& error) {
+        // Do something with error.
+        std::cerr << "Unable to publishResultOf, error code: " << static_cast<uint64_t>(error) << std::endl;
+    });
 ```
-
-If you have a callable e.g. a function should be always called, #4 could be a good solution for you.
-
-Another difference compared to the untyped publisher, is the easier handling of `iox::popo::Sample`. There is no need
-for any casts with the typed publisher, as the type of the stored data is know. One can directly access the data with
-the `operator->()`.
 
 ### Subscriber application (typed)
 
-As with the typed publisher application there is an different include compared to the untyped subscriber:
+As with the typed publisher application there is a different include compared to the untyped subscriber:
+
 ```cpp
 #include "iceoryx_posh/popo/subscriber.hpp"
 ```
 
 An instance of `Subscriber` is created:
+
 ```cpp
-iox::popo::Subscriber<RadarObject> subscriber({"Radar", "FrontLeft", "Object"}, subscriberOptions);
+iox::popo::Subscriber<RadarObject> subscriber({"Radar", "FrontLeft", "Object"});
 ```
 
 Everything else is nearly the same. However, there is one crucial difference which makes the `Subscriber` typed.
 
 Compare this line from the `UntypedSubscriber`
+
 ```cpp
-.and_then([](iox::popo::Sample<const RadarObject>& object)
+.and_then([](const void* userPayload)
 {
     // ...
 })
 ```
 
 with
+
 ```cpp
-.and_then([](iox::popo::Sample<const void>& sample)
+.and_then([](auto& sample)
 {
     // ...
 })
 ```
 
-The difference is the type that is contained in `iox::popo::Sample`. In case of the `Subscriber` it is a
-`const RadarObject` instead of `const void`.
+In case of the typed `Subscriber`, `auto` is deduced to `iox::popo::Sample<const RadarObject>`. With the `UntypedSubscriber` the parameter is `const void*` as no type information is available.
+
+<center>
+[Check out icedelivery on GitHub :fontawesome-brands-github:](https://github.com/eclipse-iceoryx/iceoryx/tree/master/iceoryx_examples/icedelivery){ .md-button }
+</center>

@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,9 +52,9 @@ class Node
     /// @return string which contains the node name
     NodeName_t getNodeName() const noexcept;
 
-    /// @brief returns the name of the process
-    /// @return string which contains the process name
-    ProcessName_t getProcessName() const noexcept;
+    /// @brief returns the name of the application's runtime
+    /// @return string which contains the runtime name
+    RuntimeName_t getRuntimeName() const noexcept;
 
   protected:
     Node(NodeData* const data) noexcept;

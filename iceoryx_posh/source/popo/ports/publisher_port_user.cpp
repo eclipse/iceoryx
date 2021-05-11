@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,9 +39,13 @@ PublisherPortUser::MemberType_t* PublisherPortUser::getMembers() noexcept
 }
 
 cxx::expected<mepoo::ChunkHeader*, AllocationError>
-PublisherPortUser::tryAllocateChunk(const uint32_t payloadSize) noexcept
+PublisherPortUser::tryAllocateChunk(const uint32_t userPayloadSize,
+                                    const uint32_t userPayloadAlignment,
+                                    const uint32_t userHeaderSize,
+                                    const uint32_t userHeaderAlignment) noexcept
 {
-    return m_chunkSender.tryAllocate(payloadSize, getUniqueID());
+    return m_chunkSender.tryAllocate(
+        getUniqueID(), userPayloadSize, userPayloadAlignment, userHeaderSize, userHeaderAlignment);
 }
 
 void PublisherPortUser::releaseChunk(mepoo::ChunkHeader* const chunkHeader) noexcept

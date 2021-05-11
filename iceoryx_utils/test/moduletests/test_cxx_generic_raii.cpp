@@ -18,7 +18,8 @@
 #include "iceoryx_utils/cxx/optional.hpp"
 #include "test.hpp"
 
-
+namespace
+{
 using namespace ::testing;
 using namespace iox::cxx;
 
@@ -137,3 +138,4 @@ TEST_F(GenericRAII_test, MoveAssignedCallsCleanupWhenOutOfScope)
 
     EXPECT_THAT(hasCalledCleanup2, Eq(1));
 }
+} // namespace

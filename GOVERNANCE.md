@@ -9,17 +9,11 @@ An up to date list of the maintainers can be found at the [Eclipse project page]
 
 ## Bi-weekly meetup
 
-Bi-weekly every first and third Thursday for 1 hour. Everyone is welcome to join.
+The developer meetup is held bi-weekly on Thursday from 17:00 - 18:00 CET. Everyone is welcome to join.
 
 You can join by using this Zoom link: https://eclipse.zoom.us/j/95918504483?pwd=RWM5Y1pkeStKVDZsU09EY1hnclREUT09
 
-```
-08:00 PST (GMT - 8)
-16:00 GMT
-17:00 CET (GMT + 1)
-21:30 IST (GMT + 5.5)
-00:00 CST (GMT + 8)
-```
+For a calendar event, you can subscribe to the [ROS calendar](https://calendar.google.com/calendar/u/0/embed?src=agf3kajirket8khktupm9go748@group.calendar.google.com&ctz=America/Los_Angeles).
 
 ### Topics
 

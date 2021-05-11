@@ -35,11 +35,17 @@ class ShutdownManager
     {
         char reason;
         psignal(num, &reason);
-        s_semaphore.post();
+        s_semaphore.post().or_else([](auto) {
+            std::cerr << "failed to call post on shutdown semaphore" << std::endl;
+            std::terminate();
+        });
     }
     static void waitUntilShutdown()
     {
-        s_semaphore.wait();
+        s_semaphore.wait().or_else([](auto) {
+            std::cerr << "failed to call wait on shutdown semaphore" << std::endl;
+            std::terminate();
+        });
     }
 
   private:
@@ -65,7 +71,7 @@ int main()
         .and_then([&](auto config) { gw.loadConfiguration(config); })
         .or_else([&](auto err) {
             iox::dds::LogWarn() << "[Main] Failed to parse gateway config with error: "
-                                << iox::config::TomlGatewayConfigParseErrorString[err];
+                                << iox::config::TOML_GATEWAY_CONFIG_FILE_PARSE_ERROR_STRINGS[err];
             iox::dds::LogWarn() << "[Main] Using default configuration.";
             iox::config::GatewayConfig defaultConfig;
             defaultConfig.setDefaults();

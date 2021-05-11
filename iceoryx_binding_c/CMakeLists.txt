@@ -1,4 +1,5 @@
-# Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+# Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,14 +16,22 @@
 # SPDX-License-Identifier: Apache-2.0
 cmake_minimum_required(VERSION 3.7)
 
-file (STRINGS "../VERSION" iceoryx_binding_c_VERSION)
-project(iceoryx_binding_c VERSION ${iceoryx_binding_c_VERSION})
+set(IOX_VERSION_STRING "1.0.0")
 
-find_package(iceoryx_posh REQUIRED)
+
+
+project(iceoryx_binding_c VERSION ${IOX_VERSION_STRING})
+
 find_package(iceoryx_utils REQUIRED)
+find_package(iceoryx_posh REQUIRED)
+
 
 include(IceoryxPackageHelper)
 include(IceoryxPlatform)
+
+if(CMAKE_SYSTEM_NAME MATCHES Linux OR CMAKE_SYSTEM_NAME MATCHES Darwin)
+    option(BUILD_SHARED_LIBS "Create shared libraries by default" ON)
+endif()
 
 #
 ########## set variables for export ##########
@@ -46,16 +55,21 @@ set(${PROJECT_NAME}_DIR ${CMAKE_CURRENT_LIST_DIR}/cmake
 ########## build building-block library ##########
 #
 add_library(${PROJECT_NAME}
-    source/c_user_trigger.cpp
-    source/c_publisher.cpp
+    source/c_notification_info.cpp
+    source/c_listener.cpp
     source/c_node.cpp
+    source/c_publisher.cpp
     source/c_runtime.cpp
     source/c_subscriber.cpp
-    source/c_event_info.cpp
+    source/c_user_trigger.cpp
     source/c_wait_set.cpp
+    source/c_chunk.cpp
+    source/c2cpp_enum_translation.cpp
+    source/c_log.cpp
     source/cpp2c_enum_translation.cpp
     source/cpp2c_publisher.cpp
     source/cpp2c_subscriber.cpp
+    source/cpp2c_service_description_translation.cpp
 )
 add_library(${PROJECT_NAMESPACE}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
@@ -70,11 +84,23 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
-target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    iceoryx_posh::iceoryx_posh
-    iceoryx_utils::iceoryx_utils
-)
+
+if(NOT (WIN32 OR QNX))
+    target_link_libraries(${PROJECT_NAME}
+      PUBLIC
+        stdc++
+        pthread
+      PRIVATE
+        iceoryx_posh::iceoryx_posh
+        iceoryx_utils::iceoryx_utils
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+      PRIVATE
+        iceoryx_posh::iceoryx_posh
+        iceoryx_utils::iceoryx_utils
+    )
+endif()
 
 target_compile_options(${PROJECT_NAME} PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
@@ -92,4 +118,9 @@ setup_install_directories_and_export_package(
     TARGETS ${PROJECT_NAME}
     INCLUDE_DIRECTORY include/
 )
+
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+  DESTINATION share/doc/iceoryx_binding_c
+  COMPONENT dev)
 

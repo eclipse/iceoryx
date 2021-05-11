@@ -33,6 +33,10 @@ else()
     set(CREATE_PATH_COMMAND mkdir -p)
 endif(WIN32)
 
+if(DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(TOOLCHAIN_FILE "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
+endif()
+
 # ===== Helpers
 function(fetch_and_install name)
     set(DOWNLOAD_CONFIG_DIR ${CMAKE_BINARY_DIR}/dependencies/${name}/download)
@@ -42,7 +46,7 @@ function(fetch_and_install name)
 
     # Fetch source
     configure_file(${name}.cmake.in ${DOWNLOAD_CONFIG_DIR}/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "${DOWNLOAD_CONFIG_DIR}"
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "${TOOLCHAIN_FILE}" "${DOWNLOAD_CONFIG_DIR}"
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${DOWNLOAD_CONFIG_DIR} )
     if(result)
@@ -71,7 +75,7 @@ function(fetch_and_install name)
     endforeach()
     string( REPLACE ";" " " ADDITIONAL_CMAKE_FLAGS "${ADDITIONAL_CMAKE_FLAGS}")
 
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}" "${ADDITIONAL_CMAKE_FLAGS}" "${SOURCE_DIR}"
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" "-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}" "${ADDITIONAL_CMAKE_FLAGS}" "${TOOLCHAIN_FILE}" "${SOURCE_DIR}"
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${BUILD_DIR} )
     if(result)

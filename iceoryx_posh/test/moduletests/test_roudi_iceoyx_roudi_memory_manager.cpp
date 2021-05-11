@@ -1,4 +1,5 @@
 // Copyright (c) 2021 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +27,6 @@ namespace iox
 {
 namespace test
 {
-
 /// @brief This test file verifies that the BaseClass IceoryxRouDiMemoryManager is tested
 class IceoryxRoudiMemoryManager_test : public Test
 {
@@ -35,8 +35,8 @@ class IceoryxRoudiMemoryManager_test : public Test
 
     void SetUp() override
     {
-      auto config = iox::RouDiConfig_t().setDefaults();
-      m_roudiMemoryManagerTest = std::unique_ptr<IceOryxRouDiMemoryManager>(new IceOryxRouDiMemoryManager(config));
+        auto config = iox::RouDiConfig_t().setDefaults();
+        m_roudiMemoryManagerTest = std::unique_ptr<IceOryxRouDiMemoryManager>(new IceOryxRouDiMemoryManager(config));
     }
 
     void TearDown() override
@@ -112,6 +112,7 @@ TEST_F(IceoryxRoudiMemoryManager_test, AcquiringPortPoolAfterCreateAndAnnounceMe
 TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemoryReturnNoError)
 {
     auto testResult = m_roudiMemoryManagerTest->createAndAnnounceMemory();
+    EXPECT_FALSE(testResult.has_error());
 
     auto result = m_roudiMemoryManagerTest->destroyMemory();
 
@@ -121,8 +122,10 @@ TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemoryReturnNoError)
 TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemoryIntrospectionMemoryManagerReturnNullOpt)
 {
     auto testResult = m_roudiMemoryManagerTest->createAndAnnounceMemory();
+    ASSERT_FALSE(testResult.has_error());
 
     auto result = m_roudiMemoryManagerTest->destroyMemory();
+    ASSERT_FALSE(result.has_error());
 
     auto res = m_roudiMemoryManagerTest->introspectionMemoryManager();
     EXPECT_THAT(res, Eq(iox::cxx::nullopt_t()));
@@ -131,8 +134,10 @@ TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemoryIntrospectionMemoryManagerRe
 TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemorySegmentManagerReturnNullOpt)
 {
     auto testResult = m_roudiMemoryManagerTest->createAndAnnounceMemory();
+    ASSERT_FALSE(testResult.has_error());
 
     auto result = m_roudiMemoryManagerTest->destroyMemory();
+    ASSERT_FALSE(result.has_error());
 
     auto resultTest = m_roudiMemoryManagerTest->segmentManager();
     EXPECT_THAT(resultTest, Eq(iox::cxx::nullopt_t()));
@@ -141,6 +146,7 @@ TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemorySegmentManagerReturnNullOpt)
 TEST_F(IceoryxRoudiMemoryManager_test, CreateAndAnnouceMemoryFailingAfterCalledTwoTimes)
 {
     auto testResult = m_roudiMemoryManagerTest->createAndAnnounceMemory();
+    ASSERT_FALSE(testResult.has_error());
 
     auto result = m_roudiMemoryManagerTest->createAndAnnounceMemory();
 
@@ -151,13 +157,15 @@ TEST_F(IceoryxRoudiMemoryManager_test, CreateAndAnnouceMemoryFailingAfterCalledT
 TEST_F(IceoryxRoudiMemoryManager_test, DestroyMemoryNotFailingAfterCalledTwoTimes)
 {
     auto testResult = m_roudiMemoryManagerTest->createAndAnnounceMemory();
+    ASSERT_FALSE(testResult.has_error());
 
     auto result = m_roudiMemoryManagerTest->destroyMemory();
+    ASSERT_FALSE(result.has_error());
 
     auto res = m_roudiMemoryManagerTest->destroyMemory();
 
     EXPECT_THAT(res.has_error(), Eq(false));
 }
 
-} // namespace test 
-} // iox
+} // namespace test
+} // namespace iox

@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,29 +20,31 @@
 #include "test.hpp"
 
 using namespace ::testing;
+using namespace iox::mepoo;
 
-class alignas(32) MemPool_test : public Test
+class MemPool_test : public Test
 {
   public:
     static constexpr uint32_t NumberOfChunks{100};
     static constexpr uint32_t ChunkSize{64};
 
-    static constexpr uint32_t LoFFLiMemoryRequirement{
-        iox::mepoo::MemPool::freeList_t::requiredMemorySize(NumberOfChunks) + 10000};
+    using FreeListIndex_t = iox::mepoo::MemPool::freeList_t::Index_t;
+    static constexpr FreeListIndex_t LoFFLiMemoryRequirement{
+        iox::mepoo::MemPool::freeList_t::requiredIndexMemorySize(NumberOfChunks) + 10000};
 
     MemPool_test()
         : allocator(m_rawMemory, NumberOfChunks * ChunkSize + LoFFLiMemoryRequirement)
-        , sut(ChunkSize, NumberOfChunks, &allocator, &allocator)
+        , sut(ChunkSize, NumberOfChunks, allocator, allocator)
     {
     }
 
     void SetUp(){};
     void TearDown(){};
 
-    alignas(32) uint8_t m_rawMemory[NumberOfChunks * ChunkSize + LoFFLiMemoryRequirement];
+    alignas(MemPool::CHUNK_MEMORY_ALIGNMENT) uint8_t m_rawMemory[NumberOfChunks * ChunkSize + LoFFLiMemoryRequirement];
     iox::posix::Allocator allocator;
 
-    iox::mepoo::MemPool sut;
+    MemPool sut;
 };
 
 TEST_F(MemPool_test, CTor)
@@ -207,10 +210,10 @@ TEST_F(MemPool_test, getMinFreeWithSecondGetChunk)
 
 TEST_F(MemPool_test, dieWhenMempoolChunkSizeIsSmallerThan32Bytes)
 {
-    EXPECT_DEATH({ iox::mepoo::MemPool sut(12, 10, &allocator, &allocator); }, ".*");
+    EXPECT_DEATH({ iox::mepoo::MemPool sut(12, 10, allocator, allocator); }, ".*");
 }
 
 TEST_F(MemPool_test, dieWhenMempoolChunkSizeIsNotPowerOf32)
 {
-    EXPECT_DEATH({ iox::mepoo::MemPool sut(333, 10, &allocator, &allocator); }, ".*");
+    EXPECT_DEATH({ iox::mepoo::MemPool sut(333, 10, allocator, allocator); }, ".*");
 }

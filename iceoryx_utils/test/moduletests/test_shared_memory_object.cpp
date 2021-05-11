@@ -19,6 +19,8 @@
 #include "iceoryx_utils/internal/posix_wrapper/shared_memory_object.hpp"
 #include "test.hpp"
 
+namespace
+{
 using namespace testing;
 using namespace iox;
 
@@ -175,3 +177,4 @@ TEST_F(SharedMemoryObject_Test, OpeningSharedMemoryAndReadMultipleContents)
     EXPECT_THAT(*sutValue1, Eq(4557));
     EXPECT_THAT(*sutValue2, Eq(8912));
 }
+} // namespace

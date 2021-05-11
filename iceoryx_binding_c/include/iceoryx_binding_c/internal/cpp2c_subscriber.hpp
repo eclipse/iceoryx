@@ -1,4 +1,5 @@
-// Copyright (c) 2020, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +19,9 @@
 #define IOX_BINDING_C_CPP2C_SUBSCRIBER_HPP
 
 #include "iceoryx_binding_c/enums.h"
+#include "iceoryx_posh/iceoryx_posh_types.hpp"
 #include "iceoryx_posh/internal/popo/ports/subscriber_port_user.hpp"
+#include "iceoryx_posh/popo/base_subscriber.hpp"
 #include "iceoryx_posh/popo/wait_set.hpp"
 
 struct cpp2c_Subscriber
@@ -31,16 +34,22 @@ struct cpp2c_Subscriber
     cpp2c_Subscriber& operator=(const cpp2c_Subscriber&) = delete;
     cpp2c_Subscriber& operator=(cpp2c_Subscriber&& rhs) = delete;
 
-    void enableEvent(iox::popo::TriggerHandle&& triggerHandle, const iox_SubscriberEvent subscriberEvent) noexcept;
+    void enableEvent(iox::popo::TriggerHandle&& triggerHandle,
+                     const iox::popo::SubscriberEvent subscriberEvent) noexcept;
 
-    void disableEvent(const iox_SubscriberEvent event) noexcept;
+    void disableEvent(const iox::popo::SubscriberEvent subscriberEvent) noexcept;
+
+    void enableState(iox::popo::TriggerHandle&& triggerHandle,
+                     const iox::popo::SubscriberState subscriberState) noexcept;
+
+    void disableState(const iox::popo::SubscriberState subscriberState) noexcept;
 
     void invalidateTrigger(const uint64_t uniqueTriggerId) noexcept;
 
     bool hasSamples() const noexcept;
 
-    iox::popo::WaitSetHasTriggeredCallback
-    getHasTriggeredCallbackForEvent(const iox_SubscriberEvent subscriberEvent) const noexcept;
+    iox::popo::WaitSetIsConditionSatisfiedCallback
+    getCallbackForIsStateConditionSatisfied(const iox::popo::SubscriberState subscriberState) const noexcept;
 
 
     iox::popo::SubscriberPortData* m_portData{nullptr};

@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,18 +35,14 @@ iox_user_trigger_t iox_user_trigger_init(iox_user_trigger_storage_t* self);
 void iox_user_trigger_deinit(iox_user_trigger_t const self);
 
 /// @brief trigger a user trigger
+/// @note a user trigger cannot be triggered when it is not attached
 /// @param[in] self handle to user trigger
 void iox_user_trigger_trigger(iox_user_trigger_t const self);
 
 /// @brief was the user trigger triggered
 /// @param[in] self handle to user trigger
+/// @note The hasTrigger state will be reset after it was handled by a WaitSet/Listener
 /// @return returns true if the user trigger was triggered, otherwise false
 bool iox_user_trigger_has_triggered(iox_user_trigger_t const self);
-
-/// @brief resets the user trigger triggering state. after that call
-///         iox_user_trigger_has_triggered will return false until it was
-///         triggered again
-/// @param[in] self handle to user trigger
-void iox_user_trigger_reset_trigger(iox_user_trigger_t const self);
 
 #endif

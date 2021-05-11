@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +23,8 @@
 
 #include <chrono>
 
+namespace
+{
 using namespace ::testing;
 using namespace iox;
 using namespace iox::posix;
@@ -229,14 +232,14 @@ TYPED_TEST(IpcChannel_test, UnlinkExistingOneWorks)
     auto first = TestFixture::IpcChannelType::create(anotherGoodName, IpcChannelMode::BLOCKING, IpcChannelSide::SERVER);
     EXPECT_FALSE(first.has_error());
     auto ret = TestFixture::IpcChannelType::unlinkIfExists(anotherGoodName);
-    EXPECT_FALSE(ret.has_error());
+    ASSERT_FALSE(ret.has_error());
     EXPECT_TRUE(ret.value());
 }
 
 TYPED_TEST(IpcChannel_test, UnlinkNonExistingOneWorks)
 {
     auto ret = TestFixture::IpcChannelType::unlinkIfExists(theUnknown);
-    EXPECT_FALSE(ret.has_error());
+    ASSERT_FALSE(ret.has_error());
     EXPECT_FALSE(ret.value());
 }
 
@@ -261,9 +264,9 @@ TYPED_TEST(IpcChannel_test, SendAndReceiveWorks)
 
 TYPED_TEST(IpcChannel_test, InvalidAfterDestroy)
 {
-    this->client.destroy();
+    ASSERT_FALSE(this->client.destroy().has_error());
     ASSERT_FALSE(this->client.isInitialized());
-    this->server.destroy();
+    ASSERT_FALSE(this->server.destroy().has_error());
     ASSERT_FALSE(this->server.isInitialized());
 }
 
@@ -384,7 +387,7 @@ TYPED_TEST(IpcChannel_test, TimedReceiveWorks)
     Duration minTimeoutTolerance = 10_ms;
     Duration maxTimeoutTolerance = 20_ms;
 
-    this->client.send(msg);
+    ASSERT_FALSE(this->client.send(msg).has_error());
 
     auto received = this->server.timedReceive(timeout);
     ASSERT_FALSE(received.has_error());
@@ -405,4 +408,5 @@ TYPED_TEST(IpcChannel_test, TimedReceiveWorks)
     // Check if timedReceive has blocked for ~timeout and has not returned immediately
     EXPECT_GT(timeDiff, timeout - minTimeoutTolerance);
 }
+} // namespace
 #endif

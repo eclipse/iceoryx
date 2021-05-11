@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +24,8 @@
 #include <fstream>
 #include <string>
 
-
+namespace
+{
 using namespace ::testing;
 
 const std::string TestFile = "FileReader_test.tmp";
@@ -154,3 +156,4 @@ TEST_F(FileReader_test, errorTerminateMode)
         },
         ".*");
 }
+} // namespace

@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,7 +36,7 @@ struct SubscriberOptions;
 struct SubscriberPortData : public BasePortData
 {
     SubscriberPortData(const capro::ServiceDescription& serviceDescription,
-                       const ProcessName_t& processName,
+                       const RuntimeName_t& runtimeName,
                        cxx::VariantQueueTypes queueType,
                        const SubscriberOptions& subscriberOptions,
                        const mepoo::MemoryInfo& memoryInfo = mepoo::MemoryInfo()) noexcept;

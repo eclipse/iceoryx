@@ -1,4 +1,5 @@
-// Copyright (c) 2019, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +23,8 @@
 #include "iceoryx_posh/runtime/node.hpp"
 #include "iceoryx_posh/runtime/port_config_info.hpp"
 #include "iceoryx_utils/cxx/convert.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
+#include "iceoryx_utils/cxx/helplets.hpp"
+#include "iceoryx_utils/internal/relocatable_pointer/base_relative_pointer.hpp"
 #include "iceoryx_utils/posix_wrapper/timer.hpp"
 
 #include <cstdint>
@@ -50,7 +52,7 @@ void PoshRuntime::setRuntimeFactory(const factory_t& factory) noexcept
     }
 }
 
-PoshRuntime& PoshRuntime::defaultRuntimeFactory(cxx::optional<const ProcessName_t*> name) noexcept
+PoshRuntime& PoshRuntime::defaultRuntimeFactory(cxx::optional<const RuntimeName_t*> name) noexcept
 {
     static PoshRuntime instance(name);
     return instance;
@@ -62,17 +64,17 @@ PoshRuntime& PoshRuntime::getInstance() noexcept
     return getInstance(cxx::nullopt);
 }
 
-PoshRuntime& PoshRuntime::initRuntime(const ProcessName_t& name) noexcept
+PoshRuntime& PoshRuntime::initRuntime(const RuntimeName_t& name) noexcept
 {
-    return getInstance(cxx::make_optional<const ProcessName_t*>(&name));
+    return getInstance(cxx::make_optional<const RuntimeName_t*>(&name));
 }
 
-PoshRuntime& PoshRuntime::getInstance(cxx::optional<const ProcessName_t*> name) noexcept
+PoshRuntime& PoshRuntime::getInstance(cxx::optional<const RuntimeName_t*> name) noexcept
 {
     return getRuntimeFactory()(name);
 }
 
-PoshRuntime::PoshRuntime(cxx::optional<const ProcessName_t*> name, const bool doMapSharedMemoryIntoThread) noexcept
+PoshRuntime::PoshRuntime(cxx::optional<const RuntimeName_t*> name, const bool doMapSharedMemoryIntoThread) noexcept
     : m_appName(verifyInstanceName(name))
     , m_ipcChannelInterface(roudi::IPC_CHANNEL_ROUDI_NAME, *name.value(), runtime::PROCESS_WAITING_FOR_ROUDI_TIMEOUT)
     , m_ShmInterface(doMapSharedMemoryIntoThread,
@@ -81,42 +83,72 @@ PoshRuntime::PoshRuntime(cxx::optional<const ProcessName_t*> name, const bool do
                      m_ipcChannelInterface.getSegmentManagerAddressOffset())
     , m_applicationPort(getMiddlewareApplication())
 {
+    if (cxx::isCompiledOn32BitSystem())
+    {
+        LogWarn() << "Running applications on 32-bit architectures is not supported! Use at your own risk!";
+    }
+
     /// @todo here we could get the LogLevel and LogMode and set it on the LogManager
 }
 
 PoshRuntime::~PoshRuntime() noexcept
 {
-    if (m_applicationPort)
+    // Inform RouDi that we're shutting down
+    IpcMessage sendBuffer;
+    sendBuffer << IpcMessageTypeToString(IpcMessageType::TERMINATION) << m_appName;
+    IpcMessage receiveBuffer;
+
+    if (m_ipcChannelInterface.sendRequestToRouDi(sendBuffer, receiveBuffer)
+        && (1U == receiveBuffer.getNumberOfElements()))
     {
-        m_applicationPort.destroy();
+        std::string IpcMessage = receiveBuffer.getElementAtIndex(0U);
+
+        if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::TERMINATION_ACK)
+        {
+            LogVerbose() << "RouDi cleaned up resources of " << m_appName << ". Shutting down gracefully.";
+        }
+        else
+        {
+            LogError() << "Got wrong response from IPC channel for IpcMessageType::TERMINATION:'"
+                       << receiveBuffer.getMessage() << "'";
+        }
+    }
+    else
+    {
+        LogError() << "Sending IpcMessageType::TERMINATION to RouDi failed:'" << receiveBuffer.getMessage() << "'";
     }
 }
 
 
-const ProcessName_t& PoshRuntime::verifyInstanceName(cxx::optional<const ProcessName_t*> name) noexcept
+const RuntimeName_t& PoshRuntime::verifyInstanceName(cxx::optional<const RuntimeName_t*> name) noexcept
 {
     if (!name.has_value())
     {
         LogError() << "Cannot initialize runtime. Application name has not been specified!";
-        std::terminate();
+        errorHandler(Error::kPOSH__RUNTIME_NO_NAME_PROVIDED, nullptr, ErrorLevel::FATAL);
     }
     else if (name.value()->empty())
     {
         LogError() << "Cannot initialize runtime. Application name must not be empty!";
-        std::terminate();
+        errorHandler(Error::kPOSH__RUNTIME_NAME_EMPTY, nullptr, ErrorLevel::FATAL);
     }
     else if (name.value()->c_str()[0] == '/')
     {
         LogError() << "Cannot initialize runtime. Please remove leading slash from Application name " << *name.value();
-        std::terminate();
+        errorHandler(Error::kPOSH__RUNTIME_LEADING_SLASH_PROVIDED, nullptr, ErrorLevel::FATAL);
     }
 
     return *name.value();
 }
 
-ProcessName_t PoshRuntime::getInstanceName() const noexcept
+RuntimeName_t PoshRuntime::getInstanceName() const noexcept
 {
     return m_appName;
+}
+
+void PoshRuntime::shutdown() noexcept
+{
+    m_shutdownRequested.store(true, std::memory_order_relaxed);
 }
 
 const std::atomic<uint64_t>* PoshRuntime::getServiceRegistryChangeCounter() noexcept
@@ -126,11 +158,11 @@ const std::atomic<uint64_t>* PoshRuntime::getServiceRegistryChangeCounter() noex
     IpcMessage receiveBuffer;
     if (sendRequestToRouDi(sendBuffer, receiveBuffer) && (2U == receiveBuffer.getNumberOfElements()))
     {
-        RelativePointer::offset_t offset{0U};
+        rp::BaseRelativePointer::offset_t offset{0U};
         cxx::convert::fromString(receiveBuffer.getElementAtIndex(0U).c_str(), offset);
-        RelativePointer::id_t segmentId{0U};
+        rp::BaseRelativePointer::id_t segmentId{0U};
         cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), segmentId);
-        auto ptr = RelativePointer::getPtr(segmentId, offset);
+        auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
 
         return reinterpret_cast<std::atomic<uint64_t>*>(ptr);
     }
@@ -166,7 +198,9 @@ PublisherPortUserType::MemberType_t* PoshRuntime::getMiddlewarePublisher(const c
     IpcMessage sendBuffer;
     sendBuffer << IpcMessageTypeToString(IpcMessageType::CREATE_PUBLISHER) << m_appName
                << static_cast<cxx::Serialization>(service).toString() << std::to_string(options.historyCapacity)
-               << options.nodeName << static_cast<cxx::Serialization>(portConfigInfo).toString();
+               << options.nodeName << std::to_string(options.offerOnCreate)
+               << std::to_string(static_cast<uint8_t>(options.subscriberTooSlowPolicy))
+               << static_cast<cxx::Serialization>(portConfigInfo).toString();
 
     auto maybePublisher = requestPublisherFromRoudi(sendBuffer);
     if (maybePublisher.has_error())
@@ -189,6 +223,12 @@ PublisherPortUserType::MemberType_t* PoshRuntime::getMiddlewarePublisher(const c
             errorHandler(Error::kPOSH__RUNTIME_ROUDI_REQUEST_PUBLISHER_WRONG_IPC_MESSAGE_RESPONSE,
                          nullptr,
                          iox::ErrorLevel::SEVERE);
+            break;
+        case IpcMessageErrorType::REQUEST_PUBLISHER_NO_WRITABLE_SHM_SEGMENT:
+            LogWarn() << "Service '" << service.operator cxx::Serialization().toString()
+                      << "' could not be created. RouDi did not find a writable shared memory segment for the current "
+                         "user. Try using another user or adapt RouDi's config.";
+            errorHandler(Error::kPOSH__RUNTIME_NO_WRITABLE_SHM_SEGMENT, nullptr, iox::ErrorLevel::SEVERE);
             break;
         default:
             LogWarn() << "Undefined behavior occurred while creating service '"
@@ -213,11 +253,11 @@ PoshRuntime::requestPublisherFromRoudi(const IpcMessage& sendBuffer) noexcept
         if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::CREATE_PUBLISHER_ACK)
 
         {
-            RelativePointer::id_t segmentId{0U};
+            rp::BaseRelativePointer::id_t segmentId{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(2U).c_str(), segmentId);
-            RelativePointer::offset_t offset{0U};
+            rp::BaseRelativePointer::offset_t offset{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), offset);
-            auto ptr = RelativePointer::getPtr(segmentId, offset);
+            auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
             return cxx::success<PublisherPortUserType::MemberType_t*>(
                 reinterpret_cast<PublisherPortUserType::MemberType_t*>(ptr));
         }
@@ -255,6 +295,12 @@ PoshRuntime::getMiddlewareSubscriber(const capro::ServiceDescription& service,
                   << ", limiting from " << subscriberOptions.queueCapacity << " to " << MAX_QUEUE_CAPACITY;
         options.queueCapacity = MAX_QUEUE_CAPACITY;
     }
+    else if (0U == options.queueCapacity)
+    {
+        LogWarn() << "Requested queue capacity of 0 doesn't make sense as no data would be received,"
+                  << " the capacity is set to 1";
+        options.queueCapacity = 1U;
+    }
 
     if (options.nodeName.empty())
     {
@@ -264,7 +310,8 @@ PoshRuntime::getMiddlewareSubscriber(const capro::ServiceDescription& service,
     IpcMessage sendBuffer;
     sendBuffer << IpcMessageTypeToString(IpcMessageType::CREATE_SUBSCRIBER) << m_appName
                << static_cast<cxx::Serialization>(service).toString() << std::to_string(options.historyRequest)
-               << std::to_string(options.queueCapacity) << options.nodeName
+               << std::to_string(options.queueCapacity) << options.nodeName << std::to_string(options.subscribeOnCreate)
+               << std::to_string(static_cast<uint8_t>(options.queueFullPolicy))
                << static_cast<cxx::Serialization>(portConfigInfo).toString();
 
     auto maybeSubscriber = requestSubscriberFromRoudi(sendBuffer);
@@ -307,11 +354,11 @@ PoshRuntime::requestSubscriberFromRoudi(const IpcMessage& sendBuffer) noexcept
 
         if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::CREATE_SUBSCRIBER_ACK)
         {
-            RelativePointer::id_t segmentId{0U};
+            rp::BaseRelativePointer::id_t segmentId{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(2U).c_str(), segmentId);
-            RelativePointer::offset_t offset{0U};
+            rp::BaseRelativePointer::offset_t offset{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), offset);
-            auto ptr = RelativePointer::getPtr(segmentId, offset);
+            auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
             return cxx::success<SubscriberPortUserType::MemberType_t*>(
                 reinterpret_cast<SubscriberPortUserType::MemberType_t*>(ptr));
         }
@@ -350,11 +397,11 @@ popo::InterfacePortData* PoshRuntime::getMiddlewareInterface(const capro::Interf
 
         if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::CREATE_INTERFACE_ACK)
         {
-            RelativePointer::id_t segmentId{0U};
+            rp::BaseRelativePointer::id_t segmentId{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(2U).c_str(), segmentId);
-            RelativePointer::offset_t offset{0U};
+            rp::BaseRelativePointer::offset_t offset{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), offset);
-            auto ptr = RelativePointer::getPtr(segmentId, offset);
+            auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
             return reinterpret_cast<popo::InterfacePortData*>(ptr);
         }
     }
@@ -379,22 +426,21 @@ NodeData* PoshRuntime::createNode(const NodeProperty& nodeProperty) noexcept
 
         if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::CREATE_NODE_ACK)
         {
-            RelativePointer::id_t segmentId{0U};
+            rp::BaseRelativePointer::id_t segmentId{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(2U).c_str(), segmentId);
-            RelativePointer::offset_t offset{0U};
+            rp::BaseRelativePointer::offset_t offset{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), offset);
-            auto ptr = RelativePointer::getPtr(segmentId, offset);
+            auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
             return reinterpret_cast<NodeData*>(ptr);
         }
     }
 
     LogError() << "Got wrong response from RouDi while creating node:'" << receiveBuffer.getMessage() << "'";
-    errorHandler(
-        Error::kPOSH__RUNTIME_ROUDI_CREATE_NODE_WRONG_IPC_MESSAGE_RESPONSE, nullptr, iox::ErrorLevel::SEVERE);
+    errorHandler(Error::kPOSH__RUNTIME_ROUDI_CREATE_NODE_WRONG_IPC_MESSAGE_RESPONSE, nullptr, iox::ErrorLevel::SEVERE);
     return nullptr;
 }
 
-cxx::expected<InstanceContainer, Error>
+cxx::expected<InstanceContainer, FindServiceError>
 PoshRuntime::findService(const capro::ServiceDescription& serviceDescription) noexcept
 {
     IpcMessage sendBuffer;
@@ -407,7 +453,7 @@ PoshRuntime::findService(const capro::ServiceDescription& serviceDescription) no
     {
         LogError() << "Could not send FIND_SERVICE request to RouDi\n";
         errorHandler(Error::kIPC_INTERFACE__REG_UNABLE_TO_WRITE_TO_ROUDI_CHANNEL, nullptr, ErrorLevel::MODERATE);
-        return cxx::error<Error>(Error::kIPC_INTERFACE__REG_UNABLE_TO_WRITE_TO_ROUDI_CHANNEL);
+        return cxx::error<FindServiceError>(FindServiceError::UNABLE_TO_WRITE_TO_ROUDI_CHANNEL);
     }
 
     InstanceContainer instanceContainer;
@@ -427,7 +473,7 @@ PoshRuntime::findService(const capro::ServiceDescription& serviceDescription) no
         LogWarn() << numberOfElements << " instances found for service \"" << serviceDescription.getServiceIDString()
                   << "\" which is more than supported number of instances(" << MAX_NUMBER_OF_INSTANCES << "\n";
         errorHandler(Error::kPOSH__SERVICE_DISCOVERY_INSTANCE_CONTAINER_OVERFLOW, nullptr, ErrorLevel::MODERATE);
-        return cxx::error<Error>(Error::kPOSH__SERVICE_DISCOVERY_INSTANCE_CONTAINER_OVERFLOW);
+        return cxx::error<FindServiceError>(FindServiceError::INSTANCE_CONTAINER_OVERFLOW);
     }
     return {cxx::success<InstanceContainer>(instanceContainer)};
 }
@@ -467,11 +513,11 @@ popo::ApplicationPortData* PoshRuntime::getMiddlewareApplication() noexcept
 
         if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::CREATE_APPLICATION_ACK)
         {
-            RelativePointer::id_t segmentId{0U};
+            rp::BaseRelativePointer::id_t segmentId{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(2U).c_str(), segmentId);
-            RelativePointer::offset_t offset{0U};
+            rp::BaseRelativePointer::offset_t offset{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), offset);
-            auto ptr = RelativePointer::getPtr(segmentId, offset);
+            auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
             return reinterpret_cast<popo::ApplicationPortData*>(ptr);
         }
     }
@@ -492,11 +538,11 @@ PoshRuntime::requestConditionVariableFromRoudi(const IpcMessage& sendBuffer) noe
 
         if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::CREATE_CONDITION_VARIABLE_ACK)
         {
-            RelativePointer::id_t segmentId{0U};
+            rp::BaseRelativePointer::id_t segmentId{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(2U).c_str(), segmentId);
-            RelativePointer::offset_t offset{0U};
+            rp::BaseRelativePointer::offset_t offset{0U};
             cxx::convert::fromString(receiveBuffer.getElementAtIndex(1U).c_str(), offset);
-            auto ptr = RelativePointer::getPtr(segmentId, offset);
+            auto ptr = rp::BaseRelativePointer::getPtr(segmentId, offset);
             return cxx::success<popo::ConditionVariableData*>(reinterpret_cast<popo::ConditionVariableData*>(ptr));
         }
     }
@@ -559,11 +605,44 @@ bool PoshRuntime::sendRequestToRouDi(const IpcMessage& msg, IpcMessage& answer) 
 }
 
 // this is the callback for the m_keepAliveTimer
-void PoshRuntime::sendKeepAlive() noexcept
+void PoshRuntime::sendKeepAliveAndHandleShutdownPreparation() noexcept
 {
     if (!m_ipcChannelInterface.sendKeepalive())
     {
         LogWarn() << "Error in sending keep alive";
+    }
+
+    // this is not the nicest solution, but we cannot send this in the signal handler where m_shutdownRequested is
+    // usually set; luckily the runtime already has a thread running and therefore this thread is used to unblock the
+    // application shutdown from a potentially blocking publisher with the
+    // SubscriberTooSlowPolicy::WAIT_FOR_SUBSCRIBER option set
+    if (m_shutdownRequested.exchange(false, std::memory_order_relaxed))
+    {
+        // Inform RouDi to prepare for app shutdown
+        IpcMessage sendBuffer;
+        sendBuffer << IpcMessageTypeToString(IpcMessageType::PREPARE_APP_TERMINATION) << m_appName;
+        IpcMessage receiveBuffer;
+
+        if (m_ipcChannelInterface.sendRequestToRouDi(sendBuffer, receiveBuffer)
+            && (1U == receiveBuffer.getNumberOfElements()))
+        {
+            std::string IpcMessage = receiveBuffer.getElementAtIndex(0U);
+
+            if (stringToIpcMessageType(IpcMessage.c_str()) == IpcMessageType::PREPARE_APP_TERMINATION_ACK)
+            {
+                LogVerbose() << "RouDi unblocked shutdown of " << m_appName << ".";
+            }
+            else
+            {
+                LogError() << "Got wrong response from IPC channel for PREPARE_APP_TERMINATION:'"
+                           << receiveBuffer.getMessage() << "'";
+            }
+        }
+        else
+        {
+            LogError() << "Sending IpcMessageType::PREPARE_APP_TERMINATION to RouDi failed:'"
+                       << receiveBuffer.getMessage() << "'";
+        }
     }
 }
 

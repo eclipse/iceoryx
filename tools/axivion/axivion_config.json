@@ -1,0 +1,1742 @@
+{
+    "Analysis": {
+        "Analysis-GlobalOptions": {
+            "global_excludes": [
+                "build/*",
+                "test/*",
+                "tools/*",
+                "iceoryx_examples/*",
+                "iceoryx_dds/*",
+                "iceoryx_integrationtest/*",
+                "iceoryx_binding_c/*",
+                "cmake/*",
+                "cpptoml_vendor/*",
+                "doc/*",
+                "iceoryx_meta/*",
+                "/usr/include/x86_64-linux-gnu/c++/*"
+            ]
+        },
+        "Architecture": {
+            "child_order": [
+                "Architecture-GravisArchitecture",
+                "Architecture-AddDynamicVariableAccesses",
+                "Architecture-CopyIntoEntriesView",
+                "Architecture-GXLImport",
+                "Architecture-RhapsodyImporter",
+                "Architecture-ARXMLImport",
+                "Architecture-CopyAndProjectView",
+                "Architecture-CreateTypes",
+                "Architecture-CustomRFGFunction",
+                "Architecture-InsertSystemNode",
+                "Architecture-ObfuscateNames",
+                "Architecture-ProjectView",
+                "Architecture-RemoveView",
+                "Architecture-StripBasepath",
+                "Architecture-TransitiveClosure",
+                "Architecture-CopyView",
+                "Architecture-CheckRFGEquality",
+                "Architecture-MatchGraphs",
+                "Architecture-EAImporter",
+                "Architecture-EdgeInterpretation",
+                "Architecture-GravisRoleAttributes",
+                "Architecture-HierarchicalMapping",
+                "Architecture-TaggedValuesMapping",
+                "Architecture-ScriptedArchitecture",
+                "Architecture-ArchitectureCheck",
+                "Architecture-ProcessLine",
+                "Architecture-CycleDetection",
+                "Architecture-CyclesView",
+                "Architecture-LiftedCyclesView",
+                "Architecture-DeadCodeView",
+                "Architecture-CombinedDeadCode",
+                "Architecture-CloneView"
+            ]
+        },
+        "Architecture-CloneView": {
+            "_active": true
+        },
+        "Architecture-CyclesView": {
+            "_active": true
+        },
+        "Architecture-DeadCodeView": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.1.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.1.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.1.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A0.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A1.1.1": {
+            "_active": false
+        },
+        "AutosarC++19_03-A1.4.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A10.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A10.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A10.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A10.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A10.3.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A11.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A11.0.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.1.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.1.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.1.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.8.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.8.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.8.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.8.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.8.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A12.8.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.2.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.5.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A13.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A14.7.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A14.8.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.3.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.3.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.4.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.4.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A15.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A16.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A16.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A16.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A16.7.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A17.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A17.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.0.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.0.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.1.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.1.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.5.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.5.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.9.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.9.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A18.9.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.10.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.10.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.10.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.10.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.11.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.13.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.13.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.13.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.13.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.13.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.13.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.7.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.7.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.7.3": {
+            "_active": false
+        },
+        "AutosarC++19_03-A2.8.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A2.8.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A21.8.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A23.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A26.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A26.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A27.0.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.1.2": {
+            "_active": true,
+            "allowed_extensions": [
+                ".h",
+                ".hpp",
+                ".hxx",
+                ".inl"
+            ]
+        },
+        "AutosarC++19_03-A3.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.1.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.1.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A3.9.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A4.10.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A4.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A4.7.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.0.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.0.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.0.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.1.9": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.10.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.16.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.2.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.2.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.2.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A5.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A6.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A6.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A6.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A6.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A6.5.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A6.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.1.9": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.2.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.2.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A7.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.4.9": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-A8.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-A9.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.10": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.1.9": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M0.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M10.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M10.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M10.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M10.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M10.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M11.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M12.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M14.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M14.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.0.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.1.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.3.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.3.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M15.3.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.0.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.0.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.0.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.0.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.0.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.1.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M16.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M17.0.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M17.0.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M17.0.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-M18.0.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M18.0.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M18.0.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-M18.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M18.7.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M19.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M2.10.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M2.13.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M2.13.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M2.13.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M2.7.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M27.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.2.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.2.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.9.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M3.9.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M4.10.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M4.10.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M4.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M4.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.10": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.11": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.12": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.14": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.15": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.16": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.17": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.18": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.20": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.21": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.0.9": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.14.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.17.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.18.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.19.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.10": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.11": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.12": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.8": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.2.9": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.3.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M5.8.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.2.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.2.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.2.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.4.3": {
+            "_active": true,
+            "acceptable_end_items": [
+                "Exit_Switch",
+                "Return_Statement",
+                "Throw_Expression"
+            ],
+            "acceptable_middle_items": [
+                "Exit_Switch",
+                "Nondefault_Case_Label",
+                "Return_Statement",
+                "Throw_Expression"
+            ],
+            "msg": {
+                "forbidden_toplevel_statement_in_case": {
+                    "disabled": true
+                }
+            }
+        },
+        "AutosarC++19_03-M6.4.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.4.5": {
+            "_active": true,
+            "acceptable_end_items": [
+                "Exit_Switch",
+                "Return_Statement",
+                "Throw_Expression"
+            ],
+            "acceptable_middle_items": [
+                "Exit_Switch",
+                "Nondefault_Case_Label",
+                "Return_Statement",
+                "Throw_Expression"
+            ]
+        },
+        "AutosarC++19_03-M6.4.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.4.7": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.5.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.5.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.5.5": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.5.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.6.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M6.6.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.1.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.3.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.3.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.3.6": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.4.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.4.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.5.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M7.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M8.0.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M8.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M8.4.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M8.4.4": {
+            "_active": true
+        },
+        "AutosarC++19_03-M8.5.2": {
+            "_active": true
+        },
+        "AutosarC++19_03-M9.3.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M9.3.3": {
+            "_active": true
+        },
+        "AutosarC++19_03-M9.6.1": {
+            "_active": true
+        },
+        "AutosarC++19_03-M9.6.4": {
+            "_active": true
+        },
+        "CertC++-ARR30": {
+            "_active": true
+        },
+        "CertC++-ARR37": {
+            "_active": true
+        },
+        "CertC++-ARR39": {
+            "_active": true
+        },
+        "CertC++-CON40": {
+            "_active": true
+        },
+        "CertC++-CON52": {
+            "_active": true
+        },
+        "CertC++-CTR56": {
+            "_active": true
+        },
+        "CertC++-DCL30": {
+            "_active": true
+        },
+        "CertC++-DCL39": {
+            "_active": true
+        },
+        "CertC++-DCL40": {
+            "_active": true
+        },
+        "CertC++-DCL50": {
+            "_active": true
+        },
+        "CertC++-DCL51": {
+            "_active": true
+        },
+        "CertC++-DCL52": {
+            "_active": true
+        },
+        "CertC++-DCL55": {
+            "_active": true
+        },
+        "CertC++-DCL57": {
+            "_active": true
+        },
+        "CertC++-DCL58": {
+            "_active": true
+        },
+        "CertC++-DCL59": {
+            "_active": true
+        },
+        "CertC++-DCL60": {
+            "_active": true
+        },
+        "CertC++-ENV30": {
+            "_active": true
+        },
+        "CertC++-ENV32": {
+            "_active": true
+        },
+        "CertC++-ENV33": {
+            "_active": true
+        },
+        "CertC++-ERR30": {
+            "_active": true
+        },
+        "CertC++-ERR32": {
+            "_active": true
+        },
+        "CertC++-ERR33": {
+            "_active": true
+        },
+        "CertC++-ERR34": {
+            "_active": true
+        },
+        "CertC++-ERR51": {
+            "_active": true
+        },
+        "CertC++-ERR52": {
+            "_active": true
+        },
+        "CertC++-ERR53": {
+            "_active": true
+        },
+        "CertC++-ERR54": {
+            "_active": true
+        },
+        "CertC++-ERR55": {
+            "_active": true
+        },
+        "CertC++-ERR58": {
+            "_active": true
+        },
+        "CertC++-ERR61": {
+            "_active": true
+        },
+        "CertC++-ERR62": {
+            "_active": true
+        },
+        "CertC++-EXP34": {
+            "_active": true
+        },
+        "CertC++-EXP35": {
+            "_active": true
+        },
+        "CertC++-EXP36": {
+            "_active": true
+        },
+        "CertC++-EXP37": {
+            "_active": true
+        },
+        "CertC++-EXP42": {
+            "_active": true
+        },
+        "CertC++-EXP45": {
+            "_active": true
+        },
+        "CertC++-EXP46": {
+            "_active": true
+        },
+        "CertC++-EXP47": {
+            "_active": true
+        },
+        "CertC++-EXP50": {
+            "_active": true
+        },
+        "CertC++-EXP52": {
+            "_active": true
+        },
+        "CertC++-EXP55": {
+            "_active": true
+        },
+        "CertC++-EXP59": {
+            "_active": true
+        },
+        "CertC++-FIO30": {
+            "_active": true
+        },
+        "CertC++-FIO34": {
+            "_active": true
+        },
+        "CertC++-FIO37": {
+            "_active": true
+        },
+        "CertC++-FIO38": {
+            "_active": true
+        },
+        "CertC++-FIO47": {
+            "_active": true
+        },
+        "CertC++-FLP30": {
+            "_active": true
+        },
+        "CertC++-FLP32": {
+            "_active": true
+        },
+        "CertC++-FLP37": {
+            "_active": true
+        },
+        "CertC++-INT34": {
+            "_active": true
+        },
+        "CertC++-INT36": {
+            "_active": true
+        },
+        "CertC++-INT50": {
+            "_active": true
+        },
+        "CertC++-MEM30": {
+            "_active": true
+        },
+        "CertC++-MEM31": {
+            "_active": true
+        },
+        "CertC++-MEM34": {
+            "_active": true
+        },
+        "CertC++-MEM35": {
+            "_active": true
+        },
+        "CertC++-MEM36": {
+            "_active": true
+        },
+        "CertC++-MEM50": {
+            "_active": true
+        },
+        "CertC++-MEM51": {
+            "_active": true
+        },
+        "CertC++-MSC30": {
+            "_active": true
+        },
+        "CertC++-MSC32": {
+            "_active": true
+        },
+        "CertC++-MSC33": {
+            "_active": true
+        },
+        "CertC++-MSC37": {
+            "_active": true
+        },
+        "CertC++-MSC50": {
+            "_active": true
+        },
+        "CertC++-MSC51": {
+            "_active": true
+        },
+        "CertC++-MSC52": {
+            "_active": true
+        },
+        "CertC++-MSC53": {
+            "_active": true
+        },
+        "CertC++-OOP50": {
+            "_active": true
+        },
+        "CertC++-OOP52": {
+            "_active": true
+        },
+        "CertC++-OOP53": {
+            "_active": true
+        },
+        "CertC++-PRE30": {
+            "_active": true
+        },
+        "CertC++-PRE31": {
+            "_active": true
+        },
+        "CertC++-PRE32": {
+            "_active": true
+        },
+        "CertC++-SIG31": {
+            "_active": true
+        },
+        "CertC++-SIG34": {
+            "_active": true
+        },
+        "CertC++-SIG35": {
+            "_active": true
+        },
+        "CertC++-STR30": {
+            "_active": true
+        },
+        "CertC++-STR31": {
+            "_active": true
+        },
+        "CertC++-STR32": {
+            "_active": true
+        },
+        "CertC++-STR34": {
+            "_active": true
+        },
+        "CertC++-STR37": {
+            "_active": true
+        },
+        "CertC++-STR38": {
+            "_active": true
+        },
+        "CloneDetection": {
+            "_active": true,
+            "excludes": [
+                "build/*"
+            ],
+            "pre_excludes": [
+                "build/*"
+            ]
+        },
+        "CycleDetection-CallgraphCycles": {
+            "_active": true
+        },
+        "CycleDetection-IncludeCycles": {
+            "_active": true
+        },
+        "DeadCodeDetection": {
+            "_active": true
+        },
+        "FaultDetection-BadEnumValue": {
+            "_active": true
+        },
+        "FaultDetection-BufferOverflow": {
+            "_active": true
+        },
+        "FaultDetection-DeadBranches": {
+            "_active": true
+        },
+        "FaultDetection-DeadCatch": {
+            "_active": true
+        },
+        "FaultDetection-DivisionByZero": {
+            "_active": true
+        },
+        "FaultDetection-DoubleFree": {
+            "_active": true
+        },
+        "FaultDetection-EscapingLocalAddress": {
+            "_active": true
+        },
+        "FaultDetection-ExceptionInsideThrow": {
+            "_active": true
+        },
+        "FaultDetection-ExceptionSpecificationViolation": {
+            "_active": true
+        },
+        "FaultDetection-FileModeConflict": {
+            "_active": true
+        },
+        "FaultDetection-ForbiddenOperations": {
+            "_active": true
+        },
+        "FaultDetection-IntegerOverflow": {
+            "_active": true
+        },
+        "FaultDetection-InvalidArgumentInCall": {
+            "_active": true
+        },
+        "FaultDetection-MemoryLeak": {
+            "_active": true
+        },
+        "FaultDetection-MissingRequiredOperations": {
+            "_active": true
+        },
+        "FaultDetection-NoexceptViolations": {
+            "_active": true
+        },
+        "FaultDetection-NullPointerDereference": {
+            "_active": true
+        },
+        "FaultDetection-OutOfBounds": {
+            "_active": true
+        },
+        "FaultDetection-RemovableStatements": {
+            "_active": true
+        },
+        "FaultDetection-StackFree": {
+            "_active": true
+        },
+        "FaultDetection-TaintAnalysis": {
+            "_active": true
+        },
+        "FaultDetection-UncaughtExceptionEscapingMain": {
+            "_active": true
+        },
+        "FaultDetection-UncaughtExceptionInXtor": {
+            "_active": true
+        },
+        "FaultDetection-UncaughtExceptionOutsideMain": {
+            "_active": true
+        },
+        "FaultDetection-UninitializedVariable": {
+            "_active": true
+        },
+        "FaultDetection-UnrelatedPointerComparison": {
+            "_active": true
+        },
+        "FaultDetection-UnrelatedPointerSubtraction": {
+            "_active": true
+        },
+        "FaultDetection-UnusedAssignments": {
+            "_active": true
+        },
+        "FaultDetection-UseAfterFree": {
+            "_active": true
+        },
+        "FaultDetection-WrongReleaseFunction": {
+            "_active": true
+        },
+        "Generic-IncludeKind": {
+            "_active": true
+        },
+        "Generic-LocalInclude": {
+            "_active": true,
+            "msg": {
+                "add_include": {
+                    "disabled": true
+                },
+                "add_symbol_declaration": {
+                    "disabled": true
+                },
+                "bad_pch_use": {
+                    "disabled": true
+                },
+                "circular_include": {
+                    "disabled": true
+                },
+                "contents_covered_include": {
+                    "disabled": true
+                },
+                "covered_include": {
+                    "disabled": true
+                },
+                "local_decl_instead_of_include": {
+                    "disabled": true
+                },
+                "local_def_instead_of_include": {
+                    "disabled": true
+                },
+                "more_precise_include": {
+                    "disabled": true
+                },
+                "move_include": {
+                    "disabled": true
+                },
+                "move_include_with_many_clients": {
+                    "disabled": true
+                }
+            }
+        },
+        "Generic-LocalScope": {
+            "_active": true
+        },
+        "Metric-ExtendedMcCabe": {
+            "_active": true
+        },
+        "Metric-HIS.APCGCYCLE": {
+            "_active": false
+        },
+        "Metric-HIS.CALLING": {
+            "_active": false
+        },
+        "Metric-HIS.CALLS": {
+            "_active": false
+        },
+        "Metric-HIS.COMF": {
+            "_active": true
+        },
+        "Metric-HIS.GOTO": {
+            "_active": true
+        },
+        "Metric-HIS.LEVEL": {
+            "_active": true
+        },
+        "Metric-HIS.NOMV": {
+            "_active": false
+        },
+        "Metric-HIS.NOMVPR": {
+            "_active": false
+        },
+        "Metric-HIS.PARAM": {
+            "_active": true
+        },
+        "Metric-HIS.PATH": {
+            "_active": true
+        },
+        "Metric-HIS.RETURN": {
+            "_active": true
+        },
+        "Metric-HIS.STMT": {
+            "_active": false
+        },
+        "Metric-HIS.VG": {
+            "_active": false
+        },
+        "Metric-HIS.VOCF": {
+            "_active": false
+        },
+        "Metric-LOC": {
+            "_active": true
+        },
+        "Metric-Lines.Code": {
+            "_active": true
+        },
+        "Metric-Lines.Comment": {
+            "_active": true
+        },
+        "Metric-Lines.Empty": {
+            "_active": true
+        },
+        "Metric-Lines.File.Code": {
+            "_active": true
+        },
+        "Metric-Lines.File.Comment": {
+            "_active": true
+        },
+        "Metric-Lines.File.CommentRatio": {
+            "_active": true
+        },
+        "Metric-Lines.File.LOC": {
+            "_active": true
+        },
+        "Metric-Lines.LOC": {
+            "_active": true
+        },
+        "Metric-Lines.Routine.LOC": {
+            "_active": true
+        },
+        "Metric-MaximumExtendedNesting": {
+            "_active": true
+        },
+        "Metric-MaximumNesting": {
+            "_active": true
+        },
+        "Metric-McCabeComplexity": {
+            "_active": true
+        },
+        "Metric-NPath": {
+            "_active": true
+        },
+        "Metric-SwitchComplexity": {
+            "_active": true
+        },
+        "Metric-TokenFileMetric.Check": {
+            "_active": true
+        },
+        "Metric-TokenFileMetric.Debug": {
+            "_active": true
+        },
+        "Metric-TokenFileMetric.Fixme": {
+            "_active": true
+        },
+        "Metric-TokenFileMetric.Hack": {
+            "_active": true
+        },
+        "Metric-TokenFileMetric.Todo": {
+            "_active": true
+        },
+        "Metric-TokenFileMetric.XXX": {
+            "_active": true
+        },
+        "Metric-TokenMetric.Check": {
+            "_active": true
+        },
+        "Metric-TokenMetric.Debug": {
+            "_active": true
+        },
+        "Metric-TokenMetric.Fixme": {
+            "_active": true
+        },
+        "Metric-TokenMetric.Hack": {
+            "_active": true
+        },
+        "Metric-TokenMetric.Todo": {
+            "_active": true
+        },
+        "Metric-TokenMetric.XXX": {
+            "_active": true
+        },
+        "Parallelism-IncorrectCriticalRegion": {
+            "_active": true
+        },
+        "Parallelism-UnsafeVarAccess": {
+            "_active": true
+        },
+        "ProjectWide": {
+            "_active": true
+        },
+        "ProjectWideExternalAnnotations": {
+            "_active": true,
+            "project_comments": [
+                "AXIVION EXCEPTION STYLE AutosarC++19_03-A16.0.1 #line : This is a build artefact."
+            ]
+        },
+        "SaveRFG": {
+            "_active": true
+        },
+        "StaticSemanticAnalysis": {
+            "_active": true,
+            "callgraph_options": {
+                "compare_parameter_types": true,
+                "treat_uncalled_functions_as_alive": true,
+                "use_full_pointer_analysis": true
+            },
+            "enable_filtering_heuristics": true,
+            "exception_options": {
+                "missing_specifier_means_throw_any": true
+            },
+            "global_classic_options": {
+                "abstract_interpretation": true,
+                "use_pointer_filter": true,
+                "use_type_filter": true
+            },
+            "logging_level": "NONE"
+        },
+        "Stylechecks": {
+            "exclude_messages_in_system_headers": true,
+            "languages": [
+                "C",
+                "C++",
+                "C++/CLI",
+                "Assembler"
+            ]
+        }
+    },
+    "Project": {
+        "AxivionLinker": {
+            "_active": true,
+            "input_files": [
+                "$(ICEORYX_DIR)/build/install/prefix/bin/iox-cpp-publisher",
+                "$(ICEORYX_DIR)/build/install/prefix/bin/iox-cpp-subscriber",
+                "$(ICEORYX_DIR)/build/install/prefix/bin/iox-cpp-waitset-individual",
+                "$(ICEORYX_DIR)/build/install/prefix/bin/iox-roudi"
+            ],
+            "ir": "result.ir",
+            "options": "-j -I2000 -i2000"
+        },
+        "BuildSystemIntegration": {
+            "child_order": [
+                "Pin All Sources",
+                "Create Build Directory",
+                "Command",
+                "cmake dependencies",
+                "cmake build",
+                "AxivionLinker",
+                "Remove Build Directory",
+                "Unpin All Sources",
+                "AxivionCompiler"
+            ]
+        },
+        "Command": {
+            "_active": false,
+            "build_command": "./tools/iceoryx_build_test.sh examples clean",
+            "clean_command": null,
+            "environment": {
+                "CC": "irCC",
+                "CMAKE_COLOR_MAKEFILE": "OFF",
+                "CXX": "irCXX"
+            }
+        },
+        "Create Build Directory": {
+            "_active": true,
+            "_copy_from": "Command",
+            "build_command": "mkdir -p build",
+            "clean_command": null,
+            "environment": {
+                "CC": "irCC",
+                "CMAKE_COLOR_MAKEFILE": "OFF",
+                "CXX": "irCXX"
+            }
+        },
+        "Git": {
+            "_active": true,
+            "sourceserver_gitdir": "$(AXIVION_DATABASES_DIR)/git/iceoryx.git"
+        },
+        "Pin All Sources": {
+            "_active": false,
+            "_copy_from": "Command",
+            "build_command": "srcCP --patch-inplace ."
+        },
+        "Project-GlobalOptions": {
+            "advanced": {
+                "multi_binary": true
+            },
+            "ci_mode": {
+                "clean_after": false,
+                "clean_before": false
+            },
+            "directory": "$(ICEORYX_DIR)",
+            "ir": "result.ir",
+            "name": "iceoryx"
+        },
+        "Remove Build Directory": {
+            "_active": true,
+            "_copy_from": "Command",
+            "build_command": null,
+            "clean_command": "rm -rf build",
+            "environment": {
+                "CC": "irCC",
+                "CMAKE_COLOR_MAKEFILE": "OFF",
+                "CXX": "irCXX"
+            }
+        },
+        "Shadow": {
+            "_active": true,
+            "shadow_directory": "$(AXIVION_DATABASES_DIR)/shadow/iceoryx",
+            "sourceserver_repository": "$(AXIVION_DATABASES_DIR)/shadow/iceoryx/shadow.fossil"
+        },
+        "Unpin All Sources": {
+            "_active": false,
+            "_copy_from": "Command",
+            "clean_command": "srcCP --revert ."
+        },
+        "cmake build": {
+            "_active": true,
+            "_copy_from": "Command",
+            "build_command": "cmake --build .  --target install -- -j$(NUM_PROCESSES=1)",
+            "clean_command": null,
+            "cwd": "build",
+            "environment": {
+                "COMPILE_ONLYIR": "Yes"
+            }
+        },
+        "cmake dependencies": {
+            "_active": true,
+            "_copy_from": "Command",
+            "build_command": "cmake -DCMAKE_BUILD_TYPE= -DCMAKE_INSTALL_PREFIX=$(ICEORYX_DIR)/build/install/prefix/ -DEXAMPLES=ON $(ICEORYX_DIR)/iceoryx_meta",
+            "clean_command": null,
+            "cwd": "build",
+            "environment": {
+                "CC": "irCC",
+                "COMPILE_ONLY": "Yes",
+                "CXX": "irCXX"
+            }
+        }
+    },
+    "Results": {
+        "Dashboard": {
+            "dashboard_url": "$(AXIVION_DASHBOARD_URL)"
+        },
+        "Database": {
+            "ci_mode": {
+                "directory": "$(AXIVION_DATABASES_DIR=/opt/axivion_iceoryx/databases)"
+            },
+            "import_suppressed_issues": true
+        }
+    },
+    "_Format": "1.0",
+    "_Version": "7.1.3",
+    "_VersionNum": [
+        7,
+        1,
+        3,
+        6163
+    ]
+}

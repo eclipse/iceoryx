@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,5 +32,9 @@ void iox_runtime_init(const char* const name);
 ///         to nameLength, is written into the memory location of name.
 ///         If name is a nullptr, 0 will be returned.
 uint64_t iox_runtime_get_instance_name(char* const name, const uint64_t nameLength);
+
+/// @brief initiates the shutdown of the runtime to unblock all potentially blocking publisher
+/// with the iox_SubscriberTooSlowPolicy::SubscriberTooSlowPolicy_WAIT_FOR_SUBSCRIBER option set
+void iox_runtime_shutdown();
 
 #endif

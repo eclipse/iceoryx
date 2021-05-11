@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,8 +36,8 @@ void MePooConfig::addMemPool(MePooConfig::Entry f_entry) noexcept
     }
     else
     {
-        LogFatal() << "MAX_NUMBER_OF_MEMPOOLS_REACHED";
-        std::terminate();
+        LogFatal() << "Maxmimum number of mempools reached, no more mempools available";
+        errorHandler(Error::kMEPOO__MAXIMUM_NUMBER_OF_MEMPOOLS_REACHED, nullptr, ErrorLevel::FATAL);
     }
 }
 

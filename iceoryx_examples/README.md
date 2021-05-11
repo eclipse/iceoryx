@@ -1,32 +1,19 @@
-## Howto build the examples
+# List of examples
 
-To build the examples you can use the cmake configuration which is provided
-in `iceoryx_meta`.
-```sh 
-cmake -Bbuild -Hiceoryx_meta -Dexamples=ON # by default the examples are always build
-cd build 
-make
-```
-
-To run an example switch into the `iceoryx_examples` directory which can be 
-found in our build directory. Then select your example and follow the instructions
-from the examples readme.
-
-```sh 
-cd build/iceoryx_examples/
-cd someExample
-./runExampleCode
-```
-
-## List of all examples
-
-| Example                                                | Description |Level |
-|:-------------------------------------------------------|:------------|:----:|
-|[icedelivery](./icedelivery/)                           | You are new to iceoryx then take a look at this example which demonstrates the basics of iceoryx by sending data from one process to another process. | Beginner |
-|[icedelivery_in_c](./icedelivery_in_c/)                 | Shows the same use case as the ice delivery example but with the iceoryx C API  | Beginner |
-|[ice_multi_publisher](./ice_multi_publisher/)           | Shows how multiple publishers can be used to publish on the same topic. | Intermediate |
-|[waitset](./waitset/)                       | Explaining the structure, usage and ideas behind the WaitSet. | Intermediate |
-|[waitset_in_c](./waitset_in_c/)                 | The C example of our WaitSet. | Intermediate |
-|[singleprocess](./singleprocess/)                       | Iceoryx can also be used for inter thread communication when you would like to run everything in a single process. | Intermediate |
-|[iceperf](./iceperf/)                                   | A benchmark application which measures the latency of an IPC transmission between two applications. | Advanced |
-|[icecrystal](./icecrystal/)                             | Demonstrates the usage of the iceoryx introspection client. | Advanced |
+| Example                                    | Description                                                               | Level              |
+|:-------------------------------------------|:--------------------------------------------------------------------------|:-------------------|
+|[icehello](./icehello/)                     | Sending data to another process                                           | :star:             |
+|[icedelivery](./icedelivery/)               | Sending and receiving data using C++                                      | :star:             |
+|[icedelivery_in_c](./icedelivery_in_c/)     | Sending and receiving data using C                                        | :star:             |
+|[iceoptions](./iceoptions/)                 | Configuring pub/sub settings like history cache size or startup behaviour | :star:             |
+|[complexdata](./complexdata/)               | Sending/receiving some of the iceoryx STL container surrogates            | :star:             |
+|[callbacks](./callbacks/)                   | Implementing event triggered callbacks using C++                          | :star::star:       |
+|[callbacks_in_c](./callbacks_in_c/)         | Implementing event triggered callbacks using C                            | :star::star:       |
+|[waitset](./waitset/)                       | Waiting for events like arrival of data using C++                         | :star::star:       |
+|[waitset_in_c](./waitset_in_c/)             | Waiting for events like arrival of data using C                           | :star::star:       |
+|[iceensemble](./iceensemble/)               | Using multiple publishers for one topic                                   | :star::star:       |
+|[singleprocess](./singleprocess/)           | Communicating in a single process between threads                         | :star::star:       |
+|[user_header](./user_header/)               | Using a user-header for additional meta-information like timestamps       | :star::star:       |
+|[ice_access_control](./ice_access_control/) | Configuring access rights for shared memory segments                      | :star::star::star: |
+|[iceperf](./iceperf/)                       | Measuring the latency of different IPC mechanisms                         | :star::star::star: |
+|[icecrystal](./icecrystal/)                 | Using the introspection client for debugging                              | :star::star::star: |

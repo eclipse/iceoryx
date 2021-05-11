@@ -23,6 +23,7 @@
 #include "iceoryx_posh/roudi/iceoryx_roudi_components.hpp"
 #include "iceoryx_posh/runtime/posh_runtime_single_process.hpp"
 #include "iceoryx_utils/log/logmanager.hpp"
+#include "iceoryx_utils/posix_wrapper/signal_handler.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -32,6 +33,12 @@
 #include <thread>
 
 std::atomic_bool keepRunning{true};
+
+static void sigHandler(int f_sig IOX_MAYBE_UNUSED)
+{
+    // caught SIGINT or SIGTERM, now exit gracefully
+    keepRunning = false;
+}
 
 struct TransmissionData_t
 {
@@ -51,7 +58,6 @@ void publisher()
     iox::popo::PublisherOptions publisherOptions;
     publisherOptions.historyCapacity = 10U;
     iox::popo::Publisher<TransmissionData_t> publisher({"Single", "Process", "Demo"}, publisherOptions);
-    publisher.offer();
 
     uint64_t counter{0};
     std::string greenRightArrow("\033[32m->\033[m ");
@@ -73,8 +79,6 @@ void subscriber()
     options.queueCapacity = 10U;
     options.historyRequest = 5U;
     iox::popo::Subscriber<TransmissionData_t> subscriber({"Single", "Process", "Demo"}, options);
-
-    subscriber.subscribe();
 
     std::string orangeLeftArrow("\033[33m<-\033[m ");
     while (keepRunning.load())
@@ -105,14 +109,18 @@ void subscriber()
 
 int main()
 {
+    // Register sigHandler
+    auto signalIntGuard = iox::posix::registerSignalHandler(iox::posix::Signal::INT, sigHandler);
+    auto signalTermGuard = iox::posix::registerSignalHandler(iox::posix::Signal::TERM, sigHandler);
+
     // set the log level to error to see the essence of the example
     iox::log::LogManager::GetLogManager().SetDefaultLogLevel(iox::log::LogLevel::kError);
 
     iox::RouDiConfig_t defaultRouDiConfig = iox::RouDiConfig_t().setDefaults();
     iox::roudi::IceOryxRouDiComponents roudiComponents(defaultRouDiConfig);
 
-    iox::roudi::RouDi roudi(roudiComponents.m_rouDiMemoryManager,
-                            roudiComponents.m_portManager,
+    iox::roudi::RouDi roudi(roudiComponents.rouDiMemoryManager,
+                            roudiComponents.portManager,
                             iox::roudi::RouDi::RoudiStartupParameters{iox::roudi::MonitoringMode::OFF, false});
 
     // create a single process runtime for inter thread communication

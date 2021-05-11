@@ -39,7 +39,10 @@ PosixShmMemoryProvider::PosixShmMemoryProvider(const ShmName_t& shmName,
 
 PosixShmMemoryProvider::~PosixShmMemoryProvider() noexcept
 {
-    destroy();
+    if (isAvailable())
+    {
+        destroy().or_else([](auto) { LogWarn() << "failed to cleanup POSIX shared memory provider resources"; });
+    }
 }
 
 cxx::expected<void*, MemoryProviderError> PosixShmMemoryProvider::createMemory(const uint64_t size,

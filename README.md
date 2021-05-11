@@ -1,11 +1,11 @@
 # iceoryx - true zero-copy inter-process-communication
 
 <p align="center">
-<img src="https://user-images.githubusercontent.com/8661268/70233652-4aa6d180-175f-11ea-8524-2344e0d3935c.png" width="50%">
+<img src="https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png" width="50%">
 </p>
 
 [![Build & Test](https://github.com/eclipse-iceoryx/iceoryx/workflows/Build%20&%20Test/badge.svg?branch=master)](https://github.com/eclipse-iceoryx/iceoryx/actions)
-[![Colcon build](https://github.com/eclipse-iceoryx/iceoryx/workflows/Colcon%20build/badge.svg?branch=master)](https://github.com/eclipse-iceoryx/iceoryx/actions)
+[![Integrationtests](https://github.com/eclipse-iceoryx/iceoryx/workflows/Iceoryx%20Integrationtests/badge.svg?branch=master)](https://github.com/eclipse-iceoryx/iceoryx/actions)
 [![Gitter](https://badges.gitter.im/eclipse-iceoryx/iceoryx.svg)](https://gitter.im/eclipse/iceoryx)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx/branch/master/graph/badge.svg?branch=master)](https://codecov.io/gh/eclipse-iceoryx/iceoryx?branch=master)
@@ -39,19 +39,23 @@ You're right, middleware is a cluttered term and can somehow be all or nothing, 
 
 It's all about the API?!
 
-Don't get too frighten of the API when strolling through the codebase. Think of iceoryx's API as a "plumbing" one
-("plumbing" as defined in Git, which means low-level). We're not using the "plumbing" API ourselves, but instead a typed API.
-The normal use case is that iceoryx is integrated as high-performance IPC transport layer in a bigger framework with additional API layers. 
-An example for such a "porcelain" API would be [ROS2](https://www.ros.org/). Others are listed in the next section.
+Don't get too frightened of the API when strolling through the codebase. Think of the untyped C++ and the C API as a
+"plumbing" one ("plumbing" as defined in Git, which means low-level). We're not using the "plumbing" APIs ourselves, but
+instead the typed C++ API. The normal use case is that iceoryx is integrated as high-performance IPC transport layer in
+a bigger framework with additional API layers.
+An example for such a "porcelain" API would be [ROS 2](https://www.ros.org/). Others are listed in the next section.
+
+You can find the full API documentation on 🌐 [https://iceoryx.io](https://iceoryx.io).
 
 ### Where is Eclipse iceoryx used?
 
 |Framework | Description |
 |---|---|
-| [ROS2](https://github.com/ros2/rmw_iceoryx) | Eclipse iceoryx can be used inside the [robot operating system](https://www.ros.org/) with [rmw_iceoryx](https://github.com/ros2/rmw_iceoryx.git) |
+| [ROS 2](https://github.com/ros2/rmw_iceoryx) | Eclipse iceoryx can be used inside the [Robot Operating System](https://www.ros.org/) with [rmw_iceoryx](https://github.com/ros2/rmw_iceoryx.git) |
 | [eCAL](https://github.com/continental/ecal) | Open-source framework from [Continental AG](https://www.continental.com/) supporting pub/sub and various message protocols |
 | [RTA-VRTE](https://www.etas.com/en/products/rta-vrte.php) | [Adaptive AUTOSAR](https://www.autosar.org/standards/adaptive-platform/) platform software framework for vehicle computer from [ETAS GmbH](https://www.etas.com) |
 | [Cyclone DDS](https://github.com/eclipse-cyclonedds/cyclonedds) | Performant and robust open-source DDS implementation maintained by [ADLINK Technology Inc.](https://www.adlinktech.com/) |
+| [Apex.OS](https://www.apex.ai/apex-os) | Safe and certified software framework for autonomous mobility systems from Apex.AI |
 
 ## Build and install
 
@@ -76,16 +80,16 @@ Please see the dedicated [README.md](tools/docker/README.md) for information on 
 
 ### Targeted quality levels & platforms
 
-> [Quality level](./CONTRIBUTING.md#quality-levels) are 5 to 1, where 1 is highest level.
+> [Quality level](./CONTRIBUTING.md#quality-levels) are 5 to 1+, where 1+ is highest level.
 
 |CMake project/target                     | QNX  | Linux, Windows, MacOS | Comment                             |
 |-----------------------------------------|:----:|:---------------------:|:-----------------------------------:|
-| iceoryx_examples                        | 5    | 5                     | All example code in this folder           |
-| iceoryx_binding_c                       | 4    | 4                     | Not final and can change in the near future |
+| iceoryx_examples                        | 5    | 5                     | All example code in this folder     |
+| iceoryx_binding_c                       | 2    | 2                     |                                     |
 | iceoryx_dds                             | 4    | 4                     |                                     |
 | iceoryx_meta                            | 5    | 5                     |                                     |
-| iceoryx_posh                            | 1, 2 | 4                     | Will be split into separate targets |
-| iceoryx_utils                           | 1    | 4                     |                                     |
+| iceoryx_posh                            | 1+, 2| 2                     | Will be split into separate targets |
+| iceoryx_utils                           | 1+   | 2                     |                                     |
 | iceoryx_introspection                   | 5    | 5                     |                                     |
 
 Is something missing or you've got ideas for other nifty examples? Jump right away to the next section!

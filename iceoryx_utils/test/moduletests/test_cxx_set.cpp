@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +51,6 @@ bool operator==(const Foo& a, const Foo& b)
 {
     return a.m_data == b.m_data;
 }
-} // namespace
 
 using Type = Foo;
 using Container = std::vector<Type>; /// @todo use fixed size container instead?
@@ -280,3 +280,4 @@ TEST_F(CxxSet_test, hasElement)
     found = set::hasElement(testContainer, otherFoo);
     EXPECT_THAT(found, Eq(false));
 }
+} // namespace

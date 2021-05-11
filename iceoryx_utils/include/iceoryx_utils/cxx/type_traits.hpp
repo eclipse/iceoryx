@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +24,27 @@ namespace iox
 {
 namespace cxx
 {
+///
+/// @brief Conditionally add const to type T if C has the const qualifier
+/// @tparam T is the type to conditionally add the const qualifier
+/// @tparam Condition is the type which determines if the const qualifier needs to be added to T
+///
+template <typename T, typename C>
+struct add_const_conditionally
+{
+    using type = T;
+};
+template <typename T, typename C>
+struct add_const_conditionally<T, const C>
+{
+    using type = const T;
+};
+///
+/// @brief Helper type for add_const_conditionally which adds const to type T if C has the const qualifier
+///
+template <typename T, typename C>
+using add_const_conditionally_t = typename add_const_conditionally<T, C>::type;
+
 ///
 /// @brief Verifies whether the passed Callable type is in fact invocable with the given arguments
 ///
@@ -65,13 +87,10 @@ struct has_signature<Callable,
 {
 };
 
-///
-/// @brief Negation of is_same
-///
-template <typename T1, typename T2>
-using not_same = typename std::
-    integral_constant<bool, !bool(std::is_same<typename std::decay<T1>::type, typename std::decay<T2>::type>::value)>;
 
+/// @brief Maps a sequence of any types to the type void
+template <typename...>
+using void_t = void;
 } // namespace cxx
 } // namespace iox
 

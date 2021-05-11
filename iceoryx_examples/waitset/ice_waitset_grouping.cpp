@@ -26,7 +26,7 @@
 
 iox::popo::UserTrigger shutdownTrigger;
 
-static void sigHandler(int f_sig [[gnu::unused]])
+static void sigHandler(int f_sig IOX_MAYBE_UNUSED)
 {
     shutdownTrigger.trigger();
 }
@@ -40,11 +40,14 @@ int main()
     auto signalIntGuard = iox::posix::registerSignalHandler(iox::posix::Signal::INT, sigHandler);
     auto signalTermGuard = iox::posix::registerSignalHandler(iox::posix::Signal::TERM, sigHandler);
 
-    iox::runtime::PoshRuntime::initRuntime("iox-ex-waitset-grouping");
+    iox::runtime::PoshRuntime::initRuntime("iox-cpp-waitset-grouping");
     iox::popo::WaitSet<NUMBER_OF_SUBSCRIBERS + ONE_SHUTDOWN_TRIGGER> waitset;
 
     // attach shutdownTrigger to handle CTRL+C
-    waitset.attachEvent(shutdownTrigger);
+    waitset.attachEvent(shutdownTrigger).or_else([](auto) {
+        std::cerr << "failed to attach shutdown trigger" << std::endl;
+        std::exit(EXIT_FAILURE);
+    });
 
     // create subscriber and subscribe them to our service
     iox::cxx::vector<iox::popo::UntypedSubscriber, NUMBER_OF_SUBSCRIBERS> subscriberVector;
@@ -52,52 +55,60 @@ int main()
     {
         subscriberVector.emplace_back(iox::capro::ServiceDescription{"Radar", "FrontLeft", "Counter"});
         auto& subscriber = subscriberVector.back();
-
-        subscriber.subscribe();
+        // Ignore unused variable warning
+        (void)subscriber;
     }
 
     constexpr uint64_t FIRST_GROUP_ID = 123U;
     constexpr uint64_t SECOND_GROUP_ID = 456U;
 
-    // attach the first two subscribers to waitset with a eventid of FIRST_GROUP_ID
+    // attach the first two subscribers to waitset with a id of FIRST_GROUP_ID
     for (auto i = 0U; i < NUMBER_OF_SUBSCRIBERS / 2; ++i)
     {
-        waitset.attachEvent(subscriberVector[i], iox::popo::SubscriberEvent::HAS_DATA, FIRST_GROUP_ID);
+        waitset.attachState(subscriberVector[i], iox::popo::SubscriberState::HAS_DATA, FIRST_GROUP_ID)
+            .or_else([&](auto) {
+                std::cerr << "failed to attach subscriber" << i << std::endl;
+                std::exit(EXIT_FAILURE);
+            });
     }
 
-    // attach the remaining subscribers to waitset with a eventid of SECOND_GROUP_ID
+    // attach the remaining subscribers to waitset with a id of SECOND_GROUP_ID
     for (auto i = NUMBER_OF_SUBSCRIBERS / 2; i < NUMBER_OF_SUBSCRIBERS; ++i)
     {
-        waitset.attachEvent(subscriberVector[i], iox::popo::SubscriberEvent::HAS_DATA, SECOND_GROUP_ID);
+        waitset.attachState(subscriberVector[i], iox::popo::SubscriberState::HAS_DATA, SECOND_GROUP_ID)
+            .or_else([&](auto) {
+                std::cerr << "failed to attach subscriber" << i << std::endl;
+                std::exit(EXIT_FAILURE);
+            });
     }
 
     // event loop
     while (true)
     {
-        auto eventVector = waitset.wait();
+        auto notificationVector = waitset.wait();
 
-        for (auto& event : eventVector)
+        for (auto& notification : notificationVector)
         {
-            if (event->doesOriginateFrom(&shutdownTrigger))
+            if (notification->doesOriginateFrom(&shutdownTrigger))
             {
                 // CTRL+c was pressed -> exit
                 return (EXIT_SUCCESS);
             }
             // we print the received data for the first group
-            else if (event->getEventId() == FIRST_GROUP_ID)
+            else if (notification->getNotificationId() == FIRST_GROUP_ID)
             {
-                auto subscriber = event->getOrigin<iox::popo::UntypedSubscriber>();
-                subscriber->take().and_then([&](auto& payload) {
-                    const CounterTopic* data = static_cast<const CounterTopic*>(payload);
+                auto subscriber = notification->getOrigin<iox::popo::UntypedSubscriber>();
+                subscriber->take().and_then([&](auto& userPayload) {
+                    const CounterTopic* data = static_cast<const CounterTopic*>(userPayload);
                     std::cout << "received: " << std::dec << data->counter << std::endl;
-                    subscriber->releaseChunk(payload);
+                    subscriber->release(userPayload);
                 });
             }
             // dismiss the received data for the second group
-            else if (event->getEventId() == SECOND_GROUP_ID)
+            else if (notification->getNotificationId() == SECOND_GROUP_ID)
             {
                 std::cout << "dismiss data\n";
-                auto subscriber = event->getOrigin<iox::popo::UntypedSubscriber>();
+                auto subscriber = notification->getOrigin<iox::popo::UntypedSubscriber>();
                 // We need to release the data to reset the trigger hasData
                 // otherwise the WaitSet would notify us in `waitset.wait()` again
                 // instantly.

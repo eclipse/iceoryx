@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@
 #include "iceoryx_dds/dds/cyclone_data_reader.hpp"
 #include "iceoryx_dds/dds/cyclone_context.hpp"
 #include "iceoryx_dds/internal/log/logging.hpp"
+#include "iceoryx_posh/mepoo/chunk_header.hpp"
 
 iox::dds::CycloneDataReader::CycloneDataReader(const capro::IdString_t serviceId,
                                                const capro::IdString_t instanceId,
@@ -53,48 +55,108 @@ void iox::dds::CycloneDataReader::connect() noexcept
     }
 }
 
-iox::cxx::optional<uint32_t> iox::dds::CycloneDataReader::peekNextSize()
+iox::cxx::optional<iox::dds::IoxChunkDatagramHeader>
+iox::dds::CycloneDataReader::peekNextIoxChunkDatagramHeader() noexcept
 {
     // ensure to only read sample - do not take
-    auto readSamples = m_impl.select().max_samples(1u).state(::dds::sub::status::SampleState::any()).read();
+    auto readSamples = m_impl.select().max_samples(1U).state(::dds::sub::status::SampleState::any()).read();
 
-    if (readSamples.length() > 0)
+    constexpr iox::cxx::nullopt_t NO_VALID_SAMPLE_AVAILABLE;
+
+    if (readSamples.length() == 0)
     {
-        auto nextSample = readSamples.begin();
-        auto nextSampleSize = nextSample->data().payload().size();
-
-        // Ignore samples with no payload
-        if (nextSampleSize != 0)
-        {
-            return iox::cxx::optional<uint32_t>(static_cast<uint32_t>(nextSampleSize));
-        }
+        return NO_VALID_SAMPLE_AVAILABLE;
     }
 
-    // no valid samples available
-    return iox::cxx::nullopt_t();
+    auto nextSample = readSamples.begin();
+    auto& nextSamplePayload = nextSample->data().payload();
+    auto nextSampleSize = nextSamplePayload.size();
+
+    auto dropSample = [&] {
+        m_impl.select().max_samples(1U).state(::dds::sub::status::SampleState::any()).take();
+        return NO_VALID_SAMPLE_AVAILABLE;
+    };
+
+    // Ignore samples with no payload
+    if (nextSampleSize == 0)
+    {
+        LogError() << "[CycloneDataReader] received sample with size zero! Dropped sample!";
+        return dropSample();
+    }
+
+    // Ignore Invalid IoxChunkDatagramHeader
+    if (nextSampleSize < sizeof(iox::dds::IoxChunkDatagramHeader))
+    {
+        auto log = LogError();
+        log << "[CycloneDataReader] invalid sample size! Must be at least sizeof(IoxChunkDatagramHeader) = "
+            << sizeof(iox::dds::IoxChunkDatagramHeader) << " but got " << nextSampleSize;
+        if (nextSampleSize >= 1)
+        {
+            log << "! Potential datagram version is " << static_cast<uint16_t>(nextSamplePayload[0])
+                << "! Dropped sample!";
+        }
+        return dropSample();
+    }
+
+    iox::dds::IoxChunkDatagramHeader::Serialized_t serializedDatagramHeader;
+    for (uint64_t i = 0U; i < serializedDatagramHeader.capacity(); ++i)
+    {
+        serializedDatagramHeader.emplace_back(nextSamplePayload[i]);
+    }
+
+    auto datagramHeader = iox::dds::IoxChunkDatagramHeader::deserialize(serializedDatagramHeader);
+
+    if (datagramHeader.datagramVersion != iox::dds::IoxChunkDatagramHeader::DATAGRAM_VERSION)
+    {
+        LogError() << "[CycloneDataReader] received sample with incompatible IoxChunkDatagramHeader version! Received '"
+                   << static_cast<uint16_t>(datagramHeader.datagramVersion) << "', expected '"
+                   << static_cast<uint16_t>(iox::dds::IoxChunkDatagramHeader::DATAGRAM_VERSION) << "'! Dropped sample!";
+        return dropSample();
+    }
+
+    if (datagramHeader.endianness != getEndianess())
+    {
+        LogError() << "[CycloneDataReader] received sample with incompatible endianess! Received '"
+                   << EndianessString[static_cast<uint64_t>(datagramHeader.endianness)] << "', expected '"
+                   << EndianessString[static_cast<uint64_t>(getEndianess())] << "'! Dropped sample!";
+        return dropSample();
+    }
+
+    return datagramHeader;
 }
 
-bool iox::dds::CycloneDataReader::hasSamples()
+bool iox::dds::CycloneDataReader::hasSamples() noexcept
 {
     auto samples = m_impl.select().max_samples(1u).state(::dds::sub::status::SampleState::any()).read();
     return samples.length() > 0;
 }
 
-iox::cxx::expected<iox::dds::DataReaderError> iox::dds::CycloneDataReader::takeNext(uint8_t* const buffer,
-                                                                                    const uint64_t& bufferSize)
+iox::cxx::expected<iox::dds::DataReaderError>
+iox::dds::CycloneDataReader::takeNext(const iox::dds::IoxChunkDatagramHeader datagramHeader,
+                                      uint8_t* const userHeaderBuffer,
+                                      uint8_t* const userPayloadBuffer) noexcept
 {
     // validation checks
     if (!m_isConnected.load())
     {
         return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::NOT_CONNECTED);
     }
-    if (buffer == nullptr)
+    // it is assume that peekNextIoxChunkDatagramHeader was called beforehand and that the provided datagramHeader
+    // belongs to this sample
+    if (datagramHeader.userHeaderSize > 0
+        && (datagramHeader.userHeaderId == iox::mepoo::ChunkHeader::NO_USER_HEADER || userHeaderBuffer == nullptr))
     {
-        return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::INVALID_RECV_BUFFER);
+        return iox::cxx::error<iox::dds::DataReaderError>(
+            iox::dds::DataReaderError::INVALID_BUFFER_PARAMETER_FOR_USER_HEADER);
+    }
+    if (datagramHeader.userPayloadSize > 0 && userPayloadBuffer == nullptr)
+    {
+        return iox::cxx::error<iox::dds::DataReaderError>(
+            iox::dds::DataReaderError::INVALID_BUFFER_PARAMETER_FOR_USER_PAYLOAD);
     }
 
     // take next sample and copy into buffer
-    auto takenSamples = m_impl.select().max_samples(1u).state(::dds::sub::status::SampleState::any()).take();
+    auto takenSamples = m_impl.select().max_samples(1U).state(::dds::sub::status::SampleState::any()).take();
     if (takenSamples.length() == 0)
     {
         // no samples available
@@ -103,87 +165,54 @@ iox::cxx::expected<iox::dds::DataReaderError> iox::dds::CycloneDataReader::takeN
 
     // valid size
     auto nextSample = takenSamples.begin();
-    auto sampleSize = nextSample->data().payload().size();
+    auto samplePayload = nextSample->data().payload();
+    auto sampleSize = samplePayload.size();
     if (sampleSize == 0)
     {
         return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::INVALID_DATA);
     }
-    if (bufferSize < sampleSize)
+    if (sampleSize < sizeof(iox::dds::IoxChunkDatagramHeader))
     {
-        // provided buffer is too small.
-        return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::RECV_BUFFER_TOO_SMALL);
+        return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::INVALID_DATAGRAM_HEADER_SIZE);
+    }
+
+    iox::dds::IoxChunkDatagramHeader::Serialized_t serializedDatagramHeader;
+    for (uint64_t i = 0U; i < serializedDatagramHeader.capacity(); ++i)
+    {
+        serializedDatagramHeader.emplace_back(samplePayload[i]);
+    }
+
+    auto actualDatagramHeader = iox::dds::IoxChunkDatagramHeader::deserialize(serializedDatagramHeader);
+
+    iox::cxx::Ensures(datagramHeader.userHeaderId == actualDatagramHeader.userHeaderId);
+    iox::cxx::Ensures(datagramHeader.userHeaderSize == actualDatagramHeader.userHeaderSize);
+    iox::cxx::Ensures(datagramHeader.userPayloadSize == actualDatagramHeader.userPayloadSize);
+    iox::cxx::Ensures(datagramHeader.userPayloadAlignment == actualDatagramHeader.userPayloadAlignment);
+
+    auto dataSize = sampleSize - sizeof(iox::dds::IoxChunkDatagramHeader);
+    auto bufferSize = datagramHeader.userHeaderSize + datagramHeader.userPayloadSize;
+
+    if (bufferSize != dataSize)
+    {
+        // provided buffer don't match
+        return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::BUFFER_SIZE_MISMATCH);
     }
 
     // copy data into the provided buffer
-    auto bytes = nextSample->data().payload().data();
-    std::copy(bytes, bytes + sampleSize, buffer);
+    if (userHeaderBuffer)
+    {
+        auto userHeaderBytes = &samplePayload.data()[sizeof(iox::dds::IoxChunkDatagramHeader)];
+        std::memcpy(userHeaderBuffer, userHeaderBytes, datagramHeader.userHeaderSize);
+    }
+
+    if (userPayloadBuffer)
+    {
+        auto userPayloadBytes =
+            &samplePayload.data()[sizeof(iox::dds::IoxChunkDatagramHeader) + datagramHeader.userHeaderSize];
+        std::memcpy(userPayloadBuffer, userPayloadBytes, datagramHeader.userPayloadSize);
+    }
 
     return iox::cxx::success<>();
-}
-
-iox::cxx::expected<uint64_t, iox::dds::DataReaderError> iox::dds::CycloneDataReader::take(
-    uint8_t* const buffer, const uint64_t& bufferSize, const iox::cxx::optional<uint64_t>& maxSamples)
-{
-    if (!m_isConnected.load())
-    {
-        return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::NOT_CONNECTED);
-    }
-    if (buffer == nullptr)
-    {
-        return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::INVALID_RECV_BUFFER);
-    }
-
-    // get size of the sample
-    auto peekResult = peekNextSize();
-    if (peekResult.has_value())
-    {
-        uint64_t sampleSize = peekResult.value();
-        if (sampleSize == 0)
-        {
-            return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::INVALID_DATA);
-        }
-        if (bufferSize < sampleSize)
-        {
-            // Provided buffer is too small.
-            return iox::cxx::error<iox::dds::DataReaderError>(iox::dds::DataReaderError::RECV_BUFFER_TOO_SMALL);
-        }
-
-        // take maximum amount possible up to the cap: maxSamples
-        auto bufferCapacity = bufferSize / sampleSize;
-
-        auto numToTake = bufferCapacity;
-        if (maxSamples.has_value())
-        {
-            if (bufferCapacity > maxSamples.value())
-            {
-                numToTake = maxSamples.value();
-            }
-        }
-        auto samples = m_impl.select()
-                           .max_samples(static_cast<uint32_t>(numToTake))
-                           .state(::dds::sub::status::SampleState::any())
-                           .take();
-
-        // copy data into the provided buffer
-        uint64_t numSamplesBuffered = 0u;
-        if (samples.length() > 0)
-        {
-            // do copy
-            uint64_t cursor = 0; // Tracks the position in the buffer to write next sample.
-            for (const auto& sample : samples)
-            {
-                auto bytes = sample.data().payload().data();
-                std::copy(bytes, bytes + sampleSize, &buffer[cursor]);
-                cursor += sampleSize;
-            }
-            numSamplesBuffered = cursor / sampleSize;
-        }
-        return iox::cxx::success<uint64_t>(numSamplesBuffered);
-    }
-    else
-    {
-        return iox::cxx::success<uint64_t>(0u);
-    }
 }
 
 iox::capro::IdString_t iox::dds::CycloneDataReader::getServiceId() const noexcept

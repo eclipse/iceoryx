@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -49,11 +50,11 @@ PortPool::getConditionVariableDataList() noexcept
 }
 
 cxx::expected<popo::InterfacePortData*, PortPoolError>
-PortPool::addInterfacePort(const ProcessName_t& applicationName, const capro::Interfaces interface) noexcept
+PortPool::addInterfacePort(const RuntimeName_t& runtimeName, const capro::Interfaces interface) noexcept
 {
     if (m_portPoolData->m_interfacePortMembers.hasFreeSpace())
     {
-        auto interfacePortData = m_portPoolData->m_interfacePortMembers.insert(applicationName, interface);
+        auto interfacePortData = m_portPoolData->m_interfacePortMembers.insert(runtimeName, interface);
         return cxx::success<popo::InterfacePortData*>(interfacePortData);
     }
     else
@@ -64,11 +65,11 @@ PortPool::addInterfacePort(const ProcessName_t& applicationName, const capro::In
 }
 
 cxx::expected<popo::ApplicationPortData*, PortPoolError>
-PortPool::addApplicationPort(const ProcessName_t& applicationName) noexcept
+PortPool::addApplicationPort(const RuntimeName_t& runtimeName) noexcept
 {
     if (m_portPoolData->m_applicationPortMembers.hasFreeSpace())
     {
-        auto applicationPortData = m_portPoolData->m_applicationPortMembers.insert(applicationName);
+        auto applicationPortData = m_portPoolData->m_applicationPortMembers.insert(runtimeName);
         return cxx::success<popo::ApplicationPortData*>(applicationPortData);
     }
     else
@@ -78,13 +79,13 @@ PortPool::addApplicationPort(const ProcessName_t& applicationName) noexcept
     }
 }
 
-cxx::expected<runtime::NodeData*, PortPoolError> PortPool::addNodeData(const ProcessName_t& process,
-                                                                       const NodeName_t& node,
+cxx::expected<runtime::NodeData*, PortPoolError> PortPool::addNodeData(const RuntimeName_t& runtimeName,
+                                                                       const NodeName_t& nodeName,
                                                                        const uint64_t nodeDeviceIdentifier) noexcept
 {
     if (m_portPoolData->m_nodeMembers.hasFreeSpace())
     {
-        auto nodeData = m_portPoolData->m_nodeMembers.insert(process, node, nodeDeviceIdentifier);
+        auto nodeData = m_portPoolData->m_nodeMembers.insert(runtimeName, nodeName, nodeDeviceIdentifier);
         return cxx::success<runtime::NodeData*>(nodeData);
     }
     else
@@ -95,11 +96,11 @@ cxx::expected<runtime::NodeData*, PortPoolError> PortPool::addNodeData(const Pro
 }
 
 cxx::expected<popo::ConditionVariableData*, PortPoolError>
-PortPool::addConditionVariableData(const ProcessName_t& process) noexcept
+PortPool::addConditionVariableData(const RuntimeName_t& runtimeName) noexcept
 {
     if (m_portPoolData->m_conditionVariableMembers.hasFreeSpace())
     {
-        auto conditionVariableData = m_portPoolData->m_conditionVariableMembers.insert(process);
+        auto conditionVariableData = m_portPoolData->m_conditionVariableMembers.insert(runtimeName);
         return cxx::success<popo::ConditionVariableData*>(conditionVariableData);
     }
     else
@@ -147,14 +148,14 @@ cxx::vector<SubscriberPortType::MemberType_t*, MAX_SUBSCRIBERS> PortPool::getSub
 cxx::expected<PublisherPortRouDiType::MemberType_t*, PortPoolError>
 PortPool::addPublisherPort(const capro::ServiceDescription& serviceDescription,
                            mepoo::MemoryManager* const memoryManager,
-                           const ProcessName_t& applicationName,
+                           const RuntimeName_t& runtimeName,
                            const popo::PublisherOptions& publisherOptions,
                            const mepoo::MemoryInfo& memoryInfo) noexcept
 {
     if (m_portPoolData->m_publisherPortMembers.hasFreeSpace())
     {
         auto publisherPortData = m_portPoolData->m_publisherPortMembers.insert(
-            serviceDescription, applicationName, memoryManager, publisherOptions, memoryInfo);
+            serviceDescription, runtimeName, memoryManager, publisherOptions, memoryInfo);
         return cxx::success<PublisherPortRouDiType::MemberType_t*>(publisherPortData);
     }
     else
@@ -166,14 +167,14 @@ PortPool::addPublisherPort(const capro::ServiceDescription& serviceDescription,
 
 cxx::expected<SubscriberPortType::MemberType_t*, PortPoolError>
 PortPool::addSubscriberPort(const capro::ServiceDescription& serviceDescription,
-                            const ProcessName_t& applicationName,
+                            const RuntimeName_t& runtimeName,
                             const popo::SubscriberOptions& subscriberOptions,
                             const mepoo::MemoryInfo& memoryInfo) noexcept
 {
     if (m_portPoolData->m_subscriberPortMembers.hasFreeSpace())
     {
         auto subscriberPortData = constructSubscriber<iox::build::CommunicationPolicy>(
-            serviceDescription, applicationName, subscriberOptions, memoryInfo);
+            serviceDescription, runtimeName, subscriberOptions, memoryInfo);
 
         return cxx::success<SubscriberPortType::MemberType_t*>(subscriberPortData);
     }

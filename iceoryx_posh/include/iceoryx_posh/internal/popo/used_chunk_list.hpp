@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +17,10 @@
 #ifndef IOX_POSH_POPO_USED_CHUNK_LIST_HPP
 #define IOX_POSH_POPO_USED_CHUNK_LIST_HPP
 
-#include "iceoryx_posh/internal/mepoo/chunk_management.hpp"
 #include "iceoryx_posh/internal/mepoo/shared_chunk.hpp"
+#include "iceoryx_posh/internal/mepoo/shm_safe_unmanaged_chunk.hpp"
 #include "iceoryx_posh/mepoo/chunk_header.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
 
-#include <array>
 #include <atomic>
 #include <cstdint>
 
@@ -29,153 +28,63 @@ namespace iox
 {
 namespace popo
 {
-template <uint32_t Size>
+/// @brief This class is used to keep track of the chunks currently in use by the application.
+///        In case the application terminates while holding chunks, this list is used by RouDi to retain ownership of
+///        the chunks and prevent a chunk leak.
+///        In order to always be able to access the used chunks, neither a vector or list can be used, because these
+///        container could be corrupted when the application dies in the wrong moment.
+///        To be able to do the cleanup, RouDi needs to be able to access the list with the used chunk under all
+///        circumstances. This is achieved by storing the ChunkManagement pointer in an array which can always be
+///        accessed. Additionally, the type stored is this array must be less or equal to 64 bit in order to write it
+///        within one clock cycle to prevent torn writes, which would corrupt the list and could potentially crash
+///        RouDi.
+template <uint32_t Capacity>
 class UsedChunkList
 {
+    static_assert(Capacity > 0, "UsedChunkList Capacity must be larger than 0!");
+
   public:
-    UsedChunkList()
-    {
-        init();
-    }
+    /// @brief Constructs a default UsedChunkList
+    UsedChunkList() noexcept;
 
-    // only from runtime context
-    bool insert(mepoo::SharedChunk f_chunk)
-    {
-        if (freeSpaceInList())
-        {
-            // get next free entry after freelistHead
-            auto nextFree = m_list[m_freeListHead];
+    /// @brief Inserts a SharedChunk into the list
+    /// @param[in] chunk to store in the list
+    /// @return true if successful, otherwise false if e.g. the list is already full
+    /// @note only from runtime context
+    bool insert(mepoo::SharedChunk chunk) noexcept;
 
-            // freeListHead is getting new usedListHead, next of this entry is updated to next in usedList
-            m_list[m_freeListHead] = m_usedListHead;
-            m_usedListHead = m_freeListHead;
+    /// @brief Removes a chunk from the list
+    /// @param[in] chunkHeader to look for a corresponding SharedChunk
+    /// @param[out] chunk which is removed
+    /// @return true if successfully removed, otherwise false if e.g. the chunkHeader was not found in the list
+    /// @note only from runtime context
+    bool remove(const mepoo::ChunkHeader* chunkHeader, mepoo::SharedChunk& chunk) noexcept;
 
-            // store chunk mgmt ptr
-            m_data[m_usedListHead] = f_chunk.release();
-
-            // set freeListHead to the next free entry
-            m_freeListHead = nextFree;
-
-            //@todo can we do this cheaper with a global fence in cleanup?
-            m_synchronizer.clear(std::memory_order_release);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    // only from runtime context
-    bool remove(const mepoo::ChunkHeader* f_chunkHeader, mepoo::SharedChunk& f_chunk)
-    {
-        uint32_t previous = InvalidIndex;
-
-        // go through usedList with stored chunks
-        for (uint32_t current = m_usedListHead; current != InvalidIndex; current = m_list[current])
-        {
-            // does the entry match the one we want to remove?
-            if (m_data[current] != nullptr && m_data[current]->m_chunkHeader == f_chunkHeader)
-            {
-                // return the chunk mgmt entry as SharedChunk object
-                f_chunk = mepoo::SharedChunk(m_data[current]);
-                m_data[current] = nullptr;
-
-                // remove index from used list
-                if (current == m_usedListHead)
-                {
-                    m_usedListHead = m_list[current];
-                }
-                else
-                {
-                    m_list[previous] = m_list[current];
-                }
-
-                // insert index to free list
-                m_list[current] = m_freeListHead;
-                m_freeListHead = current;
-
-                //@todo can we do this cheaper with a global fence in cleanup?
-                m_synchronizer.clear(std::memory_order_release);
-                return true;
-            }
-            previous = current;
-        }
-        return false;
-    }
-
-    // only once from runtime context
-    void setup()
-    {
-        m_synchronizer.test_and_set(std::memory_order_acquire);
-        /// @todo maybe also call init here?
-    }
-
-    // from RouDi context once the applications walked the plank
-    void cleanup()
-    {
-        m_synchronizer.test_and_set(std::memory_order_acquire);
-
-        for (auto& data : m_data)
-        {
-            if (data != nullptr)
-            {
-                mepoo::SharedChunk{data};
-            }
-        }
-
-        init(); // just to save us from the future self
-    }
+    /// @brief Cleans up all the remaining chunks from the list.
+    /// @note from RouDi context once the applications walked the plank. It is unsafe to call this if the application is
+    /// still running.
+    void cleanup() noexcept;
 
   private:
-    void init()
-    {
-        // build list
-        for (uint32_t i = 0u; i < Size; ++i)
-        {
-            m_list[i] = i + 1u;
-        }
-
-        if (Size > 0)
-        {
-            m_list[Size - 1u] = InvalidIndex; // just to save us from the future self
-        }
-        else
-        {
-            m_list[0u] = InvalidIndex;
-        }
-
-
-        m_usedListHead = InvalidIndex;
-        m_freeListHead = 0u;
-
-        // clear data
-        for (auto& data : m_data)
-        {
-            data = nullptr;
-        }
-
-        m_synchronizer.clear(std::memory_order_release);
-    }
-
-    bool freeSpaceInList()
-    {
-        return (m_freeListHead != InvalidIndex);
-    }
-
+    void init() noexcept;
 
   private:
-    static constexpr uint32_t InvalidIndex{Size};
+    static constexpr uint32_t INVALID_INDEX{Capacity};
+
+    using DataElement_t = mepoo::ShmSafeUnmanagedChunk;
+    static constexpr DataElement_t DATA_ELEMENT_LOGICAL_NULLPTR{};
 
   private:
     std::atomic_flag m_synchronizer = ATOMIC_FLAG_INIT;
-    uint32_t m_usedListHead{InvalidIndex};
+    uint32_t m_usedListHead{INVALID_INDEX};
     uint32_t m_freeListHead{0u};
-    std::array<uint32_t, Size> m_list;
-    std::array<relative_ptr<mepoo::ChunkManagement>, Size> m_data;
+    uint32_t m_listIndices[Capacity];
+    DataElement_t m_listData[Capacity];
 };
 
 } // namespace popo
 } // namespace iox
+
+#include "used_chunk_list.inl"
 
 #endif // IOX_POSH_POPO_USED_CHUNK_LIST_HPP

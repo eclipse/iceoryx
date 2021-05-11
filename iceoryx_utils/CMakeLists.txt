@@ -16,11 +16,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.5)
-file (STRINGS "../VERSION" iceoryx_utils_VERSION)
-project(iceoryx_utils VERSION ${iceoryx_utils_VERSION})
+
+set(IOX_VERSION_STRING "1.0.0")
+
+
+#include("${CMAKE_CURRENT_LIST_DIR}/cmake/IceoryxVersion.cmake")
+
+#parse_version(${IOX_VERSION_STRING})
+project(iceoryx_utils VERSION ${IOX_VERSION_STRING})
+#adjust_version()
+
+
 
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/IceoryxPackageHelper.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/IceoryxPlatform.cmake")
+
+if(CMAKE_SYSTEM_NAME MATCHES Linux OR CMAKE_SYSTEM_NAME MATCHES Darwin)
+    option(BUILD_SHARED_LIBS "Create shared libraries by default" ON)
+endif()
 
 if(CLANG_TIDY)
     find_program(
@@ -58,14 +71,14 @@ if(GTest_FOUND) # only GTest_FOUND, just in case someone want's to use iceoryx_u
     setup_package_name_and_create_files(
         NAME ${PROJECT_NAME}_testing
         NAMESPACE iceoryx_utils_testing
-        PROJECT_PREFIX testutils
+        PROJECT_PREFIX ${PREFIX}
     )
 
     add_library(iceoryx_utils_testing
         STATIC
-        testutils/mocks/time_mock.cpp
-        testutils/timing_test.cpp
-        testutils/compile_test.cpp
+        testing/mocks/time_mock.cpp
+        testing/timing_test.cpp
+        testing/compile_test.cpp
     )
 
     add_library(iceoryx_utils_testing::iceoryx_utils_testing ALIAS iceoryx_utils_testing)
@@ -88,9 +101,7 @@ if(GTest_FOUND) # only GTest_FOUND, just in case someone want's to use iceoryx_u
 
     target_include_directories(iceoryx_utils_testing
         PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/testutils>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/testutils/mocks>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/testing/include>
         $<INSTALL_INTERFACE:include/${PREFIX}>
     )
 
@@ -109,8 +120,8 @@ if(GTest_FOUND) # only GTest_FOUND, just in case someone want's to use iceoryx_u
     endif()
 
     setup_install_directories_and_export_package(
-    TARGETS iceoryx_utils_testing
-    INCLUDE_DIRECTORY testutils/
+        TARGETS iceoryx_utils_testing
+        INCLUDE_DIRECTORY testing/include/
     )
 
     #
@@ -150,6 +161,7 @@ add_library(iceoryx_utils
     source/log/logstream.cpp
     source/posix_wrapper/access_control.cpp
     source/posix_wrapper/mutex.cpp
+    source/posix_wrapper/file_lock.cpp
     source/posix_wrapper/semaphore.cpp
     source/posix_wrapper/timer.cpp
     source/posix_wrapper/timespec.cpp
@@ -164,7 +176,9 @@ add_library(iceoryx_utils
     source/posix_wrapper/posix_access_rights.cpp
     source/posix_wrapper/thread.cpp
     source/units/duration.cpp
-    source/relocatable_pointer/relative_ptr.cpp
+    source/relocatable_pointer/base_relative_pointer.cpp
+    source/relocatable_pointer/base_relocatable_pointer.cpp
+    source/relocatable_pointer/relative_pointer_data.cpp
 )
 
 add_library(iceoryx_utils::iceoryx_utils ALIAS iceoryx_utils)
@@ -210,9 +224,9 @@ target_link_libraries(iceoryx_platform PRIVATE ${ICEORYX_SANITIZER_FLAGS})
 target_compile_options(iceoryx_platform PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
 if(LINUX)
-    target_link_libraries(iceoryx_platform 
-        PUBLIC 
-        rt 
+    target_link_libraries(iceoryx_platform
+        PUBLIC
+        rt
         pthread
     )
 endif(LINUX)
@@ -223,12 +237,20 @@ if(PERFORM_CLANG_TIDY)
     )
 endif(PERFORM_CLANG_TIDY)
 
-
-target_link_libraries(iceoryx_utils 
-    PUBLIC 
-    iceoryx_utils::iceoryx_platform 
-    PRIVATE
-    ${ICEORYX_SANITIZER_FLAGS})
+if(QNX)
+    target_link_libraries(iceoryx_utils
+        PUBLIC
+        iceoryx_utils::iceoryx_platform
+        PRIVATE
+        socket
+        ${ICEORYX_SANITIZER_FLAGS})
+else()
+    target_link_libraries(iceoryx_utils
+        PUBLIC
+        iceoryx_utils::iceoryx_platform
+        PRIVATE
+        ${ICEORYX_SANITIZER_FLAGS})
+endif(QNX)
 
 target_compile_options(iceoryx_utils PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
@@ -261,9 +283,15 @@ install(
     FILES
         cmake/IceoryxPackageHelper.cmake
         cmake/IceoryxPlatform.cmake
+        cmake/IceoryxVersion.cmake
     DESTINATION ${DESTINATION_CONFIGDIR}
 )
 
 if(BUILD_TEST)
     add_subdirectory(test)
 endif(BUILD_TEST)
+
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+  DESTINATION share/doc/iceoryx_utils
+  COMPONENT dev)

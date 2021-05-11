@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,28 +23,34 @@ namespace roudi
 {
 template <typename T, std::enable_if_t<std::is_same<T, iox::build::ManyToManyPolicy>::value>*>
 inline iox::popo::SubscriberPortData* PortPool::constructSubscriber(const capro::ServiceDescription& serviceDescription,
-                                                                    const ProcessName_t& applicationName,
+                                                                    const RuntimeName_t& runtimeName,
                                                                     const popo::SubscriberOptions& subscriberOptions,
                                                                     const mepoo::MemoryInfo& memoryInfo) noexcept
 {
-    return m_portPoolData->m_subscriberPortMembers.insert(serviceDescription,
-                                                          applicationName,
-                                                          cxx::VariantQueueTypes::SoFi_MultiProducerSingleConsumer,
-                                                          subscriberOptions,
-                                                          memoryInfo);
+    return m_portPoolData->m_subscriberPortMembers.insert(
+        serviceDescription,
+        runtimeName,
+        (subscriberOptions.queueFullPolicy == popo::QueueFullPolicy::DISCARD_OLDEST_DATA)
+            ? cxx::VariantQueueTypes::SoFi_MultiProducerSingleConsumer
+            : cxx::VariantQueueTypes::FiFo_MultiProducerSingleConsumer,
+        subscriberOptions,
+        memoryInfo);
 }
 
 template <typename T, std::enable_if_t<std::is_same<T, iox::build::OneToManyPolicy>::value>*>
 inline iox::popo::SubscriberPortData* PortPool::constructSubscriber(const capro::ServiceDescription& serviceDescription,
-                                                                    const ProcessName_t& applicationName,
+                                                                    const RuntimeName_t& runtimeName,
                                                                     const popo::SubscriberOptions& subscriberOptions,
                                                                     const mepoo::MemoryInfo& memoryInfo) noexcept
 {
-    return m_portPoolData->m_subscriberPortMembers.insert(serviceDescription,
-                                                          applicationName,
-                                                          cxx::VariantQueueTypes::SoFi_SingleProducerSingleConsumer,
-                                                          subscriberOptions,
-                                                          memoryInfo);
+    return m_portPoolData->m_subscriberPortMembers.insert(
+        serviceDescription,
+        runtimeName,
+        (subscriberOptions.queueFullPolicy == popo::QueueFullPolicy::DISCARD_OLDEST_DATA)
+            ? cxx::VariantQueueTypes::SoFi_SingleProducerSingleConsumer
+            : cxx::VariantQueueTypes::FiFo_SingleProducerSingleConsumer,
+        subscriberOptions,
+        memoryInfo);
 }
 } // namespace roudi
 } // namespace iox

@@ -1,4 +1,5 @@
 # Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@ cmake_minimum_required(VERSION 3.5)
 project(test_binding_c VERSION 0)
 
 find_package(iceoryx_utils_testing REQUIRED)
+find_package(iceoryx_posh_testing REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
 set(PROJECT_PREFIX "binding_c")
@@ -34,11 +36,11 @@ set(TEST_LINK_LIBS
     iceoryx_posh::iceoryx_posh
     iceoryx_posh::iceoryx_posh_config
     iceoryx_posh::iceoryx_posh_roudi
-    iceoryx_posh::iceoryx_posh_roudi_environment
+    iceoryx_posh_testing::iceoryx_posh_testing
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(TEST_CXX_FLAGS ${ICEORYX_WARNINGS} /W3)
+    set(TEST_CXX_FLAGS ${ICEORYX_WARNINGS})
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS} -Wno-unused -Wno-pedantic)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -57,5 +59,5 @@ endif()
 add_executable(${PROJECT_PREFIX}_moduletests ${MODULETESTS_SRC})
 set_property(TARGET ${PROJECT_PREFIX}_moduletests PROPERTY CXX_STANDARD ${ICEORYX_CXX_STANDARD})
 target_include_directories(${PROJECT_PREFIX}_moduletests PRIVATE .)
-target_compile_options(${PROJECT_PREFIX}_moduletests PUBLIC -fPIC PRIVATE ${TEST_CXX_FLAGS})
+target_compile_options(${PROJECT_PREFIX}_moduletests PRIVATE ${TEST_CXX_FLAGS})
 target_link_libraries(${PROJECT_PREFIX}_moduletests ${TEST_LINK_LIBS})

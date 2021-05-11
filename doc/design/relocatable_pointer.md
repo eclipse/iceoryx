@@ -7,7 +7,7 @@ even to the shared memory), i.e. the pointer is invalid. In this case, different
 relocatable pointers must be used. Depending on the shared memory setup and the relationship between pointer and pointee,
 there are different use cases which we need to cover.
 
-Both relative_ptr<T> and relocatable_ptr<T> are template pointer classes that try to retain much of the normal pointer
+Both RelativePointer<T> and RelocatablePointer<T> are template pointer classes that try to retain much of the normal pointer
 syntax where possible while still being valid across address space boundaries. This means that operations like
 assignment, dereferencing, comparison and so on work similar to raw pointers. They do not possess reference counting
 semantics in this implementation, but extensions for this functionality are possible.
@@ -35,16 +35,16 @@ App2          a2  b2                  c2
 ```
 
 Let a1, b1, c1 and so on be the addresses of segment S, pointer p and object X in application 1 and similarly a2, b2 and
-c2 in application2.If application 2 maps the memory differently they will be shifted by some common offset d depending
+c2 in application2. If application 2 maps the memory differently they will be shifted by some common offset d depending
 on the individual memory mapping:
 
-a2 = a1 + d, b2 = a2 + d, c2 = c1 + d
+a2 = a1 + d, b2 = b1 + d, c2 = c1 + d
 
 This is why storing a raw pointer to X will not be sufficient, the value c1 of p will not point to X in application 2.
 However, storing the difference between the location of p and X will work since it is an invariant in both address
 spaces.
 
-Thus, instead of using a raw pointer p, we just use a relocatable pointer relocatable_ptr<T> pointing to X. This pointer
+Thus, instead of using a raw pointer p, we just use a relocatable pointer RelocatablePointer<T> pointing to X. This pointer
 can then be dereferenced in both address spaces and will point to X.
 
 Note that if we only use relocatable pointers in this way in complex data structures that rely on pointers (such as
@@ -60,16 +60,16 @@ segment* (e.g. as members of objects that reside in this segment or via emplacem
 segment).
 
 default construct a logical nullptr
-+ `relocatable_ptr<T> p;`
++ `RelocatablePointer<T> p;`
 
 construct relocatable pointing to X
-+ `relocatable_ptr<T> p(&X);`
++ `RelocatablePointer<T> p(&X);`
 
 assign relocatable to point to X
 + `p = &X;`
 
 ### Operations
-Most operations for raw pointers also work for relocatable pointers. In particular, a relocatable_ptr<T> is compatible
+Most operations for raw pointers also work for relocatable pointers. In particular, a RelocatablePointer<T> is compatible
 with a raw pointer T* in many cases, such as assignment, to provide seamless integration and convenient syntax.
 
 comparison with raw pointers
@@ -91,7 +91,7 @@ access members
 
 ### Performance
 
-Since relocatable pointers just measures the distance to the pointee from itself it just requires a number to store this
+Since relocatable pointers just measure the distance to the pointee from itself it just requires a number to store this
 pointer difference. This number has the same size as a pointer itself, i.e. 64 bit on 64 bit architectures. All
 operations use just a few simple arithmetic instructions in addition to pointer dereferencing and hence they do incur
 little overhead compared to raw pointers.
@@ -151,19 +151,19 @@ Assume we have an object X of type T in shared memory. Then we can construct rel
 registered segments*.
 
 default construct a logical nullptr
-+ `relative_ptr<T> rp;`
++ `RelativePointer<T> rp;`
 
 construct relative pointer pointing to X (provided the segment containing X was registered)
-+ `relative_ptr<T> rp(&X);`
++ `RelativePointer<T> rp(&X);`
 
 assign relative pointer to point to X
 + `rp = &X;`
 
 copy construction
-+ `relative_ptr<T> rp2(rp);`
++ `RelativePointer<T> rp2(rp);`
 
 copy assignment
-+ `relative_ptr<T> rp2 = rp;`
++ `RelativePointer<T> rp2 = rp;`
 
 ### Operations
 
@@ -197,19 +197,19 @@ the operations incur slightly more overhead compared to relocatable pointers.
 
 ## Atomic usage
 
-There is a technical problem using both relocatable_ptr and relative_ptr as a type in a std::atomic. This is essentially
+There is a technical problem using both RelocatablePointer and RelativePointer as a type in a std::atomic. This is essentially
 impossible as an atomic requires its type to be copyable/movable (to be loaded) but on the other hand, this copy
 constructor must be trivial, i.e. performable with a shallow memcpy. Therefore, the types used in atomic cannot implement
-custom copy/move. This is not possible for relocatable_ptr and relative_ptr as both require operations performed
+custom copy/move. This is not possible for RelocatablePointer and RelativePointer as both require operations performed
 during copying, which cannot be done by a simple shallow copy.
 
-To support the use case of an atomic relocatable pointer, the template atomic_relocatable_ptr<T> is provided. It is a
-basic version of a relocatable_ptr, which lacks some of its move functionality and other operations. However, its
-existing operations behave like relocatable_ptr but in an atomic way (but also incur additional overhead caused by
+To support the use case of an atomic relocatable pointer, the template AtomicRelocatablePointer<T> is provided. It is a
+basic version of a RelocatablePointer, which lacks some of its move functionality and other operations. However, its
+existing operations behave like RelocatablePointer but in an atomic way (but also incur additional overhead caused by
 atomic loads and stores). Therefore, this object can be used concurrently by multiple threads, in contrast to
-relative_ptr and relocatable_ptr. This atomic version also utilizes lock free atomic operations internally (when
+RelativePointer and RelocatablePointer. This atomic version also utilizes lock free atomic operations internally (when
 available on the target architecture) as the data to be stored is just a 64 bit word. 
 
-Note that this cannot be done as easily for relative_ptr as it requires more than 64 bit to store its internal
+Note that this cannot be done as easily for RelativePointer as it requires more than 64 bit to store its internal
 information. A construction where atomicity is guaranteed via locking could be provided in the future.
 

@@ -88,22 +88,7 @@ inline bool BaseSubscriber<port_t>::hasMissedData() noexcept
 template <typename port_t>
 inline cxx::expected<const mepoo::ChunkHeader*, ChunkReceiveResult> BaseSubscriber<port_t>::takeChunk() noexcept
 {
-    auto result = m_port.tryGetChunk();
-    if (result.has_error())
-    {
-        return cxx::error<ChunkReceiveResult>(result.get_error());
-    }
-    else
-    {
-        auto maybeHeader = result.value();
-        if (maybeHeader.has_value())
-        {
-            return cxx::success<const mepoo::ChunkHeader*>(maybeHeader.value());
-        }
-    }
-    ///@todo: optimization - we could move this to a tryGetChunk but then we should remove expected<optional<>> there in
-    /// the call chain
-    return cxx::error<ChunkReceiveResult>(ChunkReceiveResult::NO_CHUNK_AVAILABLE);
+    return m_port.tryGetChunk();
 }
 
 template <typename port_t>
@@ -123,25 +108,79 @@ inline void BaseSubscriber<port_t>::invalidateTrigger(const uint64_t uniqueTrigg
 }
 
 template <typename port_t>
-inline void BaseSubscriber<port_t>::enableEvent(iox::popo::TriggerHandle&& triggerHandle,
-                                                [[gnu::unused]] const SubscriberEvent subscriberEvent) noexcept
+inline void BaseSubscriber<port_t>::enableState(iox::popo::TriggerHandle&& triggerHandle,
+                                                IOX_MAYBE_UNUSED const SubscriberState subscriberState) noexcept
 
 {
-    m_trigger = std::move(triggerHandle);
-    m_port.setConditionVariable(m_trigger.getConditionVariableData());
+    switch (subscriberState)
+    {
+    case SubscriberState::HAS_DATA:
+        if (m_trigger)
+        {
+            LogWarn()
+                << "The subscriber is already attached with either the SubscriberState::HAS_DATA or "
+                   "SubscriberEvent::DATA_RECEIVED to a WaitSet/Listener. Detaching it from previous one and "
+                   "attaching it to the new one with SubscriberState::HAS_DATA. Best practice is to call detach first.";
+
+            errorHandler(
+                Error::kPOPO__BASE_SUBSCRIBER_OVERRIDING_WITH_STATE_SINCE_HAS_DATA_OR_DATA_RECEIVED_ALREADY_ATTACHED,
+                nullptr,
+                ErrorLevel::MODERATE);
+        }
+        m_trigger = std::move(triggerHandle);
+        m_port.setConditionVariable(*m_trigger.getConditionVariableData(), m_trigger.getUniqueId());
+        break;
+    }
 }
 
 
 template <typename port_t>
-inline WaitSetHasTriggeredCallback
-BaseSubscriber<port_t>::getHasTriggeredCallbackForEvent(const SubscriberEvent subscriberEvent) const noexcept
+inline WaitSetIsConditionSatisfiedCallback
+BaseSubscriber<port_t>::getCallbackForIsStateConditionSatisfied(const SubscriberState subscriberState) const noexcept
 {
-    switch (subscriberEvent)
+    switch (subscriberState)
     {
-    case SubscriberEvent::HAS_DATA:
+    case SubscriberState::HAS_DATA:
         return {*this, &SelfType::hasData};
     }
     return {};
+}
+
+template <typename port_t>
+inline void BaseSubscriber<port_t>::disableState(const SubscriberState subscriberState) noexcept
+{
+    switch (subscriberState)
+    {
+    case SubscriberState::HAS_DATA:
+        m_trigger.reset();
+        m_port.unsetConditionVariable();
+        break;
+    }
+}
+
+template <typename port_t>
+inline void BaseSubscriber<port_t>::enableEvent(iox::popo::TriggerHandle&& triggerHandle,
+                                                const SubscriberEvent subscriberEvent) noexcept
+{
+    switch (subscriberEvent)
+    {
+    case SubscriberEvent::DATA_RECEIVED:
+        if (m_trigger)
+        {
+            LogWarn()
+                << "The subscriber is already attached with either the SubscriberState::HAS_DATA or "
+                   "SubscriberEvent::DATA_RECEIVED to a WaitSet/Listener. Detaching it from previous one and "
+                   "attaching it to the new one with SubscriberEvent::DATA_RECEIVED. Best practice is to call detach "
+                   "first.";
+            errorHandler(
+                Error::kPOPO__BASE_SUBSCRIBER_OVERRIDING_WITH_EVENT_SINCE_HAS_DATA_OR_DATA_RECEIVED_ALREADY_ATTACHED,
+                nullptr,
+                ErrorLevel::MODERATE);
+        }
+        m_trigger = std::move(triggerHandle);
+        m_port.setConditionVariable(*m_trigger.getConditionVariableData(), m_trigger.getUniqueId());
+        break;
+    }
 }
 
 template <typename port_t>
@@ -149,7 +188,7 @@ inline void BaseSubscriber<port_t>::disableEvent(const SubscriberEvent subscribe
 {
     switch (subscriberEvent)
     {
-    case SubscriberEvent::HAS_DATA:
+    case SubscriberEvent::DATA_RECEIVED:
         m_trigger.reset();
         m_port.unsetConditionVariable();
         break;

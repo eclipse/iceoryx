@@ -15,22 +15,30 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_posh/popo/trigger.hpp"
-#include "iceoryx_posh/internal/popo/building_blocks/condition_variable_signaler.hpp"
 
 namespace iox
 {
 namespace popo
 {
-std::atomic<uint64_t> Trigger::uniqueIdCounter{0U};
+constexpr uint64_t Trigger::INVALID_TRIGGER_ID;
 
 Trigger::~Trigger()
 {
     reset();
 }
 
-bool Trigger::hasTriggered() const noexcept
+bool Trigger::isStateConditionSatisfied() const noexcept
 {
-    return (isValid()) ? m_hasTriggeredCallback().value() : false;
+    switch (getTriggerType())
+    {
+    case TriggerType::STATE_BASED:
+        return (isValid()) ? m_hasTriggeredCallback().value() : false;
+    case TriggerType::EVENT_BASED:
+        return isValid();
+    case TriggerType::INVALID:
+        return false;
+    };
+    return false;
 }
 
 void Trigger::reset() noexcept
@@ -40,23 +48,25 @@ void Trigger::reset() noexcept
         return;
     }
 
-    if (m_resetCallback)
-    {
-        m_resetCallback(m_uniqueId);
-    }
+    // the constructor made sure that m_resetCallback is always set
+    IOX_DISCARD_RESULT(m_resetCallback(m_uniqueId));
 
     invalidate();
 }
 
-const EventInfo& Trigger::getEventInfo() const noexcept
+const NotificationInfo& Trigger::getNotificationInfo() const noexcept
 {
-    return m_eventInfo;
+    return m_notificationInfo;
 }
 
 void Trigger::invalidate() noexcept
 {
     m_hasTriggeredCallback = cxx::ConstMethodCallback<bool>();
     m_resetCallback = cxx::MethodCallback<void, uint64_t>();
+    m_uniqueId = INVALID_TRIGGER_ID;
+    m_triggerType = TriggerType::INVALID;
+    m_originTriggerType = INVALID_TRIGGER_ID;
+    m_originTriggerTypeHash = INVALID_TRIGGER_ID;
 }
 
 Trigger::operator bool() const noexcept
@@ -66,14 +76,15 @@ Trigger::operator bool() const noexcept
 
 bool Trigger::isValid() const noexcept
 {
-    return static_cast<bool>(m_hasTriggeredCallback);
+    return m_uniqueId != INVALID_TRIGGER_ID;
 }
 
-bool Trigger::isLogicalEqualTo(const Trigger& rhs) const noexcept
+bool Trigger::isLogicalEqualTo(const void* const notificationOrigin,
+                               const uint64_t originTriggerType,
+                               const uint64_t originTriggerTypeHash) const noexcept
 {
-    return (isValid() && rhs.isValid() && m_eventInfo.m_eventOrigin == rhs.m_eventInfo.m_eventOrigin
-            && m_hasTriggeredCallback == rhs.m_hasTriggeredCallback
-            && m_eventInfo.m_eventId == rhs.m_eventInfo.m_eventId);
+    return isValid() && m_notificationInfo.m_notificationOrigin == notificationOrigin
+           && m_originTriggerType == originTriggerType && m_originTriggerTypeHash == originTriggerTypeHash;
 }
 
 Trigger::Trigger(Trigger&& rhs) noexcept
@@ -87,13 +98,16 @@ Trigger& Trigger::operator=(Trigger&& rhs) noexcept
     {
         reset();
 
-        // EventInfo
-        m_eventInfo = std::move(rhs.m_eventInfo);
+        // NotificationInfo
+        m_notificationInfo = std::move(rhs.m_notificationInfo);
 
         // Trigger
         m_resetCallback = std::move(rhs.m_resetCallback);
         m_hasTriggeredCallback = std::move(rhs.m_hasTriggeredCallback);
-        m_uniqueId = std::move(rhs.m_uniqueId);
+        m_uniqueId = rhs.m_uniqueId;
+        m_triggerType = rhs.m_triggerType;
+        m_originTriggerType = rhs.m_originTriggerType;
+        m_originTriggerTypeHash = rhs.m_originTriggerTypeHash;
 
         rhs.invalidate();
     }
@@ -103,6 +117,11 @@ Trigger& Trigger::operator=(Trigger&& rhs) noexcept
 uint64_t Trigger::getUniqueId() const noexcept
 {
     return m_uniqueId;
+}
+
+TriggerType Trigger::getTriggerType() const noexcept
+{
+    return m_triggerType;
 }
 
 

@@ -31,10 +31,18 @@ SampleDeleter<Port>::SampleDeleter(Port& port)
 
 template <typename Port>
 template <typename T>
-void SampleDeleter<Port>::operator()(T* const payload) const
+void SampleDeleter<Port>::operator()(T* const userPayload)
 {
-    auto header = iox::mepoo::ChunkHeader::fromPayload(payload);
-    m_port->releaseChunk(header);
+    auto chunkHeader = iox::mepoo::ChunkHeader::fromUserPayload(userPayload);
+    m_port->releaseChunk(chunkHeader);
+}
+
+template <typename Port>
+template <typename T>
+void SampleDeleter<Port>::operator()(const T* const userPayload) const
+{
+    const auto chunkHeader = iox::mepoo::ChunkHeader::fromUserPayload(userPayload);
+    m_port->releaseChunk(chunkHeader);
 }
 
 } // namespace popo

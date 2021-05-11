@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +23,10 @@ namespace popo
 {
 template <uint32_t MaxChunksHeldSimultaneously, typename ChunkQueueDataType>
 inline ChunkReceiverData<MaxChunksHeldSimultaneously, ChunkQueueDataType>::ChunkReceiverData(
-    const cxx::VariantQueueTypes queueType, const mepoo::MemoryInfo& memoryInfo) noexcept
-    : ChunkQueueDataType(queueType)
+    const cxx::VariantQueueTypes queueType,
+    const QueueFullPolicy queueFullPolicy,
+    const mepoo::MemoryInfo& memoryInfo) noexcept
+    : ChunkQueueDataType(queueFullPolicy, queueType)
     , m_memoryInfo(memoryInfo)
 {
 }

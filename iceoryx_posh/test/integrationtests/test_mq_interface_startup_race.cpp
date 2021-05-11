@@ -103,7 +103,7 @@ class CMqInterfaceStartupRace_test : public Test
         }
         ASSERT_THAT(m_appQueue.has_error(), false);
 
-        m_appQueue->send(regAck.getMessage());
+        ASSERT_FALSE(m_appQueue->send(regAck.getMessage()).has_error());
     }
 
     /// @note smart_lock in combination with optional is currently not really usable

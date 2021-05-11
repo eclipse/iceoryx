@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,26 +32,31 @@
 class MQ : public IcePerfBase
 {
   public:
-    static constexpr size_t MAX_MESSAGE_SIZE = 4 * IcePerfBase::ONE_KILOBYTE;
-    static constexpr size_t MAX_MESSAGES = 8;
+    static constexpr uint32_t MAX_MESSAGE_SIZE = 4 * IcePerfBase::ONE_KILOBYTE;
+    static constexpr uint32_t MAX_MESSAGES = 8;
     static constexpr int32_t ERROR_CODE = -1;
     static constexpr mqd_t INVALID_DESCRIPTOR = -1;
 
     MQ(const std::string& publisherName, const std::string& subscriberName) noexcept;
+    /// @brief Cleans up outdated message queues, e.g. from a previous test
+    /// @attention only leader is allowed to call this
+    static void cleanupOutdatedResources(const std::string& publisherName, const std::string& subscriberName) noexcept;
+
     void initLeader() noexcept override;
     void initFollower() noexcept override;
     void shutdown() noexcept override;
 
   private:
-    void init() noexcept;
+    static constexpr const char* PREFIX{"/"};
+    void initMqAttributes() noexcept;
     void open(const std::string& name, const iox::posix::IpcChannelSide channelSide) noexcept;
     void send(const char* buffer, uint32_t length) noexcept;
     void receive(char* buffer) noexcept;
-    void sendPerfTopic(uint32_t payloadSizeInBytes, bool runFlag) noexcept override;
+    void sendPerfTopic(const uint32_t payloadSizeInBytes, const RunFlag runFlag) noexcept override;
     PerfTopic receivePerfTopic() noexcept override;
 
-    const std::string m_publisherName;
-    const std::string m_subscriberName;
+    const std::string m_publisherMqName;
+    const std::string m_subscriberMqName;
     struct mq_attr m_attributes;
     mqd_t m_mqDescriptorPublisher = INVALID_DESCRIPTOR;
     mqd_t m_mqDescriptorSubscriber = INVALID_DESCRIPTOR;

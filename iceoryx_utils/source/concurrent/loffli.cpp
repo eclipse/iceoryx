@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,13 +24,16 @@ namespace iox
 {
 namespace concurrent
 {
-void LoFFLi::init(cxx::not_null<uint32_t*> f_freeIndicesMemory, const uint32_t f_size)
+void LoFFLi::init(cxx::not_null<Index_t*> freeIndicesMemory, const uint32_t capacity) noexcept
 {
-    cxx::Expects(f_size > 0);
-    cxx::Expects(f_size <= UINT32_MAX - 2U);
+    cxx::Expects(capacity > 0 && "A capacity of 0 is not supported!");
+    constexpr uint32_t INTERNALLY_RESERVED_INDICES{1U};
+    cxx::Expects(capacity < (std::numeric_limits<Index_t>::max() - INTERNALLY_RESERVED_INDICES)
+                 && "Requested capacityexceeds limits!");
+    cxx::Expects(m_head.is_lock_free() && "std::atomic<LoFFLi::Node> must be lock-free!");
 
-    m_nextFreeIndex = f_freeIndicesMemory;
-    m_size = f_size;
+    m_nextFreeIndex = freeIndicesMemory;
+    m_size = capacity;
     m_invalidIndex = m_size + 1;
 
     if (m_nextFreeIndex != nullptr)
@@ -41,7 +45,7 @@ void LoFFLi::init(cxx::not_null<uint32_t*> f_freeIndicesMemory, const uint32_t f
     }
 }
 
-bool LoFFLi::pop(uint32_t& index)
+bool LoFFLi::pop(Index_t& index) noexcept
 {
     Node oldHead = m_head.load(std::memory_order_acquire);
     Node newHead = oldHead;
@@ -75,7 +79,7 @@ bool LoFFLi::pop(uint32_t& index)
     return true;
 }
 
-bool LoFFLi::push(const uint32_t index)
+bool LoFFLi::push(const Index_t index) noexcept
 {
     /// we synchronize with m_nextFreeIndex in pop to perform the validity check
     std::atomic_thread_fence(std::memory_order_release);

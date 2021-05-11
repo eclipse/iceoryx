@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,8 +30,11 @@ class Allocator
 
 
   public:
-    static constexpr uint64_t MEMORY_ALIGNMENT = 32;
-    Allocator(void* const f_startAddress, const uint64_t f_length) noexcept;
+    static constexpr uint64_t MEMORY_ALIGNMENT = 8U;
+    /// @brief A bump allocator for the memory provided in the ctor arguments
+    /// @param[in] startAddress of the memory this allocator manages
+    /// @param[in] length of the memory this allocator manages
+    Allocator(void* const startAddress, const uint64_t length) noexcept;
 
     Allocator(const Allocator&) = delete;
     Allocator(Allocator&&) noexcept = default;
@@ -38,7 +42,11 @@ class Allocator
     Allocator& operator=(Allocator&&) = default;
     ~Allocator() = default;
 
-    void* allocate(const uint64_t f_size, const uint64_t f_alignment = MEMORY_ALIGNMENT) noexcept;
+    /// @brief allocates on the memory supplied with the ctor
+    /// @param[in] size of the memory to allocate
+    /// @param[in] alignment of the memory to allocate
+    /// @note May terminate if out of memory or finalizeAllocation() was called before
+    void* allocate(const uint64_t size, const uint64_t alignment) noexcept;
 
   protected:
     friend class SharedMemoryObject;

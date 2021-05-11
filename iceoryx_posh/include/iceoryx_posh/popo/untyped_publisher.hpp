@@ -25,8 +25,8 @@ namespace iox
 {
 namespace popo
 {
-template <typename base_publisher_t = BasePublisher<>>
-class UntypedPublisherImpl : public base_publisher_t
+template <typename BasePublisher_t = BasePublisher<>>
+class UntypedPublisherImpl : public BasePublisher_t
 {
   public:
     UntypedPublisherImpl(const capro::ServiceDescription& service,
@@ -38,29 +38,37 @@ class UntypedPublisherImpl : public base_publisher_t
     virtual ~UntypedPublisherImpl() = default;
 
     ///
-    /// @brief loan Get a chunk from loaned shared memory.
-    /// @param size The expected size of the chunk.
-    /// @return A pointer to a chunk of memory with the requested size or
+    /// @brief Get a chunk from loaned shared memory.
+    /// @param usePayloadSize The expected user-payload size of the chunk.
+    /// @param userPayloadAlignment The expected user-payload alignment of the chunk.
+    /// @return A pointer to the user-payload of a chunk of memory with the requested size or
     ///         an AllocationError if no chunk could be loaned.
     /// @note An AllocationError occurs if no chunk is available in the shared memory.
     ///
-    cxx::expected<void*, AllocationError> loan(const uint32_t size) noexcept;
+    cxx::expected<void*, AllocationError>
+    loan(const uint32_t userPayloadSize,
+         const uint32_t userPayloadAlignment = iox::CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT,
+         const uint32_t userHeaderSize = iox::CHUNK_NO_USER_HEADER_SIZE,
+         const uint32_t userHeaderAlignment = iox::CHUNK_NO_USER_HEADER_ALIGNMENT) noexcept;
 
     ///
-    /// @brief loanPreviousChunk Get the previously loanded chunk if possible.
-    /// @return A pointer to the previous chunk if available, nullopt otherwise.
+    /// @brief Publish the provided memory chunk.
+    /// @param userPayload Pointer to the user-payload of the allocated shared memory chunk.
+    /// @return Error if provided pointer is not a user-payload of a valid memory chunk.
     ///
-    cxx::optional<void*> loanPreviousChunk() noexcept;
+    void publish(void* const userPayload) noexcept;
 
     ///
-    /// @brief publish Publish the provided memory chunk.
-    /// @param chunk Pointer to the allocated shared memory chunk.
-    /// @return Error if provided pointer is not a valid memory chunk.
+    /// @brief Releases the ownership of the chunk provided by the user-payload pointer.
+    /// @param userPayload pointer to the user-payload of the chunk to be released
+    /// @details The userPayload pointer must have been previously provided by loan
+    ///          and not have been already released. The chunk must not be accessed afterwards
+    ///          as its memory may have been reclaimed.
     ///
-    void publish(const void* chunk) noexcept;
+    void release(void* const userPayload) noexcept;
 
   protected:
-    using base_publisher_t::port;
+    using BasePublisher_t::port;
 };
 
 using UntypedPublisher = UntypedPublisherImpl<>;

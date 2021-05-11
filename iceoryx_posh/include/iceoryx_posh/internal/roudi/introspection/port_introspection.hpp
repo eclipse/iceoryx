@@ -71,14 +71,14 @@ class PortIntrospection
 
             PublisherInfo(typename PublisherPort::MemberType_t& portData)
                 : portData(&portData)
-                , process(portData.m_processName)
+                , process(portData.m_runtimeName)
                 , service(portData.m_serviceDescription)
                 , node(portData.m_nodeName)
             {
             }
 
             typename PublisherPort::MemberType_t* portData{nullptr};
-            ProcessName_t process;
+            RuntimeName_t process;
             capro::ServiceDescription service;
             NodeName_t node;
 
@@ -98,14 +98,14 @@ class PortIntrospection
 
             SubscriberInfo(typename SubscriberPort::MemberType_t& portData)
                 : portData(&portData)
-                , process(portData.m_processName)
+                , process(portData.m_runtimeName)
                 , service(portData.m_serviceDescription)
                 , node(portData.m_nodeName)
             {
             }
 
             typename SubscriberPort::MemberType_t* portData{nullptr};
-            ProcessName_t process;
+            RuntimeName_t process;
             capro::ServiceDescription service;
             NodeName_t node;
         };

@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +46,7 @@ ChunkReceiver<ChunkReceiverDataType>::getMembers() noexcept
 }
 
 template <typename ChunkReceiverDataType>
-inline cxx::expected<cxx::optional<const mepoo::ChunkHeader*>, ChunkReceiveResult>
+inline cxx::expected<const mepoo::ChunkHeader*, ChunkReceiveResult>
 ChunkReceiver<ChunkReceiverDataType>::tryGet() noexcept
 {
     auto popRet = this->tryPop();
@@ -57,7 +58,7 @@ ChunkReceiver<ChunkReceiverDataType>::tryGet() noexcept
         // if the application holds too many chunks, don't provide more
         if (getMembers()->m_chunksInUse.insert(sharedChunk))
         {
-            return cxx::success<cxx::optional<const mepoo::ChunkHeader*>>(
+            return cxx::success<const mepoo::ChunkHeader*>(
                 const_cast<const mepoo::ChunkHeader*>(sharedChunk.getChunkHeader()));
         }
         else
@@ -67,11 +68,7 @@ ChunkReceiver<ChunkReceiverDataType>::tryGet() noexcept
             return cxx::error<ChunkReceiveResult>(ChunkReceiveResult::TOO_MANY_CHUNKS_HELD_IN_PARALLEL);
         }
     }
-    else
-    {
-        // no new chunk
-        return cxx::success<cxx::optional<const mepoo::ChunkHeader*>>(cxx::nullopt_t());
-    }
+    return cxx::error<ChunkReceiveResult>(ChunkReceiveResult::NO_CHUNK_AVAILABLE);
 }
 
 template <typename ChunkReceiverDataType>

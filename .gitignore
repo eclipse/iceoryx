@@ -11,4 +11,6 @@ clangd/
 */doc/xml/
 site/
 doc/website/API-reference/
+tools/website/generated/
 *.project
+__pycache__

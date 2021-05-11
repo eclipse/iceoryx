@@ -1,5 +1,5 @@
-// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,13 +16,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_posh/popo/untyped_publisher.hpp"
-#include "mocks/chunk_mock.hpp"
+#include "iceoryx_posh/testing/mocks/chunk_mock.hpp"
 #include "mocks/publisher_mock.hpp"
 
 #include "test.hpp"
 
+namespace
+{
 using namespace ::testing;
 using ::testing::_;
+
+struct alignas(2) TestUserHeader
+{
+    uint16_t dummy1{1U};
+    uint16_t dummy2{2U};
+};
 
 using TestUntypedPublisher = iox::popo::UntypedPublisherImpl<MockBasePublisher<void>>;
 
@@ -47,13 +55,38 @@ class UntypedPublisherTest : public Test
     MockPublisherPortUser& portMock{sut.mockPort()};
 };
 
-TEST_F(UntypedPublisherTest, LoansChunkWithRequestedSize)
+TEST_F(UntypedPublisherTest, LoansChunkWithRequestedSizeWorks)
 {
-    constexpr uint32_t ALLOCATION_SIZE = 7U;
-    EXPECT_CALL(portMock, tryAllocateChunk(ALLOCATION_SIZE))
+    constexpr uint32_t USER_PAYLOAD_SIZE = 7U;
+    constexpr uint32_t USER_PAYLOAD_ALIGNMENT = 128U;
+    EXPECT_CALL(portMock,
+                tryAllocateChunk(USER_PAYLOAD_SIZE,
+                                 USER_PAYLOAD_ALIGNMENT,
+                                 iox::CHUNK_NO_USER_HEADER_SIZE,
+                                 iox::CHUNK_NO_USER_HEADER_ALIGNMENT))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     // ===== Test ===== //
-    auto result = sut.loan(ALLOCATION_SIZE);
+    auto result = sut.loan(USER_PAYLOAD_SIZE, USER_PAYLOAD_ALIGNMENT);
+    // ===== Verify ===== //
+    EXPECT_FALSE(result.has_error());
+    // ===== Cleanup ===== //
+}
+
+TEST_F(UntypedPublisherTest, LoansChunkWithRequestedSizeAndUserHeaderWorks)
+{
+    TestUntypedPublisher sutWithUserHeader{{"", "", ""}};
+    MockPublisherPortUser& portMockWithUserHeader{sutWithUserHeader.mockPort()};
+
+    constexpr uint32_t USER_PAYLOAD_SIZE = 42U;
+    constexpr uint32_t USER_PAYLOAD_ALIGNMENT = 512U;
+    constexpr uint32_t USER_HEADER_SIZE = sizeof(TestUserHeader);
+    constexpr uint32_t USER_HEADER_ALIGNMENT = alignof(TestUserHeader);
+    EXPECT_CALL(portMockWithUserHeader,
+                tryAllocateChunk(USER_PAYLOAD_SIZE, USER_PAYLOAD_ALIGNMENT, USER_HEADER_SIZE, USER_HEADER_ALIGNMENT))
+        .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
+    // ===== Test ===== //
+    auto result =
+        sutWithUserHeader.loan(USER_PAYLOAD_SIZE, USER_PAYLOAD_ALIGNMENT, USER_HEADER_SIZE, USER_HEADER_ALIGNMENT);
     // ===== Verify ===== //
     EXPECT_FALSE(result.has_error());
     // ===== Cleanup ===== //
@@ -62,7 +95,7 @@ TEST_F(UntypedPublisherTest, LoansChunkWithRequestedSize)
 TEST_F(UntypedPublisherTest, LoanFailsIfPortCannotSatisfyAllocationRequest)
 {
     constexpr uint32_t ALLOCATION_SIZE = 17U;
-    EXPECT_CALL(portMock, tryAllocateChunk(ALLOCATION_SIZE))
+    EXPECT_CALL(portMock, tryAllocateChunk(ALLOCATION_SIZE, _, _, _))
         .WillOnce(Return(
             ByMove(iox::cxx::error<iox::popo::AllocationError>(iox::popo::AllocationError::RUNNING_OUT_OF_CHUNKS))));
     // ===== Test ===== //
@@ -73,33 +106,29 @@ TEST_F(UntypedPublisherTest, LoanFailsIfPortCannotSatisfyAllocationRequest)
     // ===== Cleanup ===== //
 }
 
-TEST_F(UntypedPublisherTest, LoanPreviousChunkSucceeds)
+TEST_F(UntypedPublisherTest, ReleaseDelegatesCallToPort)
 {
-    EXPECT_CALL(portMock, tryGetPreviousChunk())
-        .WillOnce(Return(ByMove(iox::cxx::optional<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
+    constexpr uint32_t ALLOCATION_SIZE = 7U;
+    EXPECT_CALL(portMock, tryAllocateChunk(ALLOCATION_SIZE, _, _, _))
+        .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
+
+    auto result = sut.loan(ALLOCATION_SIZE);
+    ASSERT_FALSE(result.has_error());
+    auto chunk = result.value();
+
     // ===== Test ===== //
-    auto result = sut.loanPreviousChunk();
+    EXPECT_CALL(portMock, releaseChunk(chunkMock.chunkHeader())).Times(1);
+    sut.release(chunk);
     // ===== Verify ===== //
-    EXPECT_TRUE(result.has_value());
     // ===== Cleanup ===== //
 }
 
-TEST_F(UntypedPublisherTest, LoanPreviousChunkFails)
-{
-    EXPECT_CALL(portMock, tryGetPreviousChunk()).WillOnce(Return(ByMove(iox::cxx::nullopt)));
-    // ===== Test ===== //
-    auto result = sut.loanPreviousChunk();
-    // ===== Verify ===== //
-    EXPECT_FALSE(result.has_value());
-    // ===== Cleanup ===== //
-}
-
-TEST_F(UntypedPublisherTest, PublishesPayloadViaUnderlyingPort)
+TEST_F(UntypedPublisherTest, PublishesUserPayloadViaUnderlyingPort)
 {
     // ===== Setup ===== //
     EXPECT_CALL(portMock, sendChunk).Times(1);
     // ===== Test ===== //
-    sut.publish(chunkMock.chunkHeader()->payload());
+    sut.publish(chunkMock.chunkHeader()->userPayload());
     // ===== Verify ===== //
     // ===== Cleanup ===== //
 }
@@ -138,3 +167,5 @@ TEST_F(UntypedPublisherTest, GetServiceDescriptionCallForwardedToUnderlyingPubli
     // ===== Test ===== //
     sut.getServiceDescription();
 }
+
+} // namespace

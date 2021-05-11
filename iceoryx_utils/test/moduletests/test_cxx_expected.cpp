@@ -19,8 +19,10 @@
 #include "test.hpp"
 
 using namespace ::testing;
-using namespace iox::cxx;
+using namespace ::iox::cxx;
 
+namespace
+{
 class MockCallables
 {
   public:
@@ -30,47 +32,46 @@ class MockCallables
     MOCK_METHOD0(onError, void());
 };
 
-class expected_test : public Test
+
+struct TestClass
 {
-  public:
-    struct TestClass
+    TestClass(int a, int b)
+        : m_a(a)
+        , m_b(b)
     {
-        TestClass(int a, int b)
-            : m_a(a)
-            , m_b(b)
-        {
-        }
+    }
 
-        int gimme()
-        {
-            return m_a + m_b;
-        }
+    int gimme()
+    {
+        return m_a + m_b;
+    }
 
-        int constGimme() const
-        {
-            return m_a + m_b;
-        }
+    int constGimme() const
+    {
+        return m_a + m_b;
+    }
 
-        bool operator==(const TestClass& rhs) const
-        {
-            return (m_a == rhs.m_a) && (m_b == rhs.m_b);
-        }
+    bool operator==(const TestClass& rhs) const
+    {
+        return (m_a == rhs.m_a) && (m_b == rhs.m_b);
+    }
 
-        int m_a;
-        int m_b;
-    };
+    int m_a;
+    int m_b;
 };
+
+} // namespace
 
 namespace iox
 {
 namespace cxx
 {
 template <>
-struct ErrorTypeAdapter<expected_test::TestClass>
+struct ErrorTypeAdapter<TestClass>
 {
-    static expected_test::TestClass getInvalidState()
+    static TestClass getInvalidState()
     {
-        return expected_test::TestClass(-1, -1);
+        return TestClass(-1, -1);
     }
 };
 
@@ -85,8 +86,13 @@ struct ErrorTypeAdapter<std::string>
 } // namespace cxx
 } // namespace iox
 
+namespace
+{
+class expected_test : public Test
+{
+};
 
-using TestClassAdapter = iox::cxx::ErrorTypeAdapter<expected_test::TestClass>;
+using TestClassAdapter = iox::cxx::ErrorTypeAdapter<TestClass>;
 
 enum class TestError : uint8_t
 {
@@ -185,6 +191,7 @@ TEST_F(expected_test, CreateWithValueAndMoveCtorLeadsToInvalidState)
 {
     auto sut = expected<int, TestClass>::create_value(177);
     auto movedValue{std::move(sut)};
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestClassAdapter::getInvalidState()));
 }
@@ -193,6 +200,7 @@ TEST_F(expected_test, CreateWithErrorAndMoveCtorLeadsToInvalidState)
 {
     auto sut = expected<int, TestClass>::create_error(22, 33);
     auto movedValue{std::move(sut)};
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestClassAdapter::getInvalidState()));
 }
@@ -201,6 +209,7 @@ TEST_F(expected_test, CreateWithValueAndMoveAssignmentLeadsToInvalidState)
 {
     auto sut = expected<int, TestClass>::create_value(73);
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestClassAdapter::getInvalidState()));
 }
@@ -209,6 +218,7 @@ TEST_F(expected_test, CreateWithErrorAndMoveAssignmentLeadsToInvalidState)
 {
     auto sut = expected<int, TestClass>::create_error(44, 55);
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestClassAdapter::getInvalidState()));
 }
@@ -217,6 +227,7 @@ TEST_F(expected_test, CreateInvalidExpectedAndCallGetErrorLeadsToInvalidState)
 {
     auto sut = expected<int, TestError>::create_error(TestError::ERROR1);
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestError::INVALID_STATE));
 }
@@ -225,6 +236,7 @@ TEST_F(expected_test, ErrorTypeOnlyCreateInvalidExpectedAndCallGetErrorLeadsToIn
 {
     auto sut = expected<TestError>::create_error(TestError::ERROR2);
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestError::INVALID_STATE));
 }
@@ -326,6 +338,7 @@ TEST_F(expected_test, ErrorTypeOnlyMoveCtorLeadsToInvalidState)
 {
     auto sut = expected<TestError>::create_error(TestError::ERROR2);
     auto movedValue{std::move(sut)};
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestError::INVALID_STATE));
 }
@@ -334,6 +347,7 @@ TEST_F(expected_test, ErrorTypeOnlyMoveAssignmentLeadsToInvalidState)
 {
     auto sut = expected<TestError>::create_error(TestError::ERROR1);
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     ASSERT_TRUE(sut.has_error());
     EXPECT_THAT(sut.get_error(), Eq(TestError::INVALID_STATE));
 }
@@ -440,6 +454,7 @@ TEST_F(expected_test, WhenHavingSuccessAndMoveAssignmentCallsOrElse)
 {
     expected<int, TestError> sut{success<int>(1143)};
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     TestError error{TestError::ERROR1};
     sut.and_then([&](auto&) { error = TestError::ERROR2; }).or_else([&](auto& e) { error = e; });
     EXPECT_THAT(error, Eq(TestError::INVALID_STATE));
@@ -449,6 +464,7 @@ TEST_F(expected_test, WhenHavingAnErrorAndMoveAssignmentCallsOrElse)
 {
     expected<int, TestError> sut{error<TestError>(TestError::ERROR1)};
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     TestError error{TestError::ERROR1};
     sut.and_then([&](auto&) { error = TestError::ERROR2; }).or_else([&](auto& e) { error = e; });
     EXPECT_THAT(error, Eq(TestError::INVALID_STATE));
@@ -458,6 +474,7 @@ TEST_F(expected_test, ErrorTypeOnlyWhenHavingSuccessAndMoveAssignmentCallsOrElse
 {
     expected<TestError> sut{success<>()};
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     TestError error{TestError::ERROR1};
     sut.and_then([&]() { error = TestError::ERROR2; }).or_else([&](auto& e) { error = e; });
     EXPECT_THAT(error, Eq(TestError::INVALID_STATE));
@@ -467,6 +484,7 @@ TEST_F(expected_test, ErrorTypeOnlyWhenHavingAnErrorAndMoveAssignmentCallsOrElse
 {
     expected<TestError> sut{error<TestError>(TestError::ERROR1)};
     auto movedValue = std::move(sut);
+    IOX_DISCARD_RESULT(movedValue);
     TestError error{TestError::ERROR1};
     sut.and_then([&]() { error = TestError::ERROR2; }).or_else([&](auto& e) { error = e; });
     EXPECT_THAT(error, Eq(TestError::INVALID_STATE));
@@ -541,3 +559,48 @@ TEST_F(expected_test, AndThenNotCalledWhenEmptyOptionalValue)
 
     sut.and_then([&mocks](int&) { mocks.onSuccess(); });
 }
+
+TEST_F(expected_test, AndThenInValueExpectedWithEmptyCallableDoesNotDie)
+{
+    auto sut1 = expected<int, TestError>::create_value(123);
+    const auto sut2 = expected<int, TestError>::create_value(123);
+    auto sut3 = expected<iox::cxx::optional<int>, TestError>::create_value(123);
+    const auto sut4 = expected<iox::cxx::optional<int>, TestError>::create_value(123);
+
+    // we test here that std::terminate is not called from the function_ref
+    sut1.and_then(iox::cxx::function_ref<void(int&)>());
+    sut2.and_then(iox::cxx::function_ref<void(int&)>());
+    sut3.and_then(iox::cxx::function_ref<void(int&)>());
+    sut4.and_then(iox::cxx::function_ref<void(int&)>());
+}
+
+TEST_F(expected_test, OrElseInValueExpectedWithEmptyCallableDoesNotDie)
+{
+    auto sut1 = expected<int, TestError>::create_error(TestError::ERROR1);
+    const auto sut2 = expected<int, TestError>::create_error(TestError::ERROR1);
+
+    // we test here that std::terminate is not called from the function_ref
+    sut1.or_else(iox::cxx::function_ref<void(TestError&)>());
+    sut2.or_else(iox::cxx::function_ref<void(TestError&)>());
+}
+
+TEST_F(expected_test, AndThenInErrorExpectedWithEmptyCallableDoesNotDie)
+{
+    auto sut1 = expected<TestError>::create_value();
+    const auto sut2 = expected<TestError>::create_value();
+
+    // we test here that std::terminate is not called from the function_ref
+    sut1.and_then(iox::cxx::function_ref<void()>());
+    sut2.and_then(iox::cxx::function_ref<void()>());
+}
+
+TEST_F(expected_test, OrElseInErrorExpectedWithEmptyCallableDoesNotDie)
+{
+    auto sut1 = expected<TestError>::create_error(TestError::ERROR1);
+    const auto sut2 = expected<TestError>::create_error(TestError::ERROR1);
+
+    // we test here that std::terminate is not called from the function_ref
+    sut1.or_else(iox::cxx::function_ref<void(TestError&)>());
+    sut2.or_else(iox::cxx::function_ref<void(TestError&)>());
+}
+} // namespace

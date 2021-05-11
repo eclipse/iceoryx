@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_dds/dds/cyclone_data_reader.hpp"
+#include "iceoryx_posh/testing/mocks/chunk_mock.hpp"
 #include "test.hpp"
 
 #include <Mempool_DCPS.hpp>
@@ -30,6 +32,17 @@ namespace dds
 // ======================================== Helpers ======================================== //
 using TestDataReader = CycloneDataReader;
 
+struct DummyPayload
+{
+    uint64_t a;
+    uint64_t b;
+    uint64_t c;
+};
+struct DummyUserHeader
+{
+    uint64_t a;
+};
+
 // ======================================== Fixture ======================================== //
 class CycloneDataReaderTest : public Test
 {
@@ -42,40 +55,47 @@ class CycloneDataReaderTest : public Test
 TEST_F(CycloneDataReaderTest, DoesNotAttemptToReadWhenDisconnected)
 {
     // ===== Setup
-    uint64_t bufferSize = 1024;
-    uint8_t buffer[bufferSize];
+    ChunkMock<DummyPayload> chunkMock;
+    iox::dds::IoxChunkDatagramHeader datagramHeader;
+    datagramHeader.endianness = getEndianess();
+    datagramHeader.userPayloadSize = chunkMock.chunkHeader()->userPayloadSize();
+    datagramHeader.userPayloadAlignment = chunkMock.chunkHeader()->userPayloadAlignment();
 
     // ===== Test
     TestDataReader reader{"", "", ""};
 
-    auto takeResult = reader.take(buffer, bufferSize, iox::cxx::nullopt);
-    EXPECT_EQ(true, takeResult.has_error());
-    EXPECT_EQ(iox::dds::DataReaderError::NOT_CONNECTED, takeResult.get_error());
-
-    auto takeNextResult = reader.takeNext(buffer, bufferSize);
-    EXPECT_EQ(true, takeNextResult.has_error());
-    EXPECT_EQ(iox::dds::DataReaderError::NOT_CONNECTED, takeResult.get_error());
+    auto takeNextResult = reader.takeNext(datagramHeader,
+                                          static_cast<uint8_t*>(chunkMock.chunkHeader()->userHeader()),
+                                          static_cast<uint8_t*>(chunkMock.chunkHeader()->userPayload()));
+    ASSERT_EQ(true, takeNextResult.has_error());
+    EXPECT_EQ(iox::dds::DataReaderError::NOT_CONNECTED, takeNextResult.get_error());
 }
 
 TEST_F(CycloneDataReaderTest, ReturnsErrorWhenAttemptingToReadIntoANullBuffer)
 {
     // ===== Setup
-    uint64_t bufferSize = 0;
-    uint8_t* buffer = nullptr;
+    ChunkMock<DummyPayload, DummyUserHeader> chunkMock;
+    iox::dds::IoxChunkDatagramHeader datagramHeader;
+    datagramHeader.endianness = getEndianess();
+    datagramHeader.userHeaderId = iox::mepoo::ChunkHeader::UNKNOWN_USER_HEADER;
+    datagramHeader.userHeaderSize = chunkMock.chunkHeader()->userHeaderSize();
+    datagramHeader.userPayloadSize = chunkMock.chunkHeader()->userPayloadSize();
+    datagramHeader.userPayloadAlignment = chunkMock.chunkHeader()->userPayloadAlignment();
 
     // ===== Test
     TestDataReader reader{"", "", ""};
     reader.connect();
 
-    auto takeResult = reader.take(buffer, bufferSize, iox::cxx::nullopt);
-    EXPECT_EQ(true, takeResult.has_error());
-    EXPECT_EQ(iox::dds::DataReaderError::INVALID_RECV_BUFFER, takeResult.get_error());
+    auto takeNextResult1 =
+        reader.takeNext(datagramHeader, nullptr, static_cast<uint8_t*>(chunkMock.chunkHeader()->userPayload()));
+    ASSERT_EQ(true, takeNextResult1.has_error());
+    EXPECT_EQ(iox::dds::DataReaderError::INVALID_BUFFER_PARAMETER_FOR_USER_HEADER, takeNextResult1.get_error());
 
-    auto takeNextResult = reader.takeNext(buffer, bufferSize);
-    EXPECT_EQ(true, takeNextResult.has_error());
-    EXPECT_EQ(iox::dds::DataReaderError::INVALID_RECV_BUFFER, takeNextResult.get_error());
+    auto takeNextResult2 =
+        reader.takeNext(datagramHeader, static_cast<uint8_t*>(chunkMock.chunkHeader()->userHeader()), nullptr);
+    ASSERT_EQ(true, takeNextResult2.has_error());
+    EXPECT_EQ(iox::dds::DataReaderError::INVALID_BUFFER_PARAMETER_FOR_USER_PAYLOAD, takeNextResult2.get_error());
 }
-
 
 } // namespace dds
 } // namespace iox

@@ -20,9 +20,9 @@
 #ifdef _WIN32
 #include <windows.h>
 
-void sleep_for(uint64_t milliseconds)
+void sleep_for(uint32_t milliseconds)
 {
-    Sleep(milliseconds);
+    Sleep((uint64_t)milliseconds);
 }
 
 #else

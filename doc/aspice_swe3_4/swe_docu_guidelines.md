@@ -61,8 +61,8 @@ Here we provide a list with the most usual tags in iceoryx:
 ### Custom Tags
 In iceoryx are also custom tags used for extended documentation like errors.
  - `/// @concurrent` use this tag if the code is used in multithreading context for comments about it
- - `/// @req` used to set links to a database with requirements, see [iceoryx_component.hpp](example/iceoryx_component/include/iceoryx_component.hpp)
- - `/// @link` used to set general links additional information, see [iceoryx_component.hpp](example/iceoryx_component/include/iceoryx_component.hpp)
+ - `/// @req` used to set links to a database with requirements, see [iceoryx_component.hpp](example/iceoryx_component/include/example_component.hpp)
+ - `/// @link` used to set general links additional information, see [iceoryx_component.hpp](example/iceoryx_component/include/example_component.hpp)
  - `/// @swcomponent` marks the relationship to the component
  - `/// @error` used for describing the error behavior e.g. error-handler is called
  - `/// @generatedcode` for marking code as generated

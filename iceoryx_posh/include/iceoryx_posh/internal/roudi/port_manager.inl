@@ -21,7 +21,7 @@ namespace iox
 namespace roudi
 {
 template <typename T, std::enable_if_t<std::is_same<T, iox::build::OneToManyPolicy>::value>*>
-inline cxx::optional<ProcessName_t>
+inline cxx::optional<RuntimeName_t>
 PortManager::doesViolateCommunicationPolicy(const capro::ServiceDescription& service) const noexcept
 {
     // check if the publisher is already in the list
@@ -30,15 +30,15 @@ PortManager::doesViolateCommunicationPolicy(const capro::ServiceDescription& ser
         popo::PublisherPortRouDi publisherPort(publisherPortData);
         if (service == publisherPort.getCaProServiceDescription())
         {
-            return cxx::make_optional<ProcessName_t>(publisherPortData->m_processName);
+            return cxx::make_optional<RuntimeName_t>(publisherPortData->m_runtimeName);
         }
     }
     return cxx::nullopt;
 }
 
 template <typename T, std::enable_if_t<std::is_same<T, iox::build::ManyToManyPolicy>::value>*>
-inline cxx::optional<ProcessName_t> PortManager::doesViolateCommunicationPolicy(const capro::ServiceDescription& service
-                                                                                [[gnu::unused]]) const noexcept
+inline cxx::optional<RuntimeName_t>
+PortManager::doesViolateCommunicationPolicy(const capro::ServiceDescription& service IOX_MAYBE_UNUSED) const noexcept
 {
     // Duplicates are allowed when using n:m policy
     return cxx::nullopt;

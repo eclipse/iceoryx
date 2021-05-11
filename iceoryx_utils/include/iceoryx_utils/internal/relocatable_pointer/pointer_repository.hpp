@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +14,7 @@
 // limitations under the License.
 //
 // SPDX-License-Identifier: Apache-2.0
+
 #ifndef IOX_UTILS_RELOCATABLE_POINTER_POINTER_REPOSITORY_HPP
 #define IOX_UTILS_RELOCATABLE_POINTER_POINTER_REPOSITORY_HPP
 
@@ -23,12 +25,14 @@
 
 namespace iox
 {
-///@brief Allows registration of memory segments with their start pointers and size.
+namespace rp
+{
+/// @brief Allows registration of memory segments with their start pointers and size.
 /// This class is used to resolve relative pointers in the corresponding address space of the application.
 /// Up to CAPACITY segments can be registered with MIN_ID = 1 to MAX_ID = CAPACITY - 1
 /// id 0 is reserved and allows relative pointers to behave like normal pointers
 /// (which is equivalent to measure the offset relative to 0).
-template <typename id_t, typename ptr_t, size_t CAPACITY = 10000>
+template <typename id_t, typename ptr_t, uint64_t CAPACITY = 10000U>
 class PointerRepository
 {
   private:
@@ -38,142 +42,73 @@ class PointerRepository
         ptr_t endPtr{nullptr};
     };
 
-    static constexpr size_t MAX_ID = CAPACITY - 1u;
-    static constexpr size_t MIN_ID = 1u;
-    // remark: 0 is a special purpose id and reserved
-    // id 0 is reserved to interpret the offset just as a raw pointer,
-    // i.e. its corresponding base ptr is 0
+    /// @note 0 is a special purpose id and reserved
+    /// id 0 is reserved to interpret the offset just as a raw pointer,
+    /// i.e. its corresponding base ptr is 0
+    static constexpr size_t MIN_ID = 1U;
+    static constexpr size_t MAX_ID = CAPACITY - 1U;
 
   public:
     static constexpr id_t INVALID_ID = std::numeric_limits<id_t>::max();
 
-    PointerRepository()
-        : m_info(CAPACITY)
-    {
-    }
+    /// @brief default constructor
+    PointerRepository() noexcept;
 
-    bool registerPtr(id_t id, ptr_t ptr, uint64_t size)
-    {
-        if (id > MAX_ID)
-        {
-            return false;
-        }
-        if (m_info[id].basePtr == nullptr)
-        {
-            m_info[id].basePtr = ptr;
-            m_info[id].endPtr = reinterpret_cast<ptr_t>(reinterpret_cast<uint64_t>(ptr) + size - 1u);
-            if (id > m_maxRegistered)
-            {
-                m_maxRegistered = id;
-            }
-            return true;
-        }
-        return false;
-    }
+    /// @brief registers the start pointer of the segment in another application with a specific id
+    /// @param[in] id identifies the segment
+    /// @param[in] ptr is the start pointer of the segment
+    /// @param[in] size is the size of the segment
+    /// @return true if the registration was successful, otherwise false
+    bool registerPtr(id_t id, ptr_t ptr, uint64_t size) noexcept;
 
-    id_t registerPtr(const ptr_t ptr, uint64_t size = 0u)
-    {
-        for (id_t id = 1u; id <= MAX_ID; ++id)
-        {
-            if (m_info[id].basePtr == nullptr)
-            {
-                m_info[id].basePtr = ptr;
-                m_info[id].endPtr = reinterpret_cast<ptr_t>(reinterpret_cast<uint64_t>(ptr) + size - 1u);
-                if (id > m_maxRegistered)
-                {
-                    m_maxRegistered = id;
-                }
-                return id;
-            }
-        }
+    /// @brief registers the start pointer of a segment with a specific size
+    /// @param[in] ptr is the start pointer of the segment
+    /// @param[in] size is the size of the segment
+    /// @return the id that identifies the segment
+    id_t registerPtr(const ptr_t ptr, uint64_t size = 0U) noexcept;
 
-        return INVALID_ID;
-    }
+    /// @brief unregisters the id
+    /// @param[in] id is the id to be unregistered
+    /// @return true if successful, otherwise false
+    /// @attention the relative pointers corresponding to this id become unsafe to use
+    bool unregisterPtr(id_t id) noexcept;
 
-    bool unregisterPtr(id_t id)
-    {
-        if (id <= MAX_ID && id >= MIN_ID)
-        {
-            if (m_info[id].basePtr != nullptr)
-            {
-                m_info[id].basePtr = nullptr;
+    /// @brief unregisters all ids
+    /// @attention the relative pointers corresponding to this id become unsafe to use
+    void unregisterAll() noexcept;
 
-                // do not search for next lower registered index but we could do it here
-                return true;
-            }
-        }
+    /// @brief gets the base pointer, i.e. the starting address, associated with id
+    /// @param[in] id is the segment id
+    /// @return the base pointer associated with the id
+    ptr_t getBasePtr(id_t id) const noexcept;
 
-        return false;
-    }
+    /// @brief returns the id for a given pointer ptr
+    /// @param[in] ptr is the pointer whose corresponding id is searched for
+    /// @return the id the pointer was registered to
+    id_t searchId(ptr_t ptr) const noexcept;
 
-    void unregisterAll()
-    {
-        for (auto& info : m_info)
-        {
-            info.basePtr = nullptr;
-        }
-        m_maxRegistered = 0u;
-    }
+    /// @brief checks if given id is valid
+    /// @param[in] id is the id to be checked
+    /// @return true if id is valid, otherwise false
+    bool isValid(id_t id) const noexcept;
 
-    ptr_t getBasePtr(id_t id)
-    {
-        if (id <= MAX_ID && id >= MIN_ID)
-        {
-            return m_info[id].basePtr;
-        }
-
-        // for id 0 nullptr is returned, meaning we will later interpret a relative pointer
-        // by casting the offset into a pointer (i.e. we measure relative to 0)
-
-        return nullptr; // we cannot distinguish between not registered and nullptr registered, but we do not need to
-    }
-
-    id_t searchId(ptr_t ptr)
-    {
-        for (id_t id = 1u; id <= m_maxRegistered; ++id)
-        {
-            // return first id where the ptr is in the corresponding interval
-            if (ptr >= m_info[id].basePtr && ptr <= m_info[id].endPtr)
-            {
-                return id;
-            }
-        }
-        // implicitly interpret the pointer as a regular pointer if not found
-        // by setting id to 0
-        // rationale: test cases work without registered shared memory and require
-        // this at the moment to avoid fundamental changes
-        return 0u;
-        // return INVALID_ID;
-    }
-
-    bool isValid(id_t id)
-    {
-        return id != INVALID_ID;
-    }
-
-    void print()
-    {
-        for (id_t id = 0; id < m_info.size(); ++id)
-        {
-            auto ptr = m_info[id].basePtr;
-            if (ptr != nullptr)
-            {
-                std::cout << id << " ---> " << ptr << std::endl;
-            }
-        }
-    }
+    /// @brief prints the ids and their associated base pointers
+    void print() const noexcept;
 
   private:
-    ///@ todo: if required protect vector against concurrent modification
-    // whether this is required depends on the use case, we currently do not need it
-    // we control the ids, so if they are consecutive we only need a vector/array to get the address
-    // this variable exists once per application using relative pointers,
-    // and each needs to initialize it via register calls above
+    /// @todo: if required protect vector against concurrent modification
+    /// whether this is required depends on the use case, we currently do not need it
+    /// we control the ids, so if they are consecutive we only need a vector/array to get the address
+    /// this variable exists once per application using relative pointers,
+    /// and each needs to initialize it via register calls above
 
     iox::cxx::vector<Info, CAPACITY> m_info;
-    uint64_t m_maxRegistered{0u};
+    uint64_t m_maxRegistered{0U};
 };
 
+} // namespace rp
 } // namespace iox
+
+#include "iceoryx_utils/internal/relocatable_pointer/pointer_repository.inl"
 
 #endif // IOX_UTILS_RELOCATABLE_POINTER_POINTER_REPOSITORY_HPP

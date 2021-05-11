@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@
 
 #include "iceoryx_dds/dds/data_reader.hpp"
 #include "iceoryx_dds/dds/data_writer.hpp"
+#include "iceoryx_dds/dds/dds_types.hpp"
 #include "iceoryx_posh/gateway/channel.hpp"
 #include "iceoryx_posh/gateway/gateway_generic.hpp"
 #include "iceoryx_posh/iceoryx_posh_types.hpp"
@@ -68,12 +70,11 @@ class MockDataReader
   public:
     MockDataReader(const iox::capro::ServiceDescription&){};
     MOCK_METHOD0(connect, void(void));
-    MOCK_METHOD0(peekNextSize, iox::cxx::optional<uint64_t>(void));
-    MOCK_METHOD2(takeNext, iox::cxx::expected<iox::dds::DataReaderError>(uint8_t* const, const uint64_t&));
-    MOCK_METHOD3(take,
-                 iox::cxx::expected<uint64_t, iox::dds::DataReaderError>(uint8_t* const buffer,
-                                                                         const uint64_t&,
-                                                                         const iox::cxx::optional<uint64_t>&));
+    MOCK_METHOD0(peekNextIoxChunkDatagramHeader, iox::cxx::optional<iox::dds::IoxChunkDatagramHeader>(void));
+    MOCK_METHOD3(takeNext,
+                 iox::cxx::expected<iox::dds::DataReaderError>(const iox::dds::IoxChunkDatagramHeader,
+                                                               uint8_t* const,
+                                                               uint8_t* const));
     MOCK_CONST_METHOD0(getServiceId, std::string(void));
     MOCK_CONST_METHOD0(getInstanceId, std::string(void));
     MOCK_CONST_METHOD0(getEventId, std::string(void));
@@ -84,7 +85,7 @@ class MockDataWriter
   public:
     MockDataWriter(const iox::capro::ServiceDescription&){};
     MOCK_METHOD0(connect, void(void));
-    MOCK_METHOD2(write, bool(uint8_t*, uint64_t));
+    MOCK_METHOD3(write, bool(iox::dds::IoxChunkDatagramHeader, const uint8_t* const, const uint8_t* const));
     MOCK_CONST_METHOD0(getServiceId, std::string(void));
     MOCK_CONST_METHOD0(getInstanceId, std::string(void));
     MOCK_CONST_METHOD0(getEventId, std::string(void));

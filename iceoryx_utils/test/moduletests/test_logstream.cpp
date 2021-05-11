@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +17,14 @@
 
 #include "iceoryx_utils/log/logging.hpp"
 #include "iceoryx_utils/log/logstream.hpp"
-#include "mocks/logger_mock.hpp"
-#include "test.hpp"
+#include "iceoryx_utils/testing/mocks/logger_mock.hpp"
+#include "iceoryx_utils/testing/test.hpp"
 
 #include <cstdint>
 #include <limits>
 
+namespace
+{
 using namespace ::testing;
 
 class IoxLogStream_test : public Test
@@ -353,3 +356,4 @@ TYPED_TEST(IoxLogStreamArithmetic_test, StreamOperator_ConstexprValueMax)
     ASSERT_THAT(this->loggerMock.m_logs.size(), Eq(1u));
     EXPECT_THAT(this->loggerMock.m_logs[0].message, Eq(std::to_string(this->ConstexprLogValueMax)));
 }
+} // namespace

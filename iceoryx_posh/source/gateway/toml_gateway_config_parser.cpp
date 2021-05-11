@@ -48,8 +48,23 @@ iox::config::TomlGatewayConfigParser::parse(const roudi::ConfigFilePathString_t&
     }
 
     LogInfo() << "Using gateway config at: " << path;
-    // Load the file
-    auto parsedToml = cpptoml::parse_file(path.c_str());
+
+    std::shared_ptr<cpptoml::table> parsedToml{nullptr};
+    try
+    {
+        // Load the file
+        parsedToml = cpptoml::parse_file(path.c_str());
+    }
+    catch (const std::exception& parserException)
+    {
+        auto parserError = iox::config::TomlGatewayConfigParseError::EXCEPTION_IN_PARSER;
+
+        LogWarn() << iox::cxx::convertEnumToString(iox::config::TOML_GATEWAY_CONFIG_FILE_PARSE_ERROR_STRINGS, parserError)
+                  << ": " << parserException.what();
+
+        return iox::cxx::error<iox::config::TomlGatewayConfigParseError>(parserError);
+    }
+
     auto result = validate(*parsedToml);
     if (result.has_error())
     {

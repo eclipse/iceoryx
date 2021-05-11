@@ -26,7 +26,7 @@
 
 iox::popo::UserTrigger shutdownTrigger;
 
-static void sigHandler(int f_sig [[gnu::unused]])
+static void sigHandler(int f_sig IOX_MAYBE_UNUSED)
 {
     shutdownTrigger.trigger();
 }
@@ -37,43 +37,49 @@ int main()
     auto signalIntGuard = iox::posix::registerSignalHandler(iox::posix::Signal::INT, sigHandler);
     auto signalTermGuard = iox::posix::registerSignalHandler(iox::posix::Signal::TERM, sigHandler);
 
-    iox::runtime::PoshRuntime::initRuntime("iox-ex-waitset-individual");
+    iox::runtime::PoshRuntime::initRuntime("iox-cpp-waitset-individual");
 
     iox::popo::WaitSet<> waitset;
 
     // attach shutdownTrigger to handle CTRL+C
-    waitset.attachEvent(shutdownTrigger);
+    waitset.attachEvent(shutdownTrigger).or_else([](auto) {
+        std::cerr << "failed to attach shutdown trigger" << std::endl;
+        std::exit(EXIT_FAILURE);
+    });
 
     // create two subscribers, subscribe to the service and attach them to the waitset
     iox::popo::Subscriber<CounterTopic> subscriber1({"Radar", "FrontLeft", "Counter"});
     iox::popo::Subscriber<CounterTopic> subscriber2({"Radar", "FrontLeft", "Counter"});
 
-    subscriber1.subscribe();
-    subscriber2.subscribe();
-
-    waitset.attachEvent(subscriber1, iox::popo::SubscriberEvent::HAS_DATA);
-    waitset.attachEvent(subscriber2, iox::popo::SubscriberEvent::HAS_DATA);
+    waitset.attachState(subscriber1, iox::popo::SubscriberState::HAS_DATA).or_else([](auto) {
+        std::cerr << "failed to attach subscriber1" << std::endl;
+        std::exit(EXIT_FAILURE);
+    });
+    waitset.attachState(subscriber2, iox::popo::SubscriberState::HAS_DATA).or_else([](auto) {
+        std::cerr << "failed to attach subscriber2" << std::endl;
+        std::exit(EXIT_FAILURE);
+    });
 
     // event loop
     while (true)
     {
-        auto eventVector = waitset.wait();
+        auto notificationVector = waitset.wait();
 
-        for (auto& event : eventVector)
+        for (auto& notification : notificationVector)
         {
-            if (event->doesOriginateFrom(&shutdownTrigger))
+            if (notification->doesOriginateFrom(&shutdownTrigger))
             {
                 // CTRL+c was pressed -> exit
                 return (EXIT_SUCCESS);
             }
             // process sample received by subscriber1
-            else if (event->doesOriginateFrom(&subscriber1))
+            else if (notification->doesOriginateFrom(&subscriber1))
             {
                 subscriber1.take().and_then(
                     [&](auto& sample) { std::cout << " subscriber 1 received: " << sample->counter << std::endl; });
             }
             // dismiss sample received by subscriber2
-            if (event->doesOriginateFrom(&subscriber2))
+            if (notification->doesOriginateFrom(&subscriber2))
             {
                 // We need to release the samples to reset the trigger hasSamples
                 // otherwise the WaitSet would notify us in `waitset.wait()` again

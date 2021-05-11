@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,16 +15,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "iceoryx_utils/internal/relocatable_pointer/atomic_relocatable_ptr.hpp"
+#include "iceoryx_utils/internal/relocatable_pointer/atomic_relocatable_pointer.hpp"
 
 #include "test.hpp"
 
 #include <cstring>
 
-using namespace ::testing;
-
 namespace
 {
+using namespace ::testing;
+
 using byte_t = std::uint8_t;
 
 template <size_t n, size_t alignment>
@@ -69,7 +70,7 @@ class Foo
 };
 
 template <typename T>
-using Ptr = iox::atomic_relocatable_ptr<T>;
+using Ptr = iox::rp::AtomicRelocatablePointer<T>;
 
 class AtomicRelocatablePointer_test : public Test
 {

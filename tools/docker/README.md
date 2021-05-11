@@ -34,7 +34,7 @@ All iceoryx binaries are directly available in the $PATH of the shell.
 For example, to start a sender application, you can run the following from the bound bash shell:
 
 ```
-root@b10b3630f6d3:/# iox-ex-publisher-untyped
+root@b10b3630f6d3:/# iox-cpp-publisher-untyped
 2020-12-18 09:04:12.813 [ Debug ]: Application registered management segment 0x7fa1a47c4000 with size 64244064 to id 1
 2020-12-18 09:04:12.813 [ Info  ]: Application registered payload segment 0x7fa19b98a000 with size 149134400 to id 2
 ```
@@ -42,7 +42,7 @@ root@b10b3630f6d3:/# iox-ex-publisher-untyped
 To run the corresponding receiver application, bind another shell to the container and run the following:
 
 ```
-root@b10b3630f6d3:/# iox-ex-subscriber-untyped
+root@b10b3630f6d3:/# iox-cpp-subscriber-untyped
 2020-12-18 09:04:21.692 [ Debug ]: Application registered management segment 0x7fcda1597000 with size 64244064 to id 1
 2020-12-18 09:04:21.692 [ Info  ]: Application registered payload segment 0x7fcd9875d000 with size 149134400 to id 2
 Got value: 10
@@ -77,7 +77,7 @@ Again, all iceoryx applications are directly available in the $PATH.
 To launch an example sender application, run the corresponding binary:
 
 ```
-root@b10b3630f6d3 /# iox-ex-publisher-untyped
+root@b10b3630f6d3 /# iox-cpp-publisher-untyped
 2020-12-18 09:28:17.541 [ Debug ]: Application registered management segment 0x7f2f615d9000 with size 64244064 to id 1
 2020-12-18 09:28:17.541 [ Info  ]: Application registered payload segment 0x7f2f5879f000 with size 149134400 to id 2
 ```
@@ -89,7 +89,7 @@ Then, the receiver application can be started in a separate virtual screen:
 ```
 root@b10b3630f6d3:/# screen
 #[Enter]
-root@b10b3630f6d3 /# iox-ex-subscriber-untyped
+root@b10b3630f6d3 /# iox-cpp-subscriber-untyped
 2020-12-18 09:29:24.082 [ Debug ]: Application registered management segment 0x7f39fb9fe000 with size 64244064 to id 1
 2020-12-18 09:29:24.083 [ Info  ]: Application registered payload segment 0x7f39f2bc4000 with size 149134400 to id 2
 Got value: 14

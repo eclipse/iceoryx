@@ -25,20 +25,20 @@ namespace iox
 {
 namespace popo
 {
-template <typename T, typename base_subscriber_t = BaseSubscriber<>>
-class Subscriber : public base_subscriber_t
+template <typename T, typename H = iox::mepoo::NoUserHeader, typename BaseSubscriber_t = BaseSubscriber<>>
+class SubscriberImpl : public BaseSubscriber_t
 {
-    using SelfType = Subscriber<T, base_subscriber_t>;
+    using SelfType = SubscriberImpl<T, BaseSubscriber_t>;
     static_assert(!std::is_void<T>::value, "Type must not be void. Use the UntypedSubscriber for void types.");
 
   public:
-    Subscriber(const capro::ServiceDescription& service,
-               const SubscriberOptions& subscriberOptions = SubscriberOptions());
-    Subscriber(const Subscriber& other) = delete;
-    Subscriber& operator=(const Subscriber&) = delete;
-    Subscriber(Subscriber&& rhs) = delete;
-    Subscriber& operator=(Subscriber&& rhs) = delete;
-    virtual ~Subscriber() = default;
+    SubscriberImpl(const capro::ServiceDescription& service,
+                   const SubscriberOptions& subscriberOptions = SubscriberOptions());
+    SubscriberImpl(const SubscriberImpl& other) = delete;
+    SubscriberImpl& operator=(const SubscriberImpl&) = delete;
+    SubscriberImpl(SubscriberImpl&& rhs) = delete;
+    SubscriberImpl& operator=(SubscriberImpl&& rhs) = delete;
+    virtual ~SubscriberImpl() noexcept;
 
     ///
     /// @brief Take the samples from the top of the receive queue.
@@ -46,17 +46,20 @@ class Subscriber : public base_subscriber_t
     /// @details The sample takes care of the cleanup. Don't store the raw pointer to the content of the sample, but
     /// always the whole sample.
     ///
-    cxx::expected<Sample<const T>, ChunkReceiveResult> take() noexcept;
+    cxx::expected<Sample<const T, const H>, ChunkReceiveResult> take() noexcept;
 
-    using PortType = typename base_subscriber_t::PortType;
+    using PortType = typename BaseSubscriber_t::PortType;
     using SubscriberSampleDeleter = SampleDeleter<PortType>;
 
   protected:
-    using base_subscriber_t::port;
+    using BaseSubscriber_t::port;
 
   private:
     SubscriberSampleDeleter m_sampleDeleter{port()};
 };
+
+template <typename T, typename H = mepoo::NoUserHeader>
+using Subscriber = SubscriberImpl<T, H>;
 
 } // namespace popo
 } // namespace iox

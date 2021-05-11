@@ -1,4 +1,5 @@
-// Copyright (c) 2019, 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,11 +34,12 @@ using namespace iox::popo;
 
 const iox::capro::ServiceDescription SERVICE_DESCRIPTION_VALID("Radar", "FrontRight", "ChuckNorrisDetected");
 const iox::capro::ServiceDescription SERVICE_DESCRIPTION_EMPTY(0, 0, 0);
-const iox::ProcessName_t APP_NAME_EMPTY = {""};
-const iox::ProcessName_t APP_NAME_FOR_PUBLISHER_PORTS = {"PublisherPort"};
-const iox::ProcessName_t APP_NAME_FOR_SUBSCRIBER_PORTS = {"SubscriberPort"};
-const iox::ProcessName_t APP_NAME_FOR_INTERFACE_PORTS = {"InterfacePort"};
-const iox::ProcessName_t APP_NAME_FOR_APPLICATION_PORTS = {"AppPort"};
+
+const iox::RuntimeName_t RUNTIME_NAME_EMPTY = {""};
+const iox::RuntimeName_t RUNTIME_NAME_FOR_PUBLISHER_PORTS = {"PublisherPort"};
+const iox::RuntimeName_t RUNTIME_NAME_FOR_SUBSCRIBER_PORTS = {"SubscriberPort"};
+const iox::RuntimeName_t RUNTIME_NAME_FOR_INTERFACE_PORTS = {"InterfacePort"};
+const iox::RuntimeName_t RUNTIME_NAME_FOR_APPLICATION_PORTS = {"AppPort"};
 
 iox::mepoo::MemoryManager m_memoryManager;
 std::vector<iox::UniquePortId> uniquePortIds;
@@ -68,25 +70,26 @@ PublisherPortData* createPortData()
 {
     PublisherOptions options;
     options.historyCapacity = 1U;
-    return new PublisherPortData(SERVICE_DESCRIPTION_VALID, APP_NAME_FOR_PUBLISHER_PORTS, &m_memoryManager, options);
+    return new PublisherPortData(
+        SERVICE_DESCRIPTION_VALID, RUNTIME_NAME_FOR_PUBLISHER_PORTS, &m_memoryManager, options);
 }
 template <>
 SubscriberPortData* createPortData()
 {
     return new SubscriberPortData(SERVICE_DESCRIPTION_VALID,
-                                  APP_NAME_FOR_SUBSCRIBER_PORTS,
+                                  RUNTIME_NAME_FOR_SUBSCRIBER_PORTS,
                                   iox::cxx::VariantQueueTypes::FiFo_MultiProducerSingleConsumer,
                                   SubscriberOptions());
 }
 template <>
 InterfacePortData* createPortData()
 {
-    return new InterfacePortData(APP_NAME_FOR_INTERFACE_PORTS, iox::capro::Interfaces::INTERNAL);
+    return new InterfacePortData(RUNTIME_NAME_FOR_INTERFACE_PORTS, iox::capro::Interfaces::INTERNAL);
 }
 template <>
 ApplicationPortData* createPortData()
 {
-    return new ApplicationPortData(APP_NAME_FOR_APPLICATION_PORTS);
+    return new ApplicationPortData(RUNTIME_NAME_FOR_APPLICATION_PORTS);
 }
 
 // expected ServiceDescription factories
@@ -110,29 +113,29 @@ const ServiceDescription& expectedServiceDescription<SubscriberPortData>()
 // expected ProcessName factories
 
 template <typename T>
-const iox::ProcessName_t& expectedProcessName()
+const iox::RuntimeName_t& expectedProcessName()
 {
-    return APP_NAME_EMPTY;
+    return RUNTIME_NAME_EMPTY;
 }
 template <>
-const iox::ProcessName_t& expectedProcessName<PublisherPortData>()
+const iox::RuntimeName_t& expectedProcessName<PublisherPortData>()
 {
-    return APP_NAME_FOR_PUBLISHER_PORTS;
+    return RUNTIME_NAME_FOR_PUBLISHER_PORTS;
 }
 template <>
-const iox::ProcessName_t& expectedProcessName<SubscriberPortData>()
+const iox::RuntimeName_t& expectedProcessName<SubscriberPortData>()
 {
-    return APP_NAME_FOR_SUBSCRIBER_PORTS;
+    return RUNTIME_NAME_FOR_SUBSCRIBER_PORTS;
 }
 template <>
-const iox::ProcessName_t& expectedProcessName<InterfacePortData>()
+const iox::RuntimeName_t& expectedProcessName<InterfacePortData>()
 {
-    return APP_NAME_FOR_INTERFACE_PORTS;
+    return RUNTIME_NAME_FOR_INTERFACE_PORTS;
 }
 template <>
-const iox::ProcessName_t& expectedProcessName<ApplicationPortData>()
+const iox::RuntimeName_t& expectedProcessName<ApplicationPortData>()
 {
-    return APP_NAME_FOR_APPLICATION_PORTS;
+    return RUNTIME_NAME_FOR_APPLICATION_PORTS;
 }
 
 template <typename PortData>
@@ -161,14 +164,14 @@ class BasePort_test : public Test
     BasePort sut{sutData.get()};
 };
 
-TYPED_TEST(BasePort_test, getCaProServiceDescription)
+TYPED_TEST(BasePort_test, CallingGetCaProServiceDescriptionWorks)
 {
     using PortData_t = typename TestFixture::PortData_t;
     EXPECT_THAT(this->sut.getCaProServiceDescription(), Eq(expectedServiceDescription<PortData_t>()));
 }
 
-TYPED_TEST(BasePort_test, getApplicationname)
+TYPED_TEST(BasePort_test, CallingGetRuntimeNameWorks)
 {
     using PortData_t = typename TestFixture::PortData_t;
-    EXPECT_THAT(this->sut.getProcessName(), Eq(expectedProcessName<PortData_t>()));
+    EXPECT_THAT(this->sut.getRuntimeName(), Eq(expectedProcessName<PortData_t>()));
 }

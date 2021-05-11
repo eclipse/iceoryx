@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_utils/internal/posix_wrapper/unix_domain_socket.hpp"
+#include "iceoryx_utils/cxx/generic_raii.hpp"
 #include "iceoryx_utils/cxx/helplets.hpp"
 #include "iceoryx_utils/cxx/smart_c.hpp"
 #include "iceoryx_utils/platform/socket.hpp"
@@ -65,7 +66,7 @@ UnixDomainSocket::UnixDomainSocket(const NoPathPrefix_t,
                                    const IpcChannelMode mode,
                                    const IpcChannelSide channelSide,
                                    const size_t maxMsgSize,
-                                   const uint64_t maxMsgNumber [[gnu::unused]]) noexcept
+                                   const uint64_t maxMsgNumber IOX_MAYBE_UNUSED) noexcept
     : m_name(name)
     , m_channelSide(channelSide)
 {
@@ -161,8 +162,8 @@ cxx::expected<IpcChannelError> UnixDomainSocket::closeFileDescriptor() noexcept
 {
     if (m_sockfd != INVALID_FD)
     {
-        auto closeCall = cxx::makeSmartC(
-            closePlatformFileHandle, cxx::ReturnMode::PRE_DEFINED_ERROR_CODE, {ERROR_CODE}, {}, m_sockfd);
+        auto closeCall =
+            cxx::makeSmartC(iox_close, cxx::ReturnMode::PRE_DEFINED_ERROR_CODE, {ERROR_CODE}, {}, m_sockfd);
 
         if (!closeCall.hasErrors())
         {
@@ -178,7 +179,7 @@ cxx::expected<IpcChannelError> UnixDomainSocket::closeFileDescriptor() noexcept
         }
         else
         {
-            return createErrorFromErrnum(closeCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(closeCall.getErrNum()));
         }
     }
     return cxx::success<>();
@@ -201,8 +202,8 @@ cxx::expected<IpcChannelError> UnixDomainSocket::send(const std::string& msg) co
     return timedSend(msg, units::Duration::fromSeconds(0ULL));
 }
 
-cxx::expected<IpcChannelError> UnixDomainSocket::timedSend(const std::string& msg,
-                                                           const units::Duration& timeout) const noexcept
+cxx::expected<IpcChannelError> UnixDomainSocket::timedSend(const std::string& msg, const units::Duration& timeout) const
+    noexcept
 {
     if (msg.size() >= m_maxMessageSize) // message sizes with null termination must be smaller than m_maxMessageSize
     {
@@ -238,7 +239,7 @@ cxx::expected<IpcChannelError> UnixDomainSocket::timedSend(const std::string& ms
 
     if (setsockoptCall.hasErrors())
     {
-        return createErrorFromErrnum(setsockoptCall.getErrNum());
+        return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(setsockoptCall.getErrNum()));
     }
     else
     {
@@ -255,7 +256,7 @@ cxx::expected<IpcChannelError> UnixDomainSocket::timedSend(const std::string& ms
 
         if (sendCall.hasErrors())
         {
-            return createErrorFromErrnum(sendCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(sendCall.getErrNum()));
         }
         else
         {
@@ -276,8 +277,8 @@ cxx::expected<std::string, IpcChannelError> UnixDomainSocket::receive() const no
 }
 
 
-cxx::expected<std::string, IpcChannelError>
-UnixDomainSocket::timedReceive(const units::Duration& timeout) const noexcept
+cxx::expected<std::string, IpcChannelError> UnixDomainSocket::timedReceive(const units::Duration& timeout) const
+    noexcept
 {
     if (IpcChannelSide::CLIENT == m_channelSide)
     {
@@ -299,7 +300,7 @@ UnixDomainSocket::timedReceive(const units::Duration& timeout) const noexcept
 
     if (setsockoptCall.hasErrors())
     {
-        return createErrorFromErrnum(setsockoptCall.getErrNum());
+        return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(setsockoptCall.getErrNum()));
     }
     else
     {
@@ -318,13 +319,13 @@ UnixDomainSocket::timedReceive(const units::Duration& timeout) const noexcept
 
         if (recvCall.hasErrors())
         {
-            return createErrorFromErrnum(recvCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(recvCall.getErrNum()));
         }
         /// we have to handle the timeout separately since it is not actual an
         /// error, it is expected behavior. but we have to still inform the user
         else if (recvCall.getErrNum() == EAGAIN)
         {
-            return createErrorFromErrnum(recvCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(recvCall.getErrNum()));
         }
         else
         {
@@ -352,12 +353,18 @@ cxx::expected<IpcChannelError> UnixDomainSocket::initalizeSocket(const IpcChanne
         return cxx::error<IpcChannelError>(IpcChannelError::INVALID_ARGUMENTS);
     }
 
+    // the mask will be applied to the permissions, we only allow users and group members to have read and write access
+    // the system call always succeeds, no need to check for errors
+    mode_t umaskSaved = umask(S_IXUSR | S_IXGRP | S_IRWXO);
+    // Reset to old umask when going out of scope
+    cxx::GenericRAII umaskGuard([&] { umask(umaskSaved); });
+
     auto socketCall =
         cxx::makeSmartC(socket, cxx::ReturnMode::PRE_DEFINED_ERROR_CODE, {ERROR_CODE}, {}, AF_LOCAL, SOCK_DGRAM, 0);
 
     if (socketCall.hasErrors())
     {
-        return createErrorFromErrnum(socketCall.getErrNum());
+        return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(socketCall.getErrNum()));
     }
 
     m_sockfd = socketCall.getReturnValue();
@@ -380,9 +387,12 @@ cxx::expected<IpcChannelError> UnixDomainSocket::initalizeSocket(const IpcChanne
         }
         else
         {
-            closeFileDescriptor();
+            closeFileDescriptor().or_else([](auto) {
+                std::cerr << "Unable to close socket file descriptor in error related cleanup during initialization."
+                          << std::endl;
+            });
             // possible errors in closeFileDescriptor() are masked and we inform the user about the actual error
-            return createErrorFromErrnum(bindCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(bindCall.getErrNum()));
         }
     }
     else
@@ -399,15 +409,21 @@ cxx::expected<IpcChannelError> UnixDomainSocket::initalizeSocket(const IpcChanne
 
         if (connectCall.hasErrors())
         {
-            closeFileDescriptor();
+            closeFileDescriptor().or_else([](auto) {
+                std::cerr << "Unable to close socket file descriptor in error related cleanup during initialization."
+                          << std::endl;
+            });
             // possible errors in closeFileDescriptor() are masked and we inform the user about the actual error
-            return createErrorFromErrnum(connectCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(connectCall.getErrNum()));
         }
         else if (connectCall.getErrNum() == ENOENT)
         {
-            closeFileDescriptor();
+            closeFileDescriptor().or_else([](auto) {
+                std::cerr << "Unable to close socket file descriptor in error related cleanup during initialization."
+                          << std::endl;
+            });
             // possible errors in closeFileDescriptor() are masked and we inform the user about the actual error
-            return createErrorFromErrnum(connectCall.getErrNum());
+            return cxx::error<IpcChannelError>(convertErrnoToIpcChannelError(connectCall.getErrNum()));
         }
         else
         {
@@ -426,129 +442,129 @@ cxx::expected<bool, IpcChannelError> UnixDomainSocket::isOutdated() noexcept
 }
 
 
-cxx::error<IpcChannelError> UnixDomainSocket::createErrorFromErrnum(const int32_t errnum) const noexcept
+IpcChannelError UnixDomainSocket::convertErrnoToIpcChannelError(const int32_t errnum) const noexcept
 {
     switch (errnum)
     {
     case EACCES:
     {
         std::cerr << "permission to create unix domain socket denied \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::ACCESS_DENIED);
+        return IpcChannelError(IpcChannelError::ACCESS_DENIED);
     }
     case EAFNOSUPPORT:
     {
         std::cerr << "address family not supported for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_ARGUMENTS);
+        return IpcChannelError(IpcChannelError::INVALID_ARGUMENTS);
     }
     case EINVAL:
     {
         std::cerr << "provided invalid arguments for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_ARGUMENTS);
+        return IpcChannelError(IpcChannelError::INVALID_ARGUMENTS);
     }
     case EMFILE:
     {
         std::cerr << "process limit reached for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::PROCESS_LIMIT);
+        return IpcChannelError(IpcChannelError::PROCESS_LIMIT);
     }
     case ENFILE:
     {
         std::cerr << "system limit reached for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::SYSTEM_LIMIT);
+        return IpcChannelError(IpcChannelError::SYSTEM_LIMIT);
     }
     case ENOBUFS:
     {
         std::cerr << "out of memory for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::OUT_OF_MEMORY);
+        return IpcChannelError(IpcChannelError::OUT_OF_MEMORY);
     }
     case ENOMEM:
     {
         std::cerr << "out of memory for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::OUT_OF_MEMORY);
+        return IpcChannelError(IpcChannelError::OUT_OF_MEMORY);
     }
     case EPROTONOSUPPORT:
     {
         std::cerr << "protocol type not supported for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_ARGUMENTS);
+        return IpcChannelError(IpcChannelError::INVALID_ARGUMENTS);
     }
     case EADDRINUSE:
     {
         std::cerr << "unix domain socket already in use \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::CHANNEL_ALREADY_EXISTS);
+        return IpcChannelError(IpcChannelError::CHANNEL_ALREADY_EXISTS);
     }
     case EBADF:
     {
         std::cerr << "invalid file descriptor for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_FILE_DESCRIPTOR);
+        return IpcChannelError(IpcChannelError::INVALID_FILE_DESCRIPTOR);
     }
     case ENOTSOCK:
     {
         std::cerr << "invalid file descriptor for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_FILE_DESCRIPTOR);
+        return IpcChannelError(IpcChannelError::INVALID_FILE_DESCRIPTOR);
     }
     case EADDRNOTAVAIL:
     {
         std::cerr << "interface or address error for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_CHANNEL_NAME);
+        return IpcChannelError(IpcChannelError::INVALID_CHANNEL_NAME);
     }
     case EFAULT:
     {
         std::cerr << "outside address space error for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_CHANNEL_NAME);
+        return IpcChannelError(IpcChannelError::INVALID_CHANNEL_NAME);
     }
     case ELOOP:
     {
         std::cerr << "too many symbolic links for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_CHANNEL_NAME);
+        return IpcChannelError(IpcChannelError::INVALID_CHANNEL_NAME);
     }
     case ENAMETOOLONG:
     {
         std::cerr << "name too long for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_CHANNEL_NAME);
+        return IpcChannelError(IpcChannelError::INVALID_CHANNEL_NAME);
     }
     case ENOTDIR:
     {
         std::cerr << "not a directory error for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_CHANNEL_NAME);
+        return IpcChannelError(IpcChannelError::INVALID_CHANNEL_NAME);
     }
     case ENOENT:
     {
         // no error message needed since this is a normal use case
-        return cxx::error<IpcChannelError>(IpcChannelError::NO_SUCH_CHANNEL);
+        return IpcChannelError(IpcChannelError::NO_SUCH_CHANNEL);
     }
     case EROFS:
     {
         std::cerr << "read only error for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_CHANNEL_NAME);
+        return IpcChannelError(IpcChannelError::INVALID_CHANNEL_NAME);
     }
     case EIO:
     {
         std::cerr << "I/O for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::I_O_ERROR);
+        return IpcChannelError(IpcChannelError::I_O_ERROR);
     }
     case ENOPROTOOPT:
     {
         std::cerr << "invalid option for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INVALID_ARGUMENTS);
+        return IpcChannelError(IpcChannelError::INVALID_ARGUMENTS);
     }
     case ECONNREFUSED:
     {
         std::cerr << "No server for unix domain socket \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::NO_SUCH_CHANNEL);
+        return IpcChannelError(IpcChannelError::NO_SUCH_CHANNEL);
     }
     case ECONNRESET:
     {
         std::cerr << "connection was reset by peer for \"" << m_name << "\"" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::CONNECTION_RESET_BY_PEER);
+        return IpcChannelError(IpcChannelError::CONNECTION_RESET_BY_PEER);
     }
     case EWOULDBLOCK:
     {
         // no error message needed since this is a normal use case
-        return cxx::error<IpcChannelError>(IpcChannelError::TIMEOUT);
+        return IpcChannelError(IpcChannelError::TIMEOUT);
     }
     default:
     {
         std::cerr << "internal logic error in unix domain socket \"" << m_name << "\" occurred" << std::endl;
-        return cxx::error<IpcChannelError>(IpcChannelError::INTERNAL_LOGIC_ERROR);
+        return IpcChannelError(IpcChannelError::INTERNAL_LOGIC_ERROR);
     }
     }
 }

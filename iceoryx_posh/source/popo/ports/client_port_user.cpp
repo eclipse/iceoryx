@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,7 +39,8 @@ ClientPortUser::MemberType_t* ClientPortUser::getMembers() noexcept
     return reinterpret_cast<MemberType_t*>(BasePort::getMembers());
 }
 
-cxx::expected<RequestHeader*, AllocationError> ClientPortUser::allocateRequest(const uint32_t /*payloadSize*/) noexcept
+cxx::expected<RequestHeader*, AllocationError>
+ClientPortUser::allocateRequest(const uint32_t /*userPayloadSize*/) noexcept
 {
     return cxx::error<AllocationError>(AllocationError::RUNNING_OUT_OF_CHUNKS);
 }
@@ -86,12 +88,13 @@ bool ClientPortUser::hasNewResponses() const noexcept
 
 bool ClientPortUser::hasLostResponsesSinceLastCall() noexcept
 {
-    return m_chunkReceiver.hasOverflown();
+    return m_chunkReceiver.hasLostChunks();
 }
 
-void ClientPortUser::setConditionVariable(ConditionVariableData* conditionVariableDataPtr) noexcept
+void ClientPortUser::setConditionVariable(ConditionVariableData& conditionVariableData,
+                                          const uint64_t notificationIndex) noexcept
 {
-    m_chunkReceiver.setConditionVariable(conditionVariableDataPtr);
+    m_chunkReceiver.setConditionVariable(conditionVariableData, notificationIndex);
 }
 
 void ClientPortUser::unsetConditionVariable() noexcept

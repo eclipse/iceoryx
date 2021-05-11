@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +28,7 @@ namespace popo
 struct ApplicationPortData : public BasePortData
 {
     ApplicationPortData() = default;
-    explicit ApplicationPortData(const ProcessName_t& processName) noexcept;
+    explicit ApplicationPortData(const RuntimeName_t& runtimeName) noexcept;
 
     concurrent::FiFo<capro::CaproMessage, MAX_APPLICATION_CAPRO_FIFO_SIZE> m_caproMessageFiFo;
 };

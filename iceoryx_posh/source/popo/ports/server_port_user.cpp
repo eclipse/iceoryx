@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,11 +57,11 @@ bool ServerPortUser::hasNewRequests() const noexcept
 
 bool ServerPortUser::hasLostRequestsSinceLastCall() noexcept
 {
-    return m_chunkReceiver.hasOverflown();
+    return m_chunkReceiver.hasLostChunks();
 }
 
 cxx::expected<ResponseHeader*, AllocationError>
-ServerPortUser::allocateResponse(const uint32_t /*payloadSize*/) noexcept
+ServerPortUser::allocateResponse(const uint32_t /*userPayloadSize*/) noexcept
 {
     /// @todo
     return cxx::error<AllocationError>(AllocationError::RUNNING_OUT_OF_CHUNKS);
@@ -102,9 +103,10 @@ bool ServerPortUser::hasClients() const noexcept
     return m_chunkSender.hasStoredQueues();
 }
 
-void ServerPortUser::setConditionVariable(ConditionVariableData* conditionVariableDataPtr) noexcept
+void ServerPortUser::setConditionVariable(ConditionVariableData& conditionVariableData,
+                                          const uint64_t notificationIndex) noexcept
 {
-    m_chunkReceiver.setConditionVariable(conditionVariableDataPtr);
+    m_chunkReceiver.setConditionVariable(conditionVariableData, notificationIndex);
 }
 
 void ServerPortUser::unsetConditionVariable() noexcept

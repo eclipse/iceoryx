@@ -22,6 +22,8 @@
 #include "iceoryx_posh/internal/popo/building_blocks/chunk_queue_pusher.hpp"
 #include "iceoryx_utils/cxx/helplets.hpp"
 
+#include <thread>
+
 namespace iox
 {
 namespace popo
@@ -102,7 +104,8 @@ class ChunkDistributor
     /// history
     /// @param[in] chunk queue to which this chunk shall be delivered
     /// @param[in] shared chunk to be delivered
-    void deliverToQueue(cxx::not_null<ChunkQueueData_t* const> queue, mepoo::SharedChunk chunk) noexcept;
+    /// @return false if a queue overflow occured, otherwise true
+    bool deliverToQueue(cxx::not_null<ChunkQueueData_t* const> queue, mepoo::SharedChunk chunk) noexcept;
 
     /// @brief Update the chunk history but do not deliver the chunk to any chunk queue. E.g. use case is to to update a
     /// non offered field in ara

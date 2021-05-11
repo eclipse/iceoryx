@@ -66,7 +66,20 @@ iox::cxx::expected<iox::RouDiConfig_t, iox::roudi::RouDiConfigFileParseError> To
     }
     auto groupOfCurrentProcess = iox::posix::PosixGroup::getGroupOfCurrentProcess().getName();
 
-    std::shared_ptr<cpptoml::table> parsedFile = cpptoml::parse_file(m_customConfigFilePath.c_str());
+    std::shared_ptr<cpptoml::table> parsedFile{nullptr};
+    try
+    {
+        parsedFile = cpptoml::parse_file(m_customConfigFilePath.c_str());
+    }
+    catch (const std::exception& parserException)
+    {
+        auto parserError = iox::roudi::RouDiConfigFileParseError::EXCEPTION_IN_PARSER;
+
+        LogWarn() << iox::cxx::convertEnumToString(iox::roudi::ROUDI_CONFIG_FILE_PARSE_ERROR_STRINGS, parserError)
+                  << ": " << parserException.what();
+
+        return iox::cxx::error<iox::roudi::RouDiConfigFileParseError>(parserError);
+    }
 
     auto general = parsedFile->get_table("general");
     if (!general)

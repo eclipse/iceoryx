@@ -19,12 +19,14 @@
 #define IOX_POSH_RUNTIME_IPC_INTERFACE_CREATOR_HPP
 
 #include "iceoryx_posh/internal/runtime/ipc_interface_base.hpp"
+#include "iceoryx_utils/posix_wrapper/file_lock.hpp"
 
 namespace iox
 {
 namespace runtime
 {
 /// @brief Class for creating and handling a IPC channel
+/// @note This class makes sures the IPC channel is created uniquely
 class IpcInterfaceCreator : public IpcInterfaceBase
 {
   public:
@@ -34,7 +36,7 @@ class IpcInterfaceCreator : public IpcInterfaceBase
     /// @param[in] name Unique identifier of the IPC channel
     /// @param[in] maxMessages maximum number of queued messages
     /// @param[in] message size maximum message size
-    IpcInterfaceCreator(const ProcessName_t& name,
+    IpcInterfaceCreator(const RuntimeName_t& name,
                         const uint64_t maxMessages = ROUDI_MAX_MESSAGES,
                         const uint64_t messageSize = ROUDI_MESSAGE_SIZE) noexcept;
 
@@ -51,6 +53,7 @@ class IpcInterfaceCreator : public IpcInterfaceBase
   private:
     friend class IpcRuntimeInterface;
     void cleanupResource();
+    posix::FileLock m_fileLock;
 };
 
 } // namespace runtime

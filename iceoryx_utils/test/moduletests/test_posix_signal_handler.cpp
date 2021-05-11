@@ -18,6 +18,8 @@
 #include "test.hpp"
 #include <atomic>
 
+namespace
+{
 using namespace ::testing;
 using namespace iox::posix;
 
@@ -133,3 +135,4 @@ TYPED_TEST(SignalHandler_test, MoveConstructedSignalGuardRestoresPreviousState)
     EXPECT_THAT(signalOfCallback1, Eq(this->INVALID_SIGNAL));
     EXPECT_THAT(signalOfCallback2, Eq(static_cast<int>(signalValue)));
 }
+} // namespace

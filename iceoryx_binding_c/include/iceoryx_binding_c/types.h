@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +20,10 @@
 
 #include "internal/c2cpp_binding.h"
 
+#define IOX_C_CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT 8
+#define IOX_C_CHUNK_NO_USER_HEADER_SIZE 0
+#define IOX_C_CHUNK_NO_USER_HEADER_ALIGNMENT 1
+
 /// The issue iox-308: https://github.com/eclipse-iceoryx/iceoryx/issues/308
 /// was created to explore other options then a magic number to create
 /// the structs of a specific size in C.
@@ -30,7 +35,7 @@ struct iox_ws_storage_t_
 {
     // the value of the array size is the result of the following formula:
     // sizeof(WaitSet) / 8
-    uint64_t do_not_touch_me[2567];
+    uint64_t do_not_touch_me[2965];
 };
 typedef struct iox_ws_storage_t_ iox_ws_storage_t;
 
@@ -39,7 +44,7 @@ struct iox_user_trigger_storage_t_
     // the value of the array size is the result of the following formula:
     // sizeof(UserTrigger) / 8
 #if defined(__APPLE__)
-    uint64_t do_not_touch_me[16];
+    uint64_t do_not_touch_me[17];
 #else
     uint64_t do_not_touch_me[14];
 #endif
@@ -51,7 +56,7 @@ struct iox_sub_storage_t_
     // the value of the array size is the result of the following formula:
     // sizeof(cpp2c_Subscriber) / 8
 #if defined(__APPLE__)
-    uint64_t do_not_touch_me[16];
+    uint64_t do_not_touch_me[17];
 #else
     uint64_t do_not_touch_me[14];
 #endif
@@ -62,8 +67,27 @@ struct iox_pub_storage_t_
 {
     // the value of the array size is the result of the following formula:
     // sizeof(cpp2c_Publisher) / 8
-    uint64_t do_not_touch_me[1];
+    uint64_t do_not_touch_me[2];
 };
 typedef struct iox_pub_storage_t_ iox_pub_storage_t;
+
+struct iox_listener_storage_t_
+{
+    // the value of the array size is the result of the following formula:
+    // sizeof(Listener) / 8
+#if defined(__APPLE__)
+    uint64_t do_not_touch_me[2643];
+#else
+    uint64_t do_not_touch_me[2567];
+#endif
+};
+typedef struct iox_listener_storage_t_ iox_listener_storage_t;
+
+/// @brief handle of the chunk header
+typedef struct
+{
+    // could be empty but then we get `struct has no members` warning
+    uint8_t do_not_touch_me[1];
+} iox_chunk_header_t;
 
 #endif

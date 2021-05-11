@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +16,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_posh/runtime/posh_runtime.hpp"
-#include "testutils/roudi_gtest.hpp"
+#include "iceoryx_posh/testing/roudi_gtest.hpp"
 
 using namespace iox;
 using namespace iox::runtime;
@@ -30,7 +31,7 @@ class iox_node_test : public RouDi_GTest
   public:
     void SetUp()
     {
-        iox_runtime_init(m_processName.c_str());
+        iox_runtime_init(m_runtimeName.c_str());
         m_sut = iox_node_create(m_nodeName.c_str());
     }
 
@@ -40,7 +41,7 @@ class iox_node_test : public RouDi_GTest
     }
 
     std::string m_nodeName = "hypnotoadIsWatchingUs";
-    std::string m_processName = "stoepselWillMarrySoon";
+    std::string m_runtimeName = "stoepselWillMarrySoon";
 
     iox_node_t m_sut;
 };
@@ -78,18 +79,18 @@ TEST_F(iox_node_test, getNodeNameBufferIsLessThanNodeNameLength)
 TEST_F(iox_node_test, createdNodeHasCorrectProcessName)
 {
     char name[100];
-    ASSERT_EQ(iox_node_get_process_name(m_sut, name, 100), m_processName.size());
-    EXPECT_EQ(std::string(name), m_processName);
+    ASSERT_EQ(iox_node_get_runtime_name(m_sut, name, 100), m_runtimeName.size());
+    EXPECT_EQ(std::string(name), m_runtimeName);
 }
 
-TEST_F(iox_node_test, getNodeProcessNameBufferIsNullptr)
+TEST_F(iox_node_test, getNodeRuntimeNameBufferIsNullptr)
 {
-    auto nameLength = iox_node_get_process_name(m_sut, nullptr, 100);
+    auto nameLength = iox_node_get_runtime_name(m_sut, nullptr, 100);
 
     ASSERT_THAT(nameLength, Eq(0U));
 }
 
-TEST_F(iox_node_test, getNodeProcessNameBufferIsLessThanNodeProcessNameLength)
+TEST_F(iox_node_test, getNodeRuntimeNameBufferIsLessThanNodeProcessNameLength)
 {
     constexpr uint64_t PROCESS_NAME_BUFFER_LENGTH{9};
     char truncatedProcessName[PROCESS_NAME_BUFFER_LENGTH];
@@ -97,10 +98,10 @@ TEST_F(iox_node_test, getNodeProcessNameBufferIsLessThanNodeProcessNameLength)
     {
         c = '#';
     }
-    auto nameLength = iox_node_get_process_name(m_sut, truncatedProcessName, PROCESS_NAME_BUFFER_LENGTH);
+    auto nameLength = iox_node_get_runtime_name(m_sut, truncatedProcessName, PROCESS_NAME_BUFFER_LENGTH);
 
     std::string expectedProcessName = "stoepsel";
 
-    ASSERT_THAT(nameLength, Eq(m_processName.size()));
+    ASSERT_THAT(nameLength, Eq(m_runtimeName.size()));
     EXPECT_THAT(truncatedProcessName, StrEq(expectedProcessName));
 }

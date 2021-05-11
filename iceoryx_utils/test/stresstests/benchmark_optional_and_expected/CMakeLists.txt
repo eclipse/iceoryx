@@ -1,4 +1,5 @@
 # Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +34,18 @@ target_link_libraries(iox-bm-optional-and-expected
     iceoryx_utils::iceoryx_utils
     Threads::Threads
 )
-set_target_properties(iox-bm-optional-and-expected PROPERTIES 
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(TEST_CXX_FLAGS ${ICEORYX_WARNINGS})
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+endif()
+
+target_compile_options(iox-bm-optional-and-expected PRIVATE ${TEST_CXX_FLAGS})
+
+set_target_properties(iox-bm-optional-and-expected PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD ${ICEORYX_CXX_STANDARD}
     POSITION_INDEPENDENT_CODE ON

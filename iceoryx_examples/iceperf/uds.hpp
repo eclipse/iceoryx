@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,19 +43,28 @@ class UDS : public IcePerfBase
     static constexpr int32_t INVALID_FD = -1;
 
     UDS(const std::string& publisherName, const std::string& subscriberName) noexcept;
+    /// @brief Cleans up outdated sockets, e.g. from a previous test
+    /// @attention only leader is allowed to call this
+    static void cleanupOutdatedResources(const std::string& publisherName, const std::string& subscriberName) noexcept;
+
     void initLeader() noexcept override;
     void initFollower() noexcept override;
     void shutdown() noexcept override;
 
   private:
+    static constexpr const char* PREFIX{"/tmp/"};
     void init() noexcept;
     void send(const char* buffer, uint32_t length) noexcept;
     void receive(char* buffer) noexcept;
-    void sendPerfTopic(uint32_t payloadSizeInBytes, bool runFlag) noexcept override;
+    void waitForLeader() noexcept;
+    void waitForFollower() noexcept;
+    void sendPerfTopic(const uint32_t payloadSizeInBytes, const RunFlag runFlag) noexcept override;
     PerfTopic receivePerfTopic() noexcept override;
 
-    const std::string m_publisherName;
-    const std::string m_subscriberName;
+    static void initSocketAddress(sockaddr_un& sockAddr, const std::string& socketName);
+
+    const std::string m_publisherSocketName;
+    const std::string m_subscriberSocketName;
     int m_sockfdPublisher{INVALID_FD};
     int m_sockfdSubscriber{INVALID_FD};
     struct sockaddr_un m_sockAddrPublisher;

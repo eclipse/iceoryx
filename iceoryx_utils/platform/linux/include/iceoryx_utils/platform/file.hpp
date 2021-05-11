@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,5 +18,7 @@
 #define IOX_UTILS_LINUX_PLATFORM_FILE_HPP
 
 #include <sys/file.h>
+
+int iox_flock(int fd, int op);
 
 #endif // IOX_UTILS_LINUX_PLATFORM_FILE_HPP

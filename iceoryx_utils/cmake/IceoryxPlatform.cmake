@@ -1,4 +1,5 @@
-# Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+# Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,15 +34,15 @@ elseif(APPLE)
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(ICEORYX_WARNINGS PRIVATE ${ICEORYX_WARNINGS} /W1)
-    # todo: '/O2' and '/RTC1' (set by default) options are incompatible, 
+    set(ICEORYX_WARNINGS PRIVATE ${ICEORYX_WARNINGS} /W0) # TODO iox-#33 set to /W1
+    # todo: '/O2' and '/RTC1' (set by default) options are incompatible,
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(ICEORYX_WARNINGS PRIVATE ${ICEORYX_WARNINGS} -W -Wall -Wextra -Wuninitialized -Wpedantic -Wstrict-aliasing -Wcast-align -Wno-noexcept-type -Wconversion)
 endif()
 
 if(BUILD_STRICT)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        set(ICEORYX_WARNINGS ${ICEORYX_WARNINGS} /WX)
+        set(ICEORYX_WARNINGS ${ICEORYX_WARNINGS} /W0) # TODO iox-#33 set to /WX
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(ICEORYX_WARNINGS ${ICEORYX_WARNINGS} -Werror)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -88,10 +89,8 @@ function(iox_create_lsan_runtime_blacklist BLACKLIST_FILE_PATH)
     #     1         24 iox::posix::MessageQueue::receive
     if(NOT EXISTS ${BLACKLIST_FILE_PATH})
         file(WRITE  ${BLACKLIST_FILE_PATH} "# This file is auto-generated from iceoryx_utils/cmake/IceoryxPlatform.cmake\n")
-        file(APPEND ${BLACKLIST_FILE_PATH} "leak:libacl.so.1\n")
-        file(APPEND ${BLACKLIST_FILE_PATH} "leak:iox::posix::MessageQueue::timedReceive\n")
-        file(APPEND ${BLACKLIST_FILE_PATH} "leak:iox::posix::UnixDomainSocket::timedReceive\n")
-        file(APPEND ${BLACKLIST_FILE_PATH} "leak:iox::posix::MessageQueue::receive\n")
+        file(APPEND ${BLACKLIST_FILE_PATH} "#leak:libacl.so.1\n")
+        file(APPEND ${BLACKLIST_FILE_PATH} "#leak:iox::posix::UnixDomainSocket::timedReceive\n")
         file(APPEND ${BLACKLIST_FILE_PATH} "# End of file\n")
     endif()
 endfunction()
@@ -138,8 +137,9 @@ if(SANITIZE)
 endif()
 
 if(COVERAGE)
+    set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(ICEORYX_SANITIZER_FLAGS -fprofile-arcs -ftest-coverage CACHE INTERNAL "")
+        set(ICEORYX_SANITIZER_FLAGS -g -O0 -fprofile-arcs -ftest-coverage CACHE INTERNAL "")
     else(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         message( FATAL_ERROR "You need to run gcov with gcc compiler." )
     endif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

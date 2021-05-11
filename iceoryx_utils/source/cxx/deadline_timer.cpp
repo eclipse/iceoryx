@@ -54,8 +54,7 @@ const iox::units::Duration DeadlineTimer::remainingTime() const noexcept
 
 iox::units::Duration DeadlineTimer::getCurrentMonotonicTime() const noexcept
 {
-    auto chronoCurrentTime = std::chrono::steady_clock::now().time_since_epoch();
-    iox::units::Duration currentTime(chronoCurrentTime);
+    iox::units::Duration currentTime(std::chrono::steady_clock::now().time_since_epoch());
     return currentTime;
 }
 

@@ -21,6 +21,8 @@
 #include <errno.h>
 #include <string>
 
+namespace
+{
 using namespace ::testing;
 
 static int SomeFunction(int a, int b, int c)
@@ -148,3 +150,4 @@ TEST_F(smart_c_test, SimpleFunctionWithSuccessfulEINTRRepitition)
 
     EXPECT_THAT(call.hasErrors(), Eq(false));
 }
+} // namespace

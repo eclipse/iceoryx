@@ -1,4 +1,4 @@
-// Copyright (c) 2020 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,14 +17,26 @@
 #ifndef IOX_EXAMPLES_ICEPERF_EXAMPLE_COMMON_HPP
 #define IOX_EXAMPLES_ICEPERF_EXAMPLE_COMMON_HPP
 
-enum class Benchmarks
+enum class Benchmark
 {
     ALL,
-    C_API,
-    CPP_API
+    LATENCY,
+    THROUGHPUT
 };
 
-Benchmarks getBenchmarkFromString(const char* argv) noexcept;
+enum class Technology
+{
+    ALL,
+    ICEORYX_CPP_API,
+    ICEORYX_C_API,
+    POSIX_MESSAGE_QUEUE,
+    UNIX_DOMAIN_SOCKET
+};
+
+enum class RunFlag
+{
+    STOP,
+    RUN
+};
 
 #endif
-

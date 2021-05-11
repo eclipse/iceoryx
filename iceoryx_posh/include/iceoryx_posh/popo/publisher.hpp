@@ -31,30 +31,39 @@ namespace popo
 /// This allows any publisher specialization to be stored as a reference by the Sample class.
 /// It is also needed to avoid circular dependencies between Sample and Publisher.
 ///
-template <typename T>
+template <typename T, typename H>
 class PublisherInterface
 {
   public:
-    virtual void publish(Sample<T>&& sample) noexcept = 0;
+    virtual void publish(Sample<T, H>&& sample) noexcept = 0;
 
     virtual ~PublisherInterface(){};
 
   protected:
     PublisherInterface() = default;
 };
-template <typename T, typename base_publisher_t = BasePublisher<>>
-class Publisher : public base_publisher_t, public PublisherInterface<T>
+template <typename T, typename H = mepoo::NoUserHeader, typename BasePublisher_t = BasePublisher<>>
+class PublisherImpl : public BasePublisher_t, public PublisherInterface<T, H>
 {
-    static_assert(!std::is_void<T>::value, "Type must not be void. Use the UntypedPublisher for void types.");
-    static_assert(std::is_default_constructible<T>::value, "The Publisher requires default-constructable types.");
+    static_assert(!std::is_void<T>::value, "The type `T` must not be void. Use the UntypedPublisher for void types.");
+    static_assert(!std::is_void<H>::value, "The user-header `H` must not be void.");
+
+    static_assert(!std::is_const<T>::value, "The type `T` must not be const.");
+    static_assert(!std::is_reference<T>::value, "The type `T` must not be a reference.");
+    static_assert(!std::is_pointer<T>::value, "The type `T` must not be a pointer.");
+
+    static_assert(!std::is_const<H>::value, "The user-header `H` must not be const.");
+    static_assert(!std::is_reference<H>::value, "The user-header `H` must not be a reference.");
+    static_assert(!std::is_pointer<H>::value, "The user-header must `H` not be a pointer.");
 
   public:
-    Publisher(const capro::ServiceDescription& service, const PublisherOptions& publisherOptions = PublisherOptions());
-    Publisher(const Publisher& other) = delete;
-    Publisher& operator=(const Publisher&) = delete;
-    Publisher(Publisher&& rhs) = default;
-    Publisher& operator=(Publisher&& rhs) = default;
-    virtual ~Publisher() = default;
+    PublisherImpl(const capro::ServiceDescription& service,
+                  const PublisherOptions& publisherOptions = PublisherOptions());
+    PublisherImpl(const PublisherImpl& other) = delete;
+    PublisherImpl& operator=(const PublisherImpl&) = delete;
+    PublisherImpl(PublisherImpl&& rhs) = default;
+    PublisherImpl& operator=(PublisherImpl&& rhs) = default;
+    virtual ~PublisherImpl() = default;
 
     ///
     /// @brief loan Get a sample from loaned shared memory and consctruct the data with the given arguments.
@@ -64,19 +73,13 @@ class Publisher : public base_publisher_t, public PublisherInterface<T>
     /// @details The loaned sample is automatically released when it goes out of scope.
     ///
     template <typename... Args>
-    cxx::expected<Sample<T>, AllocationError> loan(Args&&... args) noexcept;
-
-    ///
-    /// @brief previousSample Retrieve the previously loaned sample if it has not yet been claimed.
-    /// @return The previously loaned sample if retrieved.
-    ///
-    cxx::optional<Sample<T>> loanPreviousSample() noexcept;
+    cxx::expected<Sample<T, H>, AllocationError> loan(Args&&... args) noexcept;
 
     ///
     /// @brief publish Publishes the given sample and then releases its loan.
     /// @param sample The sample to publish.
     ///
-    void publish(Sample<T>&& sample) noexcept override;
+    void publish(Sample<T, H>&& sample) noexcept override;
 
     ///
     /// @brief publishCopyOf Copy the provided value into a loaned shared memory chunk and publish it.
@@ -94,16 +97,19 @@ class Publisher : public base_publisher_t, public PublisherInterface<T>
     cxx::expected<AllocationError> publishResultOf(Callable c, ArgTypes... args) noexcept;
 
   protected:
-    using base_publisher_t::port;
+    using BasePublisher_t::port;
 
   private:
-    Sample<T> convertChunkHeaderToSample(const mepoo::ChunkHeader* const header) noexcept;
+    Sample<T, H> convertChunkHeaderToSample(mepoo::ChunkHeader* const header) noexcept;
 
-    cxx::expected<Sample<T>, AllocationError> loanSample(const uint32_t size) noexcept;
+    cxx::expected<Sample<T, H>, AllocationError> loanSample() noexcept;
 
-    using PublisherSampleDeleter = SampleDeleter<typename base_publisher_t::PortType>;
+    using PublisherSampleDeleter = SampleDeleter<typename BasePublisher_t::PortType>;
     PublisherSampleDeleter m_sampleDeleter{port()};
 };
+
+template <typename T, typename H = mepoo::NoUserHeader>
+using Publisher = PublisherImpl<T, H>;
 
 } // namespace popo
 } // namespace iox

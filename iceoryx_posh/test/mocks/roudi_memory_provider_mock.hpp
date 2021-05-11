@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +32,10 @@ class MemoryProviderTestImpl : public iox::roudi::MemoryProvider
   public:
     ~MemoryProviderTestImpl()
     {
-        destroy();
+        if (isAvailable())
+        {
+            EXPECT_FALSE(destroy().has_error());
+        }
     }
 
     iox::cxx::expected<void*, iox::roudi::MemoryProviderError> createMemory(const uint64_t size,

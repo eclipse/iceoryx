@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@
 #include "iceoryx_posh/internal/mepoo/memory_manager.hpp"
 #include "iceoryx_posh/internal/mepoo/mepoo_segment.hpp"
 #include "iceoryx_posh/mepoo/segment_config.hpp"
+#include "iceoryx_utils/cxx/optional.hpp"
 #include "iceoryx_utils/cxx/string.hpp"
 #include "iceoryx_utils/cxx/vector.hpp"
 #include "iceoryx_utils/internal/posix_wrapper/shared_memory_object/allocator.hpp"
@@ -40,8 +42,8 @@ template <typename SegmentType = MePooSegment<>>
 class SegmentManager
 {
   public:
-    SegmentManager(const SegmentConfig& f_segmentConfig, posix::Allocator* f_managementAllocator);
-    ~SegmentManager() = default;
+    SegmentManager(const SegmentConfig& segmentConfig, posix::Allocator* managementAllocator) noexcept;
+    ~SegmentManager() noexcept = default;
 
     SegmentManager(const SegmentManager& rhs) = delete;
     SegmentManager(SegmentManager&& rhs) = delete;
@@ -57,7 +59,7 @@ class SegmentManager
                        uint64_t size,
                        bool isWritable,
                        uint64_t segmentId,
-                       const iox::mepoo::MemoryInfo& memoryInfo = iox::mepoo::MemoryInfo())
+                       const iox::mepoo::MemoryInfo& memoryInfo = iox::mepoo::MemoryInfo()) noexcept
             : m_sharedMemoryName(sharedMemoryName)
             , m_startAddress(startAddress)
             , m_size(size)
@@ -78,21 +80,21 @@ class SegmentManager
 
     struct SegmentUserInformation
     {
-        MemoryManager* m_memoryManager;
+        cxx::optional<std::reference_wrapper<MemoryManager>> m_memoryManager;
         uint64_t m_segmentID;
     };
 
     using SegmentMappingContainer = cxx::vector<SegmentMapping, MAX_SHM_SEGMENTS>;
 
-    SegmentMappingContainer getSegmentMappings(posix::PosixUser f_user);
-    SegmentUserInformation getSegmentInformationForUser(posix::PosixUser f_user);
+    SegmentMappingContainer getSegmentMappings(const posix::PosixUser& user) noexcept;
+    SegmentUserInformation getSegmentInformationWithWriteAccessForUser(const posix::PosixUser& user) noexcept;
 
-    static uint64_t requiredManagementMemorySize(const SegmentConfig& f_config);
-    static uint64_t requiredChunkMemorySize(const SegmentConfig& f_config);
-    static uint64_t requiredFullMemorySize(const SegmentConfig& f_config);
+    static uint64_t requiredManagementMemorySize(const SegmentConfig& config) noexcept;
+    static uint64_t requiredChunkMemorySize(const SegmentConfig& config) noexcept;
+    static uint64_t requiredFullMemorySize(const SegmentConfig& config) noexcept;
 
   private:
-    bool createSegment(const SegmentConfig::SegmentEntry& f_segmentEntry);
+    void createSegment(const SegmentConfig::SegmentEntry& segmentEntry) noexcept;
 
   private:
     template <typename MemoryManger, typename SegmentManager, typename PublisherPort>

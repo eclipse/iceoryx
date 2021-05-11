@@ -15,8 +15,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "iceoryx_posh/testing/mocks/chunk_mock.hpp"
 #include "iceoryx_utils/cxx/generic_raii.hpp"
-#include "mocks/chunk_mock.hpp"
 #include "mocks/publisher_mock.hpp"
 #include "mocks/subscriber_mock.hpp"
 #include "test.hpp"
@@ -170,7 +170,7 @@ TEST_F(PortIntrospection_test, sendPortData_EmptyList)
     auto chunk = std::unique_ptr<ChunkMock<Topic>>(new ChunkMock<Topic>);
     bool chunkWasSent = false;
 
-    EXPECT_CALL(m_introspectionAccess.getPublisherPort().value(), tryAllocateChunk(_))
+    EXPECT_CALL(m_introspectionAccess.getPublisherPort().value(), tryAllocateChunk(_, _, _, _))
         .WillOnce(Return(iox::cxx::expected<iox::mepoo::ChunkHeader*, iox::popo::AllocationError>::create_value(
             chunk.get()->chunkHeader())));
 
@@ -192,21 +192,21 @@ TEST_F(PortIntrospection_test, addAndRemovePublisher)
 
     auto chunk = std::unique_ptr<ChunkMock<Topic>>(new ChunkMock<Topic>);
 
-    const iox::ProcessName_t processName1{"name1"};
-    const iox::ProcessName_t processName2{"name2"};
+    const iox::RuntimeName_t runtimeName1{"name1"};
+    const iox::RuntimeName_t runtimeName2{"name2"};
     const iox::NodeName_t nodeName1{"4"};
     const iox::NodeName_t nodeName2{"jkl"};
 
     // prepare expected outputs
     PortData expected1;
-    expected1.m_name = processName1;
+    expected1.m_name = runtimeName1;
     expected1.m_caproInstanceID = "1";
     expected1.m_caproServiceID = "2";
     expected1.m_caproEventMethodID = "3";
     expected1.m_node = nodeName1;
 
     PortData expected2;
-    expected2.m_name = processName2;
+    expected2.m_name = runtimeName2;
     expected2.m_caproInstanceID = "abc";
     expected2.m_caproServiceID = "def";
     expected2.m_caproEventMethodID = "ghi";
@@ -223,8 +223,8 @@ TEST_F(PortIntrospection_test, addAndRemovePublisher)
     publisherOptions1.nodeName = nodeName1;
     iox::popo::PublisherOptions publisherOptions2;
     publisherOptions2.nodeName = nodeName2;
-    iox::popo::PublisherPortData portData1(service1, processName1, &memoryManager, publisherOptions1);
-    iox::popo::PublisherPortData portData2(service2, processName2, &memoryManager, publisherOptions2);
+    iox::popo::PublisherPortData portData1(service1, runtimeName1, &memoryManager, publisherOptions1);
+    iox::popo::PublisherPortData portData2(service2, runtimeName2, &memoryManager, publisherOptions2);
     MockPublisherPortUser port1(&portData1);
     MockPublisherPortUser port2(&portData2);
     // test adding of ports
@@ -234,7 +234,7 @@ TEST_F(PortIntrospection_test, addAndRemovePublisher)
     EXPECT_THAT(m_introspectionAccess.addPublisher(portData2), Eq(true));
     EXPECT_THAT(m_introspectionAccess.addPublisher(portData2), Eq(false));
 
-    EXPECT_CALL(m_introspectionAccess.getPublisherPort().value(), tryAllocateChunk(_))
+    EXPECT_CALL(m_introspectionAccess.getPublisherPort().value(), tryAllocateChunk(_, _, _, _))
         .WillRepeatedly(Return(iox::cxx::expected<iox::mepoo::ChunkHeader*, iox::popo::AllocationError>::create_value(
             chunk.get()->chunkHeader())));
 
@@ -321,21 +321,21 @@ TEST_F(PortIntrospection_test, addAndRemoveSubscriber)
 
     auto chunk = std::unique_ptr<ChunkMock<Topic>>(new ChunkMock<Topic>);
 
-    const iox::ProcessName_t processName1{"name1"};
-    const iox::ProcessName_t processName2{"name2"};
+    const iox::RuntimeName_t runtimeName1{"name1"};
+    const iox::RuntimeName_t runtimeName2{"name2"};
     const iox::NodeName_t nodeName1{"4"};
     const iox::NodeName_t nodeName2{"7"};
 
     // prepare expected outputs
     PortData expected1;
-    expected1.m_name = processName1;
+    expected1.m_name = runtimeName1;
     expected1.m_caproInstanceID = "1";
     expected1.m_caproServiceID = "2";
     expected1.m_caproEventMethodID = "3";
     expected1.m_node = nodeName1;
 
     PortData expected2;
-    expected2.m_name = processName2;
+    expected2.m_name = runtimeName2;
     expected2.m_caproInstanceID = "4";
     expected2.m_caproServiceID = "5";
     expected2.m_caproEventMethodID = "6";
@@ -355,17 +355,17 @@ TEST_F(PortIntrospection_test, addAndRemoveSubscriber)
     // test adding of ports
     // remark: duplicate subscriber insertions are not possible
     iox::popo::SubscriberPortData recData1{
-        service1, processName1, iox::cxx::VariantQueueTypes::FiFo_MultiProducerSingleConsumer, subscriberOptions1};
+        service1, runtimeName1, iox::cxx::VariantQueueTypes::FiFo_MultiProducerSingleConsumer, subscriberOptions1};
     MockSubscriberPortUser port1(&recData1);
     iox::popo::SubscriberPortData recData2{
-        service2, processName2, iox::cxx::VariantQueueTypes::FiFo_MultiProducerSingleConsumer, subscriberOptions2};
+        service2, runtimeName2, iox::cxx::VariantQueueTypes::FiFo_MultiProducerSingleConsumer, subscriberOptions2};
     MockSubscriberPortUser port2(&recData2);
     EXPECT_THAT(m_introspectionAccess.addSubscriber(recData1), Eq(true));
     EXPECT_THAT(m_introspectionAccess.addSubscriber(recData1), Eq(false));
     EXPECT_THAT(m_introspectionAccess.addSubscriber(recData2), Eq(true));
     EXPECT_THAT(m_introspectionAccess.addSubscriber(recData2), Eq(false));
 
-    EXPECT_CALL(m_introspectionAccess.getPublisherPort().value(), tryAllocateChunk(_))
+    EXPECT_CALL(m_introspectionAccess.getPublisherPort().value(), tryAllocateChunk(_, _, _, _))
         .WillRepeatedly(Return(iox::cxx::expected<iox::mepoo::ChunkHeader*, iox::popo::AllocationError>::create_value(
             chunk.get()->chunkHeader())));
 
@@ -471,4 +471,3 @@ TEST_F(PortIntrospection_test, DISABLED_thread)
     std::this_thread::sleep_for(
         std::chrono::milliseconds(555)); // if the thread doesn't stop, we have 12 runs after the sleep period
 }
-

@@ -14,6 +14,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "iceoryx_posh/popo/enum_trigger_type.hpp"
 #include "iceoryx_posh/popo/wait_set.hpp"
 #include "iceoryx_posh/runtime/posh_runtime.hpp"
 #include "iceoryx_utils/cxx/optional.hpp"
@@ -22,10 +23,16 @@
 #include <thread>
 
 // The two events the MyTriggerClass offers
-enum class MyTriggerClassEvents
+enum class MyTriggerClassStates : iox::popo::StateEnumIdentifier
 {
-    PERFORMED_ACTION,
-    ACTIVATE
+    HAS_PERFORMED_ACTION,
+    IS_ACTIVATED
+};
+
+enum class MyTriggerClassEvents : iox::popo::EventEnumIdentifier
+{
+    PERFORM_ACTION_CALLED,
+    ACTIVATE_CALLED
 };
 
 // Triggerable class which has two events an both events can be
@@ -81,14 +88,14 @@ class MyTriggerClass
     }
 
     // reset PERFORMED_ACTION and ACTIVATE event
-    void reset(const MyTriggerClassEvents event) noexcept
+    void reset(const MyTriggerClassStates event) noexcept
     {
         switch (event)
         {
-        case MyTriggerClassEvents::PERFORMED_ACTION:
+        case MyTriggerClassStates::HAS_PERFORMED_ACTION:
             m_hasPerformedAction = false;
             break;
-        case MyTriggerClassEvents::ACTIVATE:
+        case MyTriggerClassStates::IS_ACTIVATED:
             m_isActivated = false;
             break;
         }
@@ -96,12 +103,31 @@ class MyTriggerClass
 
     static void callOnAction(MyTriggerClass* const triggerClassPtr)
     {
+        // Ignore unused variable warning
+        (void)triggerClassPtr;
         std::cout << "action performed" << std::endl;
     }
 
-    friend iox::popo::EventAttorney;
+    friend iox::popo::NotificationAttorney;
 
   private:
+    /// @brief Only usable by the WaitSet, not for public use
+    // This method attaches a state of the class to a waitset.
+    // The state is choosen by the state parameter. Additionally, you can
+    // set a eventId to group multiple instances and a custom callback.
+    void enableState(iox::popo::TriggerHandle&& triggerHandle, const MyTriggerClassStates state) noexcept
+    {
+        switch (state)
+        {
+        case MyTriggerClassStates::HAS_PERFORMED_ACTION:
+            m_onActionTrigger = std::move(triggerHandle);
+            break;
+        case MyTriggerClassStates::IS_ACTIVATED:
+            m_activateTrigger = std::move(triggerHandle);
+            break;
+        }
+    }
+
     /// @brief Only usable by the WaitSet, not for public use
     // This method attaches an event of the class to a waitset.
     // The event is choosen by the event parameter. Additionally, you can
@@ -110,10 +136,10 @@ class MyTriggerClass
     {
         switch (event)
         {
-        case MyTriggerClassEvents::PERFORMED_ACTION:
+        case MyTriggerClassEvents::PERFORM_ACTION_CALLED:
             m_onActionTrigger = std::move(triggerHandle);
             break;
-        case MyTriggerClassEvents::ACTIVATE:
+        case MyTriggerClassEvents::ACTIVATE_CALLED:
             m_activateTrigger = std::move(triggerHandle);
             break;
         }
@@ -134,28 +160,42 @@ class MyTriggerClass
         }
     }
 
-    void disableEvent(const MyTriggerClassEvents event) noexcept
+    void disableState(const MyTriggerClassStates state) noexcept
     {
-        switch (event)
+        switch (state)
         {
-        case MyTriggerClassEvents::PERFORMED_ACTION:
+        case MyTriggerClassStates::HAS_PERFORMED_ACTION:
             m_onActionTrigger.reset();
             break;
-        case MyTriggerClassEvents::ACTIVATE:
+        case MyTriggerClassStates::IS_ACTIVATED:
             m_activateTrigger.reset();
             break;
         }
     }
 
-    /// @brief Only usable by the WaitSet, not for public use
-    iox::popo::WaitSetHasTriggeredCallback
-    getHasTriggeredCallbackForEvent(const MyTriggerClassEvents event) const noexcept
+    void disableEvent(const MyTriggerClassEvents event) noexcept
     {
         switch (event)
         {
-        case MyTriggerClassEvents::PERFORMED_ACTION:
+        case MyTriggerClassEvents::PERFORM_ACTION_CALLED:
+            m_onActionTrigger.reset();
+            break;
+        case MyTriggerClassEvents::ACTIVATE_CALLED:
+            m_activateTrigger.reset();
+            break;
+        }
+    }
+
+
+    /// @brief Only usable by the WaitSet, not for public use
+    iox::popo::WaitSetIsConditionSatisfiedCallback
+    getCallbackForIsStateConditionSatisfied(const MyTriggerClassStates event) const noexcept
+    {
+        switch (event)
+        {
+        case MyTriggerClassStates::HAS_PERFORMED_ACTION:
             return {*this, &MyTriggerClass::hasPerformedAction};
-        case MyTriggerClassEvents::ACTIVATE:
+        case MyTriggerClassStates::IS_ACTIVATED:
             return {*this, &MyTriggerClass::isActivated};
         }
         return {};
@@ -182,27 +222,25 @@ void callOnActivate(MyTriggerClass* const triggerClassPtr)
 }
 
 // The global event loop. It will create an infinite loop and
-// will work on the incoming events.
+// will work on the incoming notifications.
 void eventLoop()
 {
     while (true)
     {
-        auto eventVector = waitset->wait();
-        for (auto& event : eventVector)
+        auto notificationVector = waitset->wait();
+        for (auto& notification : notificationVector)
         {
-            if (event->getEventId() == ACTIVATE_ID)
+            if (notification->getNotificationId() == ACTIVATE_ID)
             {
                 // reset MyTriggerClass instance state
-                event->getOrigin<MyTriggerClass>()->reset(MyTriggerClassEvents::ACTIVATE);
+                notification->getOrigin<MyTriggerClass>()->reset(MyTriggerClassStates::IS_ACTIVATED);
                 // call the callback attached to the trigger
-                (*event)();
+                (*notification)();
             }
-            else if (event->getEventId() == ACTION_ID)
+            else if (notification->getNotificationId() == ACTION_ID)
             {
-                // reset MyTriggerClass instance state
-                event->getOrigin<MyTriggerClass>()->reset(MyTriggerClassEvents::PERFORMED_ACTION);
-                // call the callback attached to the trigger
-                (*event)();
+                // reset is not required since we attached an notification here. we will be notified once
+                (*notification)();
             }
         }
     }
@@ -210,22 +248,38 @@ void eventLoop()
 
 int main()
 {
-    iox::runtime::PoshRuntime::initRuntime("iox-ex-waitset-trigger");
+    iox::runtime::PoshRuntime::initRuntime("iox-cpp-waitset-trigger");
 
     // we create a waitset and a triggerClass instance inside of the two
-    // global optional's
+    // global optionals
     waitset.emplace();
     triggerClass.emplace();
 
-    // attach both events to a waitset and assign a callback
-    waitset->attachEvent(*triggerClass, MyTriggerClassEvents::ACTIVATE, ACTIVATE_ID, &callOnActivate);
-    waitset->attachEvent(
-        *triggerClass, MyTriggerClassEvents::PERFORMED_ACTION, ACTION_ID, &MyTriggerClass::callOnAction);
+    // attach the IS_ACTIVATED state to the waitset and assign a callback
+    waitset
+        ->attachState(*triggerClass,
+                      MyTriggerClassStates::IS_ACTIVATED,
+                      ACTIVATE_ID,
+                      iox::popo::createNotificationCallback(callOnActivate))
+        .or_else([](auto) {
+            std::cerr << "failed to attach MyTriggerClassStates::IS_ACTIVATED state " << std::endl;
+            std::exit(EXIT_FAILURE);
+        });
+    // attach the PERFORM_ACTION_CALLED event to the waitset and assign a callback
+    waitset
+        ->attachEvent(*triggerClass,
+                      MyTriggerClassEvents::PERFORM_ACTION_CALLED,
+                      ACTION_ID,
+                      iox::popo::createNotificationCallback(MyTriggerClass::callOnAction))
+        .or_else([](auto) {
+            std::cerr << "failed to attach MyTriggerClassEvents::PERFORM_ACTION_CALLED event " << std::endl;
+            std::exit(EXIT_FAILURE);
+        });
 
     // start the event loop which is handling the events
     std::thread eventLoopThread(eventLoop);
 
-    // start a thread which will trigger a event every second
+    // start a thread which will trigger an event every second
     std::thread triggerThread([&] {
         uint64_t activationCode = 1U;
         for (auto i = 0U; i < 10; ++i)

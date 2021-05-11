@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -254,7 +255,7 @@ Timer::OsTimer::~OsTimer() noexcept
 {
     if (m_timerId != INVALID_TIMER_ID)
     {
-        stop();
+        stop().or_else([](auto) { std::cerr << "Unable to stop the timer in the destructor." << std::endl; });
 
         // do not delete the timer while the callback is running, it could access the timer which is about to be deleted
         auto& callbackHandle = OsTimer::s_callbackHandlePool[m_callbackHandleIndex];

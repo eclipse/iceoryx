@@ -1,4 +1,5 @@
-// Copyright (c) 2020, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,13 +23,14 @@ namespace iox
 namespace popo
 {
 SubscriberPortData::SubscriberPortData(const capro::ServiceDescription& serviceDescription,
-                                       const ProcessName_t& processName,
+                                       const RuntimeName_t& runtimeName,
                                        cxx::VariantQueueTypes queueType,
                                        const SubscriberOptions& subscriberOptions,
                                        const mepoo::MemoryInfo& memoryInfo) noexcept
-    : BasePortData(serviceDescription, processName, subscriberOptions.nodeName)
-    , m_chunkReceiverData(queueType, memoryInfo)
+    : BasePortData(serviceDescription, runtimeName, subscriberOptions.nodeName)
+    , m_chunkReceiverData(queueType, subscriberOptions.queueFullPolicy, memoryInfo)
     , m_historyRequest(subscriberOptions.historyRequest)
+    , m_subscribeRequested(subscriberOptions.subscribeOnCreate)
 {
     m_chunkReceiverData.m_queue.setCapacity(subscriberOptions.queueCapacity);
 }

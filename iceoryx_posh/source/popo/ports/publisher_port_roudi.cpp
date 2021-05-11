@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +25,11 @@ PublisherPortRouDi::PublisherPortRouDi(cxx::not_null<MemberType_t* const> publis
     : BasePort(publisherPortDataPtr)
     , m_chunkSender(&getMembers()->m_chunkSenderData)
 {
+}
+
+SubscriberTooSlowPolicy PublisherPortRouDi::getSubscriberTooSlowPolicy() const noexcept
+{
+    return getMembers()->m_chunkSenderData.m_subscriberTooSlowPolicy;
 }
 
 const PublisherPortRouDi::MemberType_t* PublisherPortRouDi::getMembers() const noexcept

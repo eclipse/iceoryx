@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,11 +62,7 @@ mutex::mutex(bool f_isRecursive)
         !cxx::makeSmartC(pthread_mutexattr_destroy, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0}, {}, &attr)
              .hasErrors();
 
-    if (!isInitialized)
-    {
-        std::cerr << "unable to create mutex - terminating\n";
-        std::terminate();
-    }
+    cxx::Ensures(isInitialized && "Unable to create mutex");
 }
 
 mutex::~mutex()
@@ -73,13 +70,7 @@ mutex::~mutex()
     auto destroyCall =
         cxx::makeSmartC(pthread_mutex_destroy, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0}, {}, &m_handle);
 
-    if (destroyCall.hasErrors())
-    {
-        std::cerr << "could not destroy mutex ::: pthread_mutex_destroy returned " << destroyCall.getReturnValue()
-                  << " "
-                  << "( " << strerror(destroyCall.getReturnValue()) << ") " << std::endl;
-        std::terminate();
-    }
+    cxx::Ensures(!destroyCall.hasErrors() && "Could not destroy mutex");
 }
 
 pthread_mutex_t mutex::get_native_handle() const noexcept

@@ -17,7 +17,7 @@ cmake_minimum_required(VERSION 3.5)
 project(googletest-build CXX)
 
 if(BUILD_TEST)
-    
+
     include(ProcessorCount)
     ProcessorCount(N)
 
@@ -33,6 +33,12 @@ if(BUILD_TEST)
         set(ENABLE_STATIC_DEBUG "-Dgtest_force_shared_crt=ON")
     endif(WIN32)
 
+    if(DEFINED CMAKE_TOOLCHAIN_FILE)
+        set(TOOLCHAIN_FILE "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
+        set(GTest_DIR ${CMAKE_BINARY_DIR}/dependencies/install/lib/cmake/GTest)
+        set(GTest_DIR ${GTest_DIR} CACHE PATH "" FORCE)
+    endif()
+
     # set download confi, source and build paths
     set(DOWNLOAD_CONFIG_DIR ${CMAKE_BINARY_DIR}/dependencies/googletest/download)
     set(SOURCE_DIR ${CMAKE_BINARY_DIR}/dependencies/googletest/src)
@@ -41,7 +47,7 @@ if(BUILD_TEST)
 
     # Download and unpack googletest at configure time
     configure_file(googletest.cmake.in ${DOWNLOAD_CONFIG_DIR}/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} ${ENABLE_STATIC_DEBUG} -G "${CMAKE_GENERATOR}" "${DOWNLOAD_CONFIG_DIR}"
+    execute_process(COMMAND ${CMAKE_COMMAND} ${ENABLE_STATIC_DEBUG} -G "${CMAKE_GENERATOR}" "${TOOLCHAIN_FILE}" "${DOWNLOAD_CONFIG_DIR}"
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${DOWNLOAD_CONFIG_DIR} )
     if(result)
@@ -57,7 +63,7 @@ if(BUILD_TEST)
 
     file(MAKE_DIRECTORY ${BUILD_DIR})
 
-    execute_process(COMMAND ${CMAKE_COMMAND} ${ENABLE_STATIC_DEBUG} -G "${CMAKE_GENERATOR}" "-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}" "${SOURCE_DIR}"
+    execute_process(COMMAND ${CMAKE_COMMAND} ${ENABLE_STATIC_DEBUG} -G "${CMAKE_GENERATOR}" "-DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}" "${TOOLCHAIN_FILE}" "${SOURCE_DIR}"
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${BUILD_DIR} )
     if(result)

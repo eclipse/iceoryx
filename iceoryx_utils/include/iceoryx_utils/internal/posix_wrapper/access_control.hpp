@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@
 #ifndef IOX_UTILS_POSIX_WRAPPER_ACCESS_CONTROL_HPP
 #define IOX_UTILS_POSIX_WRAPPER_ACCESS_CONTROL_HPP
 
-#include "iceoryx_utils/cxx/optional.hpp"
+#include "iceoryx_utils/cxx/expected.hpp"
 #include "iceoryx_utils/cxx/string.hpp"
 #include "iceoryx_utils/cxx/vector.hpp"
 #include "iceoryx_utils/platform/acl.hpp"
@@ -42,6 +43,12 @@ class AccessController
 {
   public:
     using string_t = cxx::string<100>;
+
+    enum class AccessControllerError : uint8_t
+    {
+        INVALID_STATE,
+        COULD_NOT_ALLOCATE_NEW_ACL,
+    };
 
     /// @brief maximum number of permission entries the AccessController can store
     static constexpr int32_t MaxNumOfPermissions = 20;
@@ -106,7 +113,7 @@ class AccessController
 
     cxx::vector<PermissionEntry, MaxNumOfPermissions> m_permissions;
 
-    smartAclPointer_t createACL(const int32_t f_numEntries) const;
+    cxx::expected<smartAclPointer_t, AccessControllerError> createACL(const int32_t f_numEntries) const;
     bool createACLEntry(const acl_t f_ACL, const PermissionEntry& f_entry) const;
     bool addAclPermission(acl_permset_t f_permset, acl_perm_t f_perm) const;
 

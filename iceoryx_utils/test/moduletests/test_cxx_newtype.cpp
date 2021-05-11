@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +16,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_utils/cxx/newtype.hpp"
+#include "iceoryx_utils/testing/compile_test.hpp"
 #include "test.hpp"
-#include "testutils/compile_test.hpp"
 
+namespace
+{
 using namespace ::testing;
 using namespace iox;
 using namespace iox::cxx;
@@ -144,3 +147,4 @@ TEST(NewType, AssignByValueMoveDoesCompile)
 
     EXPECT_TRUE(a == b);
 }
+} // namespace

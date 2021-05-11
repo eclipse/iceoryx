@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 - 2020 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,14 +70,14 @@ uint64_t iox_node_get_name(iox_node_t const self, char* const name, const uint64
     return nameAsString.size();
 }
 
-uint64_t iox_node_get_process_name(iox_node_t const self, char* const name, const uint64_t nameCapacity)
+uint64_t iox_node_get_runtime_name(iox_node_t const self, char* const name, const uint64_t nameCapacity)
 {
     if (name == nullptr)
     {
         return 0U;
     }
 
-    auto nameAsString = NodeBindingExtension(self).getProcessName();
+    auto nameAsString = NodeBindingExtension(self).getRuntimeName();
     strncpy(name, nameAsString.c_str(), nameCapacity);
     name[nameCapacity - 1U] = '\0'; // strncpy doesn't add a null-termination if destination is smaller than source
 

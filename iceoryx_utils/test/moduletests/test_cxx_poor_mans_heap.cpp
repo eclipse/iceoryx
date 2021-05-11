@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,11 +19,10 @@
 #include "iceoryx_utils/cxx/poor_mans_heap.hpp"
 #include "test.hpp"
 
-
-using namespace ::testing;
-
 namespace
 {
+using namespace ::testing;
+
 enum class Identity : uint32_t
 {
     None,
@@ -97,8 +97,6 @@ class Foo : public Interface
   protected:
     alignas(32) uint8_t m_dummy[73];
 };
-
-} // namespace
 
 class PoorMansHeap_test : public Test
 {
@@ -205,3 +203,4 @@ TEST_F(PoorMansHeap_test, instanceAccess)
     EXPECT_THAT(m_sut->identity(), Eq(Identity::Bar));
     EXPECT_THAT((*m_sut).identity(), Eq(Identity::Bar));
 }
+} // namespace

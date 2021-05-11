@@ -22,19 +22,19 @@ namespace iox
 namespace roudi
 {
 IceOryxRouDiComponents::IceOryxRouDiComponents(const RouDiConfig_t& roudiConfig) noexcept
-    : m_rouDiMemoryManager(roudiConfig)
-    , m_portManager([&]() -> IceOryxRouDiMemoryManager* {
+    : rouDiMemoryManager(roudiConfig)
+    , portManager([&]() -> IceOryxRouDiMemoryManager* {
         // this temporary object will create a roudi IPC channel
         // and close it immediatelly
         // if there was an outdated roudi IPC channel, it will be cleaned up
         // if there is an outdated IPC channel, the start of the apps will be terminated
         runtime::IpcInterfaceBase::cleanupOutdatedIpcChannel(roudi::IPC_CHANNEL_ROUDI_NAME);
 
-        m_rouDiMemoryManager.createAndAnnounceMemory().or_else([](RouDiMemoryManagerError error) {
+        rouDiMemoryManager.createAndAnnounceMemory().or_else([](RouDiMemoryManagerError error) {
             LogFatal() << "Could not create SharedMemory! Error: " << error;
             errorHandler(Error::kROUDI_COMPONENTS__SHARED_MEMORY_UNAVAILABLE, nullptr, iox::ErrorLevel::FATAL);
         });
-        return &m_rouDiMemoryManager;
+        return &rouDiMemoryManager;
     }())
 {
 }

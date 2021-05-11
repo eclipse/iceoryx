@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,14 +53,16 @@ namespace posix
 ///         }
 ///
 ///     }
+///
+/// @attention Errors in c'tor or d'tor can lead to a program termination!
+///
 class mutex
 {
   public:
-    /// @brief the construction of the mutex can fail which will lead to a call
-    ///         to std::terminate which is alright for the moment since we are
-    ///         intending to get rid of the mutex sooner or later
+    /// @attention the construction of the mutex can fail. This can lead to a program termination!
     mutex(const bool f_isRecursive);
 
+    /// @attention the destruction of the mutex can fail. This can lead to a program termination!
     ~mutex();
 
     /// @brief all copy and move assignment methods need to be deleted otherwise

@@ -17,7 +17,7 @@
 #include "iceoryx_posh/iceoryx_posh_types.hpp"
 #include "iceoryx_utils/log/logging.hpp"
 #include "iceoryx_utils/log/logstream.hpp"
-#include "mocks/logger_mock.hpp"
+#include "iceoryx_utils/testing/mocks/logger_mock.hpp"
 
 #include "test.hpp"
 

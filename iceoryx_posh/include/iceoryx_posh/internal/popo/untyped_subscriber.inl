@@ -22,29 +22,35 @@ namespace iox
 {
 namespace popo
 {
-template <typename base_subscriber_t>
-inline UntypedSubscriberImpl<base_subscriber_t>::UntypedSubscriberImpl(const capro::ServiceDescription& service,
-                                                                       const SubscriberOptions& subscriberOptions)
+template <typename BaseSubscriber_t>
+inline UntypedSubscriberImpl<BaseSubscriber_t>::UntypedSubscriberImpl(const capro::ServiceDescription& service,
+                                                                      const SubscriberOptions& subscriberOptions)
     : BaseSubscriber(service, subscriberOptions)
 {
 }
 
-template <typename base_subscriber_t>
-inline cxx::expected<const void*, ChunkReceiveResult> UntypedSubscriberImpl<base_subscriber_t>::take() noexcept
+template <typename BaseSubscriber_t>
+inline cxx::expected<const void*, ChunkReceiveResult> UntypedSubscriberImpl<BaseSubscriber_t>::take() noexcept
 {
     auto result = BaseSubscriber::takeChunk();
     if (result.has_error())
     {
         return cxx::error<ChunkReceiveResult>(result.get_error());
     }
-    return cxx::success<const void*>(result.value()->payload());
+    return cxx::success<const void*>(result.value()->userPayload());
 }
 
-template <typename base_subscriber_t>
-inline void UntypedSubscriberImpl<base_subscriber_t>::releaseChunk(const void* payload) noexcept
+template <typename BaseSubscriber_t>
+inline void UntypedSubscriberImpl<BaseSubscriber_t>::release(const void* const userPayload) noexcept
 {
-    auto header = mepoo::ChunkHeader::fromPayload(payload);
-    port().releaseChunk(header);
+    auto chunkHeader = mepoo::ChunkHeader::fromUserPayload(userPayload);
+    port().releaseChunk(chunkHeader);
+}
+
+template <typename BaseSubscriber_t>
+inline UntypedSubscriberImpl<BaseSubscriber_t>::~UntypedSubscriberImpl() noexcept
+{
+    BaseSubscriber_t::m_trigger.reset();
 }
 
 } // namespace popo

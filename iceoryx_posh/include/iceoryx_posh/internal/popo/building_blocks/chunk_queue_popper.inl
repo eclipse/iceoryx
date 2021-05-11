@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,10 +52,18 @@ inline cxx::optional<mepoo::SharedChunk> ChunkQueuePopper<ChunkQueueDataType>::t
     // check if queue had an element that was poped and return if so
     if (retVal.has_value())
     {
-        auto chunkTupleOut = *retVal;
-        auto chunkManagement =
-            relative_ptr<mepoo::ChunkManagement>(chunkTupleOut.m_chunkOffset, chunkTupleOut.m_segmentId);
-        auto chunk = mepoo::SharedChunk(chunkManagement);
+        auto chunk = retVal.value().releaseToSharedChunk();
+
+        auto receivedChunkHeaderVersion = chunk.getChunkHeader()->chunkHeaderVersion();
+        if (receivedChunkHeaderVersion != mepoo::ChunkHeader::CHUNK_HEADER_VERSION)
+        {
+            LogError() << "Received chunk with CHUNK_HEADER_VERSION '" << receivedChunkHeaderVersion
+                       << "' but expected '" << mepoo::ChunkHeader::CHUNK_HEADER_VERSION << "'! Dropping chunk!";
+            errorHandler(Error::kPOPO__CHUNK_QUEUE_POPPER_CHUNK_WITH_INCOMPATIBLE_CHUNK_HEADER_VERSION,
+                         nullptr,
+                         ErrorLevel::SEVERE);
+            return cxx::nullopt_t();
+        }
         return cxx::make_optional<mepoo::SharedChunk>(chunk);
     }
     else
@@ -64,11 +73,11 @@ inline cxx::optional<mepoo::SharedChunk> ChunkQueuePopper<ChunkQueueDataType>::t
 }
 
 template <typename ChunkQueueDataType>
-inline bool ChunkQueuePopper<ChunkQueueDataType>::hasOverflown() noexcept
+inline bool ChunkQueuePopper<ChunkQueueDataType>::hasLostChunks() noexcept
 {
-    if (getMembers()->m_queueHasOverflown.load(std::memory_order_relaxed))
+    if (getMembers()->m_queueHasLostChunks.load(std::memory_order_relaxed))
     {
-        getMembers()->m_queueHasOverflown.store(false, std::memory_order_relaxed);
+        getMembers()->m_queueHasLostChunks.store(false, std::memory_order_relaxed);
         return true;
     }
     return false;
@@ -107,30 +116,30 @@ inline uint64_t ChunkQueuePopper<ChunkQueueDataType>::getMaximumCapacity() const
 template <typename ChunkQueueDataType>
 inline void ChunkQueuePopper<ChunkQueueDataType>::clear() noexcept
 {
-    while (auto maybeChunkTuple = getMembers()->m_queue.pop())
+    while (auto maybeUnmanagedChunk = getMembers()->m_queue.pop())
     {
         // PRQA S 4117 4 # d'tor of SharedChunk will release the memory, so RAII has the side effect here
-        auto chunkTupleOut = maybeChunkTuple.value();
-        auto chunkManagement =
-            relative_ptr<mepoo::ChunkManagement>(chunkTupleOut.m_chunkOffset, chunkTupleOut.m_segmentId);
-        auto chunk = mepoo::SharedChunk(chunkManagement);
+        maybeUnmanagedChunk.value().releaseToSharedChunk();
     }
 }
 
 template <typename ChunkQueueDataType>
-inline void ChunkQueuePopper<ChunkQueueDataType>::setConditionVariable(
-    cxx::not_null<ConditionVariableData*> conditionVariableDataPtr) noexcept
+inline void ChunkQueuePopper<ChunkQueueDataType>::setConditionVariable(ConditionVariableData& conditionVariableDataRef,
+                                                                       const uint64_t notificationIndex) noexcept
 {
     typename MemberType_t::LockGuard_t lock(*getMembers());
 
-    getMembers()->m_conditionVariableDataPtr = conditionVariableDataPtr;
+    getMembers()->m_conditionVariableDataPtr = &conditionVariableDataRef;
+    getMembers()->m_conditionVariableNotificationIndex.emplace(notificationIndex);
 }
 
 template <typename ChunkQueueDataType>
 inline void ChunkQueuePopper<ChunkQueueDataType>::unsetConditionVariable() noexcept
 {
     typename MemberType_t::LockGuard_t lock(*getMembers());
+
     getMembers()->m_conditionVariableDataPtr = nullptr;
+    getMembers()->m_conditionVariableNotificationIndex.reset();
 }
 
 template <typename ChunkQueueDataType>

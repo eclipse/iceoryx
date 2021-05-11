@@ -25,6 +25,7 @@ mkdir -p $OUTPUT_FOLDER
 
 case "$2" in
     "initial")
+        lcov -z
         lcov -c -i -d $BUILD_FOLDER -o $OUTPUT_FOLDER/iceoryx_init.info --no-external --rc lcov_branch_coverage=1
         ;;
     "scan")
@@ -34,7 +35,7 @@ case "$2" in
         --rc lcov_branch_coverage=1
 
         lcov -o $OUTPUT_FOLDER/iceoryx_lcov_result_"$TEST_SCOPE".info --rc lcov_branch_coverage=1 -r $OUTPUT_FOLDER/iceoryx_full.info \
-        "*/build/*" "*/test/*" "*/iceoryx_examples/*" "*/testutils/*" "*/roudi_environment/*"
+        "*/build/*" "*/test/*" "*/testing/*" "*/iceoryx_examples/*"
 
         genhtml $OUTPUT_FOLDER/iceoryx_lcov_result_"$TEST_SCOPE".info -o $OUTPUT_FOLDER --config-file --legend --show-details --branch-coverage
         ;;

@@ -62,7 +62,7 @@ inline void PeriodicTask<T>::stop() noexcept
 {
     if (m_taskExecutor.joinable())
     {
-        m_stop.post();
+        cxx::Expects(!m_stop.post().has_error());
         m_taskExecutor.join();
     }
 }
@@ -79,7 +79,7 @@ inline void PeriodicTask<T>::run() noexcept
     posix::SemaphoreWaitState waitState = posix::SemaphoreWaitState::NO_TIMEOUT;
     do
     {
-        m_callable();
+        IOX_DISCARD_RESULT(m_callable());
 
         /// @todo use a refactored posix::Timer::wait method returning TIMER_TICK and TIMER_STOPPED once available
         auto waitResult = m_stop.timedWait(m_interval, true);

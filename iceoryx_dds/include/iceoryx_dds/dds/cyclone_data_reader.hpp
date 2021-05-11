@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,12 +47,11 @@ class CycloneDataReader : public DataReader
 
     void connect() noexcept override;
 
-    iox::cxx::optional<uint32_t> peekNextSize() override;
-    bool hasSamples() override;
-    iox::cxx::expected<DataReaderError> takeNext(uint8_t* const buffer, const uint64_t& bufferSize) override;
-
-    iox::cxx::expected<uint64_t, DataReaderError>
-    take(uint8_t* const buffer, const uint64_t& bufferSize, const iox::cxx::optional<uint64_t>& maxSamples) override;
+    iox::cxx::optional<IoxChunkDatagramHeader> peekNextIoxChunkDatagramHeader() noexcept override;
+    bool hasSamples() noexcept override;
+    iox::cxx::expected<DataReaderError> takeNext(const IoxChunkDatagramHeader datagramHeader,
+                                                 uint8_t* const userHeaderBuffer,
+                                                 uint8_t* const userPayloadBuffer) noexcept override;
 
     capro::IdString_t getServiceId() const noexcept override;
     capro::IdString_t getInstanceId() const noexcept override;

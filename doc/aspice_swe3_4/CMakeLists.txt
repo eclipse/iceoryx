@@ -16,8 +16,14 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-file(STRINGS "../../VERSION" iceoryx_doc_VERSION)
-project(iceoryx_doc VERSION ${iceoryx_doc_VERSION})
+set(IOX_VERSION_STRING "1.0.0")
+
+#find_package(iceoryx_utils REQUIRED)
+
+#include(IceoryxVersion)
+#parse_version(${IOX_VERSION_STRING})
+project(iceoryx_doc VERSION ${IOX_VERSION_STRING})
+#adjust_version()
 
 find_package(Doxygen REQUIRED)
 

@@ -27,7 +27,7 @@ inline SharedPointer<T>::SharedPointer(const SharedChunk& chunk, Targs&&... args
 {
     if (chunk.m_chunkManagement != nullptr)
     {
-        new (chunk.m_chunkManagement->m_chunkHeader->payload()) T(std::forward<Targs>(args)...);
+        new (chunk.m_chunkManagement->m_chunkHeader->userPayload()) T(std::forward<Targs>(args)...);
         this->m_isInitialized = true;
     }
     else
@@ -77,14 +77,14 @@ inline void SharedPointer<T>::deleteManagedObjectIfNecessary() noexcept
     if (m_chunk.m_chunkManagement != nullptr
         && m_chunk.m_chunkManagement->m_referenceCounter.load(std::memory_order_relaxed) == 2)
     {
-        static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->payload())->~T();
+        static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->userPayload())->~T();
     }
 }
 
 template <typename T>
 inline T* SharedPointer<T>::get() noexcept
 {
-    return static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->payload());
+    return static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->userPayload());
 }
 
 template <typename T>
@@ -96,7 +96,7 @@ inline const T* SharedPointer<T>::get() const noexcept
 template <typename T>
 inline T* SharedPointer<T>::operator->() noexcept
 {
-    return static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->payload());
+    return static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->userPayload());
 }
 
 template <typename T>
@@ -108,7 +108,7 @@ inline const T* SharedPointer<T>::operator->() const noexcept
 template <typename T>
 inline T& SharedPointer<T>::operator*() noexcept
 {
-    return *static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->payload());
+    return *static_cast<T*>(m_chunk.m_chunkManagement->m_chunkHeader->userPayload());
 }
 
 template <typename T>

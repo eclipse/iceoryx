@@ -20,6 +20,8 @@
 #include "iceoryx_utils/internal/posix_wrapper/shared_memory_object/shared_memory.hpp"
 #include "iceoryx_utils/platform/stat.hpp"
 
+namespace
+{
 using namespace testing;
 
 class SharedMemory_Test : public Test
@@ -105,3 +107,4 @@ TEST_F(SharedMemory_Test, getHandleOfValidObject)
                                                 128);
     EXPECT_THAT(sut->getHandle(), Ne(-1));
 }
+} // namespace

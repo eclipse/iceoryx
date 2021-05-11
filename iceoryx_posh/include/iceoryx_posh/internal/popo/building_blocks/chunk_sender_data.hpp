@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +19,11 @@
 
 #include "iceoryx_posh/iceoryx_posh_types.hpp"
 #include "iceoryx_posh/internal/mepoo/memory_manager.hpp"
-#include "iceoryx_posh/internal/mepoo/shared_chunk.hpp"
+#include "iceoryx_posh/internal/mepoo/shm_safe_unmanaged_chunk.hpp"
 #include "iceoryx_posh/internal/popo/building_blocks/chunk_distributor_data.hpp"
 #include "iceoryx_posh/internal/popo/used_chunk_list.hpp"
 #include "iceoryx_posh/mepoo/memory_info.hpp"
 #include "iceoryx_utils/cxx/helplets.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
 
 namespace iox
 {
@@ -33,16 +33,17 @@ template <uint32_t MaxChunksAllocatedSimultaneously, typename ChunkDistributorDa
 struct ChunkSenderData : public ChunkDistributorDataType
 {
     explicit ChunkSenderData(cxx::not_null<mepoo::MemoryManager* const> memoryManager,
+                             const SubscriberTooSlowPolicy subscriberTooSlowPolicy,
                              const uint64_t historyCapacity = 0U,
                              const mepoo::MemoryInfo& memoryInfo = mepoo::MemoryInfo()) noexcept;
 
     using ChunkDistributorData_t = ChunkDistributorDataType;
 
-    const relative_ptr<mepoo::MemoryManager> m_memoryMgr;
+    const rp::RelativePointer<mepoo::MemoryManager> m_memoryMgr;
     mepoo::MemoryInfo m_memoryInfo;
     UsedChunkList<MaxChunksAllocatedSimultaneously> m_chunksInUse;
     mepoo::SequenceNumber_t m_sequenceNumber{0U};
-    mepoo::SharedChunk m_lastChunk{nullptr};
+    mepoo::ShmSafeUnmanagedChunk m_lastChunkUnmanaged;
 };
 
 } // namespace popo

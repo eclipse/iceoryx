@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,9 +37,9 @@ TEST(ShmCreatorDeathTest, AllocatingTooMuchMemoryLeadsToExitWithSIGBUS)
     iox::roudi::MemPoolCollectionMemoryBlock badmempools(badconfig);
     iox::roudi::PosixShmMemoryProvider badShmProvider(
         TEST_SHM_NAME, iox::posix::AccessMode::READ_WRITE, iox::posix::OwnerShip::MINE);
-    badShmProvider.addMemoryBlock(&badmempools);
+    ASSERT_FALSE(badShmProvider.addMemoryBlock(&badmempools).has_error());
 
-    EXPECT_DEATH(badShmProvider.create(), ".*");
+    EXPECT_DEATH(IOX_DISCARD_RESULT(badShmProvider.create()), ".*");
 
     // try again with a config with low memory requirements; success clears shared memory allocated by the OS in e.g.
     // /dev/shm
@@ -47,8 +48,8 @@ TEST(ShmCreatorDeathTest, AllocatingTooMuchMemoryLeadsToExitWithSIGBUS)
     iox::roudi::MemPoolCollectionMemoryBlock goodmempools(goodconfig);
     iox::roudi::PosixShmMemoryProvider goodShmProvider(
         TEST_SHM_NAME, iox::posix::AccessMode::READ_WRITE, iox::posix::OwnerShip::MINE);
-    goodShmProvider.addMemoryBlock(&goodmempools);
-    goodShmProvider.create();
+    ASSERT_FALSE(goodShmProvider.addMemoryBlock(&goodmempools).has_error());
+    ASSERT_FALSE(goodShmProvider.create().has_error());
 }
 } // namespace
 

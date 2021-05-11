@@ -24,116 +24,120 @@ namespace popo
 {
 namespace internal
 {
-template <typename T>
-inline SamplePrivateData<T>::SamplePrivateData(cxx::unique_ptr<T>&& sampleUniquePtr,
-                                               PublisherInterface<T>& publisher) noexcept
+template <typename T, typename H>
+inline SamplePrivateData<T, H>::SamplePrivateData(cxx::unique_ptr<T>&& sampleUniquePtr,
+                                                  PublisherInterface<T, H>& publisher) noexcept
     : sampleUniquePtr(std::move(sampleUniquePtr))
     , publisherRef(publisher)
 {
 }
 
-template <typename T>
-inline SamplePrivateData<const T>::SamplePrivateData(cxx::unique_ptr<const T>&& sampleUniquePtr) noexcept
+template <typename T, typename H>
+inline SamplePrivateData<const T, H>::SamplePrivateData(cxx::unique_ptr<const T>&& sampleUniquePtr) noexcept
     : sampleUniquePtr(std::move(sampleUniquePtr))
 {
 }
 } // namespace internal
 
-template <typename T>
+template <typename T, typename H>
 template <typename S, typename>
-inline Sample<T>::Sample(cxx::unique_ptr<T>&& sampleUniquePtr, PublisherInterface<T>& publisher) noexcept
+inline Sample<T, H>::Sample(cxx::unique_ptr<T>&& sampleUniquePtr, PublisherInterface<T, H>& publisher) noexcept
     : m_members({std::move(sampleUniquePtr), publisher})
 {
 }
 
-template <typename T>
+template <typename T, typename H>
 template <typename S, typename>
-inline Sample<T>::Sample(cxx::unique_ptr<T>&& sampleUniquePtr) noexcept
+inline Sample<T, H>::Sample(cxx::unique_ptr<T>&& sampleUniquePtr) noexcept
     : m_members(std::move(sampleUniquePtr))
 {
 }
 
-template <typename T>
-inline Sample<T>::Sample(std::nullptr_t) noexcept
-{
-    m_members.sampleUniquePtr.reset();
-}
-
-template <typename T>
-template <typename S, typename>
-inline T* Sample<T>::operator->() noexcept
+template <typename T, typename H>
+inline T* Sample<T, H>::operator->() noexcept
 {
     return get();
 }
 
-template <typename T>
-inline const T* Sample<T>::operator->() const noexcept
+template <typename T, typename H>
+inline const T* Sample<T, H>::operator->() const noexcept
 {
     return get();
 }
 
-template <typename T>
-template <typename S, typename>
-inline S& Sample<T>::operator*() noexcept
+template <typename T, typename H>
+inline T& Sample<T, H>::operator*() noexcept
 {
     return *get();
 }
 
-template <typename T>
-inline const T& Sample<T>::operator*() const noexcept
+template <typename T, typename H>
+inline const T& Sample<T, H>::operator*() const noexcept
 {
     return *get();
 }
 
-template <typename T>
-inline Sample<T>::operator bool() const noexcept
+template <typename T, typename H>
+inline Sample<T, H>::operator bool() const noexcept
 {
     return get() != nullptr;
 }
 
-template <typename T>
-template <typename S, typename>
-inline T* Sample<T>::get() noexcept
+template <typename T, typename H>
+inline T* Sample<T, H>::get() noexcept
 {
     return m_members.sampleUniquePtr.get();
 }
 
-template <typename T>
-inline const T* Sample<T>::get() const noexcept
+template <typename T, typename H>
+inline const T* Sample<T, H>::get() const noexcept
 {
     return m_members.sampleUniquePtr.get();
 }
 
-template <typename T>
-template <typename S, typename>
-inline mepoo::ChunkHeader* Sample<T>::getHeader() noexcept
+template <typename T, typename H>
+inline typename Sample<T, H>::ConditionalConstChunkHeader_t* Sample<T, H>::getChunkHeader() noexcept
 {
-    return mepoo::ChunkHeader::fromPayload(m_members.sampleUniquePtr.get());
+    return mepoo::ChunkHeader::fromUserPayload(m_members.sampleUniquePtr.get());
 }
 
-template <typename T>
-inline const mepoo::ChunkHeader* Sample<T>::getHeader() const noexcept
+template <typename T, typename H>
+inline const mepoo::ChunkHeader* Sample<T, H>::getChunkHeader() const noexcept
 {
-    return mepoo::ChunkHeader::fromPayload(m_members.sampleUniquePtr.get());
+    return mepoo::ChunkHeader::fromUserPayload(m_members.sampleUniquePtr.get());
 }
 
-template <typename T>
+template <typename T, typename H>
+template <typename R, typename>
+inline R& Sample<T, H>::getUserHeader() noexcept
+{
+    return *static_cast<R*>(mepoo::ChunkHeader::fromUserPayload(m_members.sampleUniquePtr.get())->userHeader());
+}
+
+template <typename T, typename H>
+template <typename R, typename>
+inline const R& Sample<T, H>::getUserHeader() const noexcept
+{
+    return const_cast<Sample<T, H>*>(this)->getUserHeader();
+}
+
+template <typename T, typename H>
 template <typename S, typename>
-inline void Sample<T>::publish() noexcept
+inline void Sample<T, H>::publish() noexcept
 {
     if (m_members.sampleUniquePtr)
     {
         m_members.publisherRef.get().publish(std::move(*this));
     }
-
     else
     {
-        /// @todo Notify caller of attempt to publish invalid chunk. Or something ?
+        LogError() << "Tried to publish empty Sample! Might be an already published or moved Sample!";
+        errorHandler(Error::kPOSH__PUBLISHING_EMPTY_SAMPLE, nullptr, ErrorLevel::MODERATE);
     }
 }
 
-template <typename T>
-inline T* Sample<T>::release() noexcept
+template <typename T, typename H>
+inline T* Sample<T, H>::release() noexcept
 {
     return m_members.sampleUniquePtr.release();
 }

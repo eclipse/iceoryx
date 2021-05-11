@@ -23,6 +23,8 @@
 
 #include <chrono>
 
+namespace
+{
 using namespace ::testing;
 using namespace iox;
 using namespace iox::posix;
@@ -107,4 +109,5 @@ TEST_F(UnixDomainSocket_test, ReceivingOnClientLeadsToError)
     EXPECT_TRUE(result.has_error());
     ASSERT_THAT(result.get_error(), Eq(IpcChannelError::INTERNAL_LOGIC_ERROR));
 }
+} // namespace
 #endif

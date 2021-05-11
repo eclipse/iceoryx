@@ -1,4 +1,5 @@
 // Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2021 by Robert Bosch GmbH. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,7 +43,10 @@ bool operator==(const CmdLineArgs_t& lhs, const CmdLineArgs_t& rhs)
 } // namespace config
 } // namespace iox
 
-
+namespace iox
+{
+namespace test
+{
 class CmdLineParser_test : public Test
 {
   public:
@@ -55,11 +59,12 @@ class CmdLineParser_test : public Test
 
     void testLogLevel(uint8_t numberOfArgs, char* args[], LogLevel level)
     {
-        iox::config::CmdLineParser sut;
+        CmdLineParser sut;
         auto result = sut.parse(numberOfArgs, args);
 
-        EXPECT_THAT(result.has_error(), Eq(false));
-        EXPECT_THAT(result.value().logLevel, Eq(level));
+        ASSERT_FALSE(result.has_error());
+        EXPECT_EQ(result.value().logLevel, level);
+        EXPECT_TRUE(result.value().run);
 
         // Reset optind to be able to parse again
         optind = 0;
@@ -67,11 +72,12 @@ class CmdLineParser_test : public Test
 
     void testMonitoringMode(uint8_t numberOfArgs, char* args[], MonitoringMode mode)
     {
-        iox::config::CmdLineParser sut;
+        CmdLineParser sut;
         auto result = sut.parse(numberOfArgs, args);
 
-        EXPECT_THAT(result.has_error(), Eq(false));
-        EXPECT_THAT(result.value().monitoringMode, Eq(mode));
+        ASSERT_FALSE(result.has_error());
+        EXPECT_EQ(result.value().monitoringMode, mode);
+        EXPECT_TRUE(result.value().run);
 
         // Reset optind to be able to parse again
         optind = 0;
@@ -79,11 +85,12 @@ class CmdLineParser_test : public Test
 
     void testCompatibilityLevel(uint8_t numberOfArgs, char* args[], CompatibilityCheckLevel level)
     {
-        iox::config::CmdLineParser sut;
+        CmdLineParser sut;
         auto result = sut.parse(numberOfArgs, args);
 
-        EXPECT_THAT(result.has_error(), Eq(false));
-        EXPECT_THAT(result.value().compatibilityCheckLevel, Eq(level));
+        ASSERT_FALSE(result.has_error());
+        EXPECT_EQ(result.value().compatibilityCheckLevel, level);
+        EXPECT_TRUE(result.value().run);
 
         // Reset optind to be able to parse again
         optind = 0;
@@ -92,104 +99,104 @@ class CmdLineParser_test : public Test
 
 TEST_F(CmdLineParser_test, NoOptionLeadsToDefaultValues)
 {
-    constexpr uint8_t numberOfArgs{1U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{1U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     args[0] = &appName[0];
     const CmdLineArgs_t defaultValues;
 
     CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value(), Eq(defaultValues));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_EQ(result.value(), defaultValues);
 }
 
 TEST_F(CmdLineParser_test, WrongOptionLeadsUnkownOptionResult)
 {
-    constexpr uint8_t numberOfArgs{2U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{2U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "--ICanHazLulz";
     args[0] = &appName[0];
     args[1] = &option[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(true));
-    EXPECT_THAT(result.get_error(), Eq(CmdLineParserResult::UNKNOWN_OPTION_USED));
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(result.get_error(), CmdLineParserResult::UNKNOWN_OPTION_USED);
 }
 
 TEST_F(CmdLineParser_test, HelpLongOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{2U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{2U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "--help";
     args[0] = &appName[0];
     args[1] = &option[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, HelpShortOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{2U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{2U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-h";
     args[0] = &appName[0];
     args[1] = &option[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, VersionShortOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{2U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{2U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-v";
     args[0] = &appName[0];
     args[1] = &option[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, VersionLongOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{2U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{2U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "--version";
     args[0] = &appName[0];
     args[1] = &option[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, MonitoringModeOptionsLeadToCorrectMode)
 {
-    constexpr uint8_t numberOfArgs{3U};
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
     MonitoringMode modeArray[] = {MonitoringMode::ON, MonitoringMode::OFF};
-    char* args[numberOfArgs];
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char optionArray[][20] = {"-m", "--monitoring-mode"};
     char valueArray[][10] = {"on", "off"};
@@ -202,7 +209,7 @@ TEST_F(CmdLineParser_test, MonitoringModeOptionsLeadToCorrectMode)
         for (auto expectedValue : modeArray)
         {
             args[2] = valueArray[i];
-            testMonitoringMode(numberOfArgs, args, expectedValue);
+            testMonitoringMode(NUMBER_OF_ARGS, args, expectedValue);
             i++;
         }
     }
@@ -210,8 +217,8 @@ TEST_F(CmdLineParser_test, MonitoringModeOptionsLeadToCorrectMode)
 
 TEST_F(CmdLineParser_test, WrongMonitoringModeOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-m";
     char wrongValue[] = "DontBlink";
@@ -219,16 +226,16 @@ TEST_F(CmdLineParser_test, WrongMonitoringModeOptionLeadsToProgrammNotRunning)
     args[1] = &option[0];
     args[2] = &wrongValue[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, LogLevelOptionsLeadToCorrectLogLevel)
 {
-    constexpr uint8_t numberOfArgs{3U};
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
     LogLevel loglevelArray[] = {LogLevel::kOff,
                                 LogLevel::kFatal,
                                 LogLevel::kError,
@@ -236,10 +243,10 @@ TEST_F(CmdLineParser_test, LogLevelOptionsLeadToCorrectLogLevel)
                                 LogLevel::kInfo,
                                 LogLevel::kDebug,
                                 LogLevel::kVerbose};
-    char* args[numberOfArgs];
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char optionArray[][20] = {"-l", "--log-level"};
-    char valueArray[][10] = {"off", "fatal", "error", "warn", "info", "debug", "verbose"};
+    char valueArray[][10] = {"off", "fatal", "error", "warning", "info", "debug", "verbose"};
     args[0] = &appName[0];
 
     for (auto optionValue : optionArray)
@@ -249,7 +256,7 @@ TEST_F(CmdLineParser_test, LogLevelOptionsLeadToCorrectLogLevel)
         for (auto expectedValue : loglevelArray)
         {
             args[2] = valueArray[i];
-            testLogLevel(numberOfArgs, args, expectedValue);
+            testLogLevel(NUMBER_OF_ARGS, args, expectedValue);
             i++;
         }
     }
@@ -257,8 +264,8 @@ TEST_F(CmdLineParser_test, LogLevelOptionsLeadToCorrectLogLevel)
 
 TEST_F(CmdLineParser_test, WrongLogLevelOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-l";
     char wrongValue[] = "TimeyWimey";
@@ -266,17 +273,17 @@ TEST_F(CmdLineParser_test, WrongLogLevelOptionLeadsToProgrammNotRunning)
     args[1] = &option[0];
     args[2] = &wrongValue[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, KillDelayLongOptionLeadsToCorrectDelay)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "--kill-delay";
     char value[] = "73";
@@ -284,17 +291,18 @@ TEST_F(CmdLineParser_test, KillDelayLongOptionLeadsToCorrectDelay)
     args[1] = &option[0];
     args[2] = &value[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().processKillDelay, Eq(Duration::fromSeconds(73)));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_EQ(result.value().processKillDelay, Duration::fromSeconds(73));
+    EXPECT_TRUE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, KillDelayShortOptionLeadsToCorrectDelay)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-k";
     char value[] = "42";
@@ -302,17 +310,18 @@ TEST_F(CmdLineParser_test, KillDelayShortOptionLeadsToCorrectDelay)
     args[1] = &option[0];
     args[2] = &value[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().processKillDelay, Eq(Duration::fromSeconds(42)));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_EQ(result.value().processKillDelay, Duration::fromSeconds(42));
+    EXPECT_TRUE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, KillDelayOptionOutOfBoundsLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "--kill-delay";
     char value[] = "4294967296"; // MAX_PROCESS_KILL_DELAY + 1
@@ -320,23 +329,23 @@ TEST_F(CmdLineParser_test, KillDelayOptionOutOfBoundsLeadsToProgrammNotRunning)
     args[1] = &option[0];
     args[2] = &value[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, CompatibilityLevelOptionsLeadToCorrectCompatibilityLevel)
 {
-    constexpr uint8_t numberOfArgs{3U};
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
     CompatibilityCheckLevel loglevelArray[] = {CompatibilityCheckLevel::OFF,
                                                CompatibilityCheckLevel::MAJOR,
                                                CompatibilityCheckLevel::MINOR,
                                                CompatibilityCheckLevel::PATCH,
                                                CompatibilityCheckLevel::COMMIT_ID,
                                                CompatibilityCheckLevel::BUILD_DATE};
-    char* args[numberOfArgs];
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char optionArray[][20] = {"-x", "--compatibility"};
     char valueArray[][10] = {"off", "major", "minor", "patch", "commitId", "buildDate"};
@@ -349,7 +358,7 @@ TEST_F(CmdLineParser_test, CompatibilityLevelOptionsLeadToCorrectCompatibilityLe
         for (auto expectedValue : loglevelArray)
         {
             args[2] = valueArray[i];
-            testCompatibilityLevel(numberOfArgs, args, expectedValue);
+            testCompatibilityLevel(NUMBER_OF_ARGS, args, expectedValue);
             i++;
         }
     }
@@ -357,8 +366,8 @@ TEST_F(CmdLineParser_test, CompatibilityLevelOptionsLeadToCorrectCompatibilityLe
 
 TEST_F(CmdLineParser_test, WrongCompatibilityLevelOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-x";
     char wrongValue[] = "AmyPond";
@@ -366,17 +375,17 @@ TEST_F(CmdLineParser_test, WrongCompatibilityLevelOptionLeadsToProgrammNotRunnin
     args[1] = &option[0];
     args[2] = &wrongValue[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, UniqueIdLongOptionLeadsToCorrectUniqueId)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "--unique-roudi-id";
     char value[] = "4242";
@@ -384,18 +393,19 @@ TEST_F(CmdLineParser_test, UniqueIdLongOptionLeadsToCorrectUniqueId)
     args[1] = &option[0];
     args[2] = &value[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().uniqueRouDiId.has_value(), Eq(true));
-    EXPECT_THAT(result.value().uniqueRouDiId.value(), Eq(4242));
+    ASSERT_FALSE(result.has_error());
+    ASSERT_TRUE(result.value().uniqueRouDiId.has_value());
+    EXPECT_EQ(result.value().uniqueRouDiId.value(), 4242);
+    EXPECT_TRUE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, UniqueIdShortOptionLeadsToCorrectUniqueId)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-u";
     char value[] = "4242";
@@ -403,18 +413,19 @@ TEST_F(CmdLineParser_test, UniqueIdShortOptionLeadsToCorrectUniqueId)
     args[1] = &option[0];
     args[2] = &value[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().uniqueRouDiId.has_value(), Eq(true));
-    EXPECT_THAT(result.value().uniqueRouDiId.value(), Eq(4242));
+    ASSERT_FALSE(result.has_error());
+    ASSERT_TRUE(result.value().uniqueRouDiId.has_value());
+    EXPECT_EQ(result.value().uniqueRouDiId.value(), 4242);
+    EXPECT_TRUE(result.value().run);
 }
 
 TEST_F(CmdLineParser_test, OutOfBoundsUniqueIdOptionLeadsToProgrammNotRunning)
 {
-    constexpr uint8_t numberOfArgs{3U};
-    char* args[numberOfArgs];
+    constexpr uint8_t NUMBER_OF_ARGS{3U};
+    char* args[NUMBER_OF_ARGS];
     char appName[] = "./foo";
     char option[] = "-u";
     char wrongValue[] = "65536"; // MAX_ROUDI_ID + 1
@@ -422,10 +433,48 @@ TEST_F(CmdLineParser_test, OutOfBoundsUniqueIdOptionLeadsToProgrammNotRunning)
     args[1] = &option[0];
     args[2] = &wrongValue[0];
 
-    iox::config::CmdLineParser sut;
-    auto result = sut.parse(numberOfArgs, args);
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args);
 
-    EXPECT_THAT(result.has_error(), Eq(false));
-    EXPECT_THAT(result.value().run, Eq(false));
+    ASSERT_FALSE(result.has_error());
+    EXPECT_FALSE(result.value().run);
 }
+
+TEST_F(CmdLineParser_test, CmdLineParsingModeEqualToOneHandlesOnlyTheFirstOption)
+{
+    constexpr uint8_t NUMBER_OF_ARGS{5U};
+    char* args[NUMBER_OF_ARGS];
+    char appName[] = "./foo";
+    char uniqueIdOption[] = "-u";
+    char idValue[] = "4242";
+    char killOption[] = "-k";
+    char killValue[] = "42";
+    args[0] = &appName[0];
+    args[1] = &uniqueIdOption[0];
+    args[2] = &idValue[0];
+    args[3] = &killOption[0];
+    args[4] = &killValue[0];
+
+    CmdLineParser sut;
+    auto result = sut.parse(NUMBER_OF_ARGS, args, CmdLineParser::CmdLineArgumentParsingMode::ONE);
+
+    ASSERT_FALSE(result.has_error());
+    ASSERT_TRUE(result.value().uniqueRouDiId.has_value());
+    EXPECT_EQ(result.value().uniqueRouDiId.value(), 4242);
+    EXPECT_EQ(result.value().processKillDelay, iox::roudi::PROCESS_DEFAULT_KILL_DELAY); // default value for kill delay
+    EXPECT_TRUE(result.value().run);
+
+    optind = 0;
+
+    auto res = sut.parse(NUMBER_OF_ARGS, args);
+
+    ASSERT_FALSE(res.has_error());
+    ASSERT_TRUE(res.value().uniqueRouDiId.has_value());
+    EXPECT_EQ(res.value().uniqueRouDiId.value(), 4242);
+    EXPECT_EQ(res.value().processKillDelay, Duration::fromSeconds(42));
+    EXPECT_TRUE(result.value().run);
+}
+
+} // namespace test
+} // namespace iox
 #endif

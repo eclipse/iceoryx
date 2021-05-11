@@ -1,4 +1,5 @@
-# Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+# Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,49 +21,47 @@ include(GNUInstallDirs)
 
 find_package(iceoryx_posh CONFIG REQUIRED)
 find_package(iceoryx_binding_c CONFIG REQUIRED)
+find_package(iceoryx_utils CONFIG REQUIRED)
 
 get_target_property(ICEORYX_CXX_STANDARD iceoryx_posh::iceoryx_posh CXX_STANDARD)
-if ( NOT ICEORYX_CXX_STANDARD )
-    include(IceoryxPlatform)
-endif ()
+include(IceoryxPlatform)
 
-add_executable(iox-ex-c-waitset-publisher ./ice_c_waitset_publisher.c)
-target_link_libraries(iox-ex-c-waitset-publisher
-    iceoryx_posh::iceoryx_posh
+if("-Wno-noexcept-type" IN_LIST ICEORYX_WARNINGS)
+    list(REMOVE_ITEM ICEORYX_WARNINGS "-Wno-noexcept-type")
+endif()
+
+add_executable(iox-c-waitset-publisher ./ice_c_waitset_publisher.c)
+target_link_libraries(iox-c-waitset-publisher
     iceoryx_binding_c::iceoryx_binding_c
 )
-target_compile_options(iox-ex-c-waitset-publisher PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+target_compile_options(iox-c-waitset-publisher PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
-add_executable(iox-ex-c-waitset-gateway ./ice_c_waitset_gateway.c)
-target_link_libraries(iox-ex-c-waitset-gateway
-    iceoryx_posh::iceoryx_posh
+add_executable(iox-c-waitset-gateway ./ice_c_waitset_gateway.c)
+target_link_libraries(iox-c-waitset-gateway
     iceoryx_binding_c::iceoryx_binding_c
 )
-target_compile_options(iox-ex-c-waitset-gateway PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+target_compile_options(iox-c-waitset-gateway PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
-add_executable(iox-ex-c-waitset-grouping ./ice_c_waitset_grouping.c)
-target_link_libraries(iox-ex-c-waitset-grouping
-    iceoryx_posh::iceoryx_posh
+add_executable(iox-c-waitset-grouping ./ice_c_waitset_grouping.c)
+target_link_libraries(iox-c-waitset-grouping
     iceoryx_binding_c::iceoryx_binding_c
 )
-target_compile_options(iox-ex-c-waitset-grouping PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+target_compile_options(iox-c-waitset-grouping PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
-add_executable(iox-ex-c-waitset-individual ./ice_c_waitset_individual.c)
-target_link_libraries(iox-ex-c-waitset-individual
-    iceoryx_posh::iceoryx_posh
+add_executable(iox-c-waitset-individual ./ice_c_waitset_individual.c)
+target_link_libraries(iox-c-waitset-individual
     iceoryx_binding_c::iceoryx_binding_c
 )
-target_compile_options(iox-ex-c-waitset-individual PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+target_compile_options(iox-c-waitset-individual PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
-add_executable(iox-ex-c-waitset-sync ./ice_c_waitset_sync.c)
-target_link_libraries(iox-ex-c-waitset-sync
-    iceoryx_posh::iceoryx_posh
+add_executable(iox-c-waitset-sync ./ice_c_waitset_sync.c)
+target_link_libraries(iox-c-waitset-sync
     iceoryx_binding_c::iceoryx_binding_c
 )
-target_compile_options(iox-ex-c-waitset-sync PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
+target_compile_options(iox-c-waitset-sync PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
 set_source_files_properties(
-    ./ice_c_waitset_sync.c 
+    ./ice_c_waitset_sync.c
     ./ice_c_waitset_individual.c
     ./ice_c_waitset_grouping.c
     ./ice_c_waitset_gateway.c
@@ -72,16 +71,16 @@ set_source_files_properties(
 )
 
 set_target_properties(
-    iox-ex-c-waitset-sync 
-    iox-ex-c-waitset-individual
-    iox-ex-c-waitset-grouping 
-    iox-ex-c-waitset-gateway
-    iox-ex-c-waitset-publisher 
+    iox-c-waitset-sync
+    iox-c-waitset-individual
+    iox-c-waitset-grouping
+    iox-c-waitset-gateway
+    iox-c-waitset-publisher
   PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
 install(
-    TARGETS iox-ex-c-waitset-publisher iox-ex-c-waitset-gateway iox-ex-c-waitset-grouping iox-ex-c-waitset-individual iox-ex-c-waitset-sync
+    TARGETS iox-c-waitset-publisher iox-c-waitset-gateway iox-c-waitset-grouping iox-c-waitset-individual iox-c-waitset-sync
     RUNTIME DESTINATION bin
 )

@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -64,8 +65,8 @@ TEST_F(GenericMemoryBlock_POD_Test, EmplaceWithoutCreate)
 TEST_F(GenericMemoryBlock_POD_Test, EmplaceValue)
 {
     constexpr uint32_t EXPECTED_VALUE{42};
-    memoryProvider.addMemoryBlock(&sutPOD);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sutPOD));
+    IOX_DISCARD_RESULT(memoryProvider.create());
     ASSERT_THAT(sutPOD.memory().has_value(), Eq(true));
 
     auto emplaceResult = sutPOD.emplace(EXPECTED_VALUE);
@@ -77,8 +78,8 @@ TEST_F(GenericMemoryBlock_POD_Test, MultipleEmplaceValue)
 {
     constexpr uint32_t FIRST_VALUE{13};
     constexpr uint32_t EXPECTED_VALUE{73};
-    memoryProvider.addMemoryBlock(&sutPOD);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sutPOD));
+    IOX_DISCARD_RESULT(memoryProvider.create());
 
     sutPOD.emplace(FIRST_VALUE);
 
@@ -90,8 +91,8 @@ TEST_F(GenericMemoryBlock_POD_Test, MultipleEmplaceValue)
 TEST_F(GenericMemoryBlock_POD_Test, GetValue)
 {
     constexpr uint32_t EXPECTED_VALUE{42};
-    memoryProvider.addMemoryBlock(&sutPOD);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sutPOD));
+    IOX_DISCARD_RESULT(memoryProvider.create());
 
     sutPOD.emplace(EXPECTED_VALUE);
 
@@ -149,8 +150,8 @@ class GenericMemoryBlock_NonTrivial_Test : public Test
 TEST_F(GenericMemoryBlock_NonTrivial_Test, EmplaceValue)
 {
     constexpr uint32_t EXPECTED_VALUE{142};
-    memoryProvider.addMemoryBlock(&sut);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sut));
+    IOX_DISCARD_RESULT(memoryProvider.create());
     ASSERT_THAT(sut.memory().has_value(), Eq(true));
 
     auto emplaceResult = sut.emplace(EXPECTED_VALUE);
@@ -163,8 +164,8 @@ TEST_F(GenericMemoryBlock_NonTrivial_Test, MultipleEmplaceValue)
 {
     constexpr uint32_t FIRST_VALUE{113};
     constexpr uint32_t EXPECTED_VALUE{173};
-    memoryProvider.addMemoryBlock(&sut);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sut));
+    IOX_DISCARD_RESULT(memoryProvider.create());
 
     sut.emplace(FIRST_VALUE);
 
@@ -182,8 +183,8 @@ TEST_F(GenericMemoryBlock_NonTrivial_Test, DestroyWithoutCreate)
 
 TEST_F(GenericMemoryBlock_NonTrivial_Test, DestroyWithoutEmplace)
 {
-    memoryProvider.addMemoryBlock(&sut);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sut));
+    IOX_DISCARD_RESULT(memoryProvider.create());
     sut.destroy();
     /// @note we just expect to not terminate
 }
@@ -191,8 +192,8 @@ TEST_F(GenericMemoryBlock_NonTrivial_Test, DestroyWithoutEmplace)
 TEST_F(GenericMemoryBlock_NonTrivial_Test, DestroyWithEmplace)
 {
     constexpr uint32_t EXPECTED_VALUE{111};
-    memoryProvider.addMemoryBlock(&sut);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sut));
+    IOX_DISCARD_RESULT(memoryProvider.create());
     EXPECT_THAT(sut.emplace(EXPECTED_VALUE).value()->m_data, EXPECTED_VALUE);
     EXPECT_THAT(NonTrivialClass::s_constructorCounter, Eq(1u));
 
@@ -205,8 +206,8 @@ TEST_F(GenericMemoryBlock_NonTrivial_Test, DestroyWithEmplace)
 TEST_F(GenericMemoryBlock_NonTrivial_Test, RepetitiveDestroyWithEmplace)
 {
     constexpr uint32_t EXPECTED_VALUE{42};
-    memoryProvider.addMemoryBlock(&sut);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sut));
+    IOX_DISCARD_RESULT(memoryProvider.create());
     sut.emplace(EXPECTED_VALUE);
 
     sut.destroy();

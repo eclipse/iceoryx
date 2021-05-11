@@ -231,7 +231,7 @@ class variant
     /// @brief returns the index of the stored type in the variant. if the variant does
     ///         not contain any type it returns INVALID_VARIANT_INDEX
     /// @return index of the stored type
-    constexpr size_t index() const noexcept;
+    constexpr uint64_t index() const noexcept;
 
   private:
     alignas(algorithm::max(alignof(Types)...)) internal::byte_t m_storage[TYPE_SIZE]{0u};

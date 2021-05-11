@@ -160,8 +160,7 @@ CmdLineParser::parse(int argc, char* argv[], const CmdLineArgumentParsingMode cm
             }
             else
             {
-                m_processKillDelay =
-                    units::Duration::fromSeconds(processKillDelayInSeconds);
+                m_processKillDelay = units::Duration::fromSeconds(processKillDelayInSeconds);
             }
             break;
         }
@@ -212,8 +211,13 @@ CmdLineParser::parse(int argc, char* argv[], const CmdLineArgumentParsingMode cm
             break;
         }
     }
-    return cxx::success<CmdLineArgs_t>(CmdLineArgs_t{
-        m_monitoringMode, m_logLevel, m_compatibilityCheckLevel, m_processKillDelay, m_uniqueRouDiId, m_run, ""});
+    return cxx::success<CmdLineArgs_t>(CmdLineArgs_t{m_monitoringMode,
+                                                     m_logLevel,
+                                                     m_compatibilityCheckLevel,
+                                                     m_processKillDelay,
+                                                     m_uniqueRouDiId,
+                                                     m_run,
+                                                     iox::roudi::ConfigFilePathString_t("")});
 } // namespace roudi
 } // namespace config
 } // namespace iox

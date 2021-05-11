@@ -1,0 +1,64 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Iceoryx Integrationtests
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, release* ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+          os: [ubuntu-20.04]
+
+    steps:
+      - name: compiler versions
+        run: |
+          echo $(gcc --version)
+          echo $(clang --version)
+
+      - name: Setup ROS
+        uses: ros-tooling/setup-ros@0.1.2
+        with:
+          required-ros-distributions: foxy
+
+      - name: Install Iceoryx Dependencies
+        run: |
+          sudo apt install -y apt-transport-https
+          sudo apt update && sudo apt install -y cmake libacl1-dev libncurses5-dev pkg-config ros-foxy-ros-testing
+          mkdir -p src/iceoryx
+          cd $GITHUB_WORKSPACE/src/iceoryx
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Check copyrights
+        run: |
+          source /opt/ros/foxy/setup.bash
+          cd $GITHUB_WORKSPACE
+          sudo rm -rf /opt/ros/foxy/lib/python3.8/site-packages/ament_copyright/template/apache2_header.txt
+          sudo cp -rf $GITHUB_WORKSPACE/tools/apache2_header.txt /opt/ros/foxy/lib/python3.8/site-packages/ament_copyright/template/.
+          sudo sed -i '41 c\"'c'", "'cc'", "'cpp'", "'cxx'", "'h'", "'hh'", "'hpp'", "'hxx'", "'inl'", "'sh'"' /opt/ros/foxy/lib/python3.8/site-packages/ament_copyright/main.py
+          ament_copyright --exclude LICENSE CONTRIBUTING.md tools/apache2_header.txt
+
+      - name: Build
+        run: |
+          source /opt/ros/foxy/setup.bash
+          cd $GITHUB_WORKSPACE
+          rm -rf iceoryx_examples/COLCON_IGNORE iceoryx_integrationtest/COLCON_IGNORE
+          colcon build
+
+      - name: Test Execution
+        run: |
+          source /opt/ros/foxy/setup.bash
+          source $GITHUB_WORKSPACE/install/setup.bash
+          cd $GITHUB_WORKSPACE
+          colcon test --packages-select iceoryx_integrationtest
+          colcon test-result --all --verbose

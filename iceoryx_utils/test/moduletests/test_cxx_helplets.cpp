@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +18,12 @@
 #include "iceoryx_utils/cxx/helplets.hpp"
 #include "test.hpp"
 
+#include <type_traits>
+
+namespace
+{
 using namespace ::testing;
+using namespace iox::cxx;
 
 namespace
 {
@@ -80,3 +86,107 @@ TEST_F(Helplets_test, maxAlignment)
     EXPECT_THAT(alignof(FooBar), Eq(alignof(FuBar)));
     EXPECT_THAT((iox::cxx::maxAlignment<FooBar, FuBar>()), Eq(alignof(FooBar)));
 }
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint8WhenValueSmaller256)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<123U>, uint8_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint8WhenValueEqualTo255)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<255U>, uint8_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint16WhenValueEqualTo256)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<256U>, uint16_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint16WhenValueBetween256And65535)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<8172U>, uint16_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint16WhenValueEqualTo65535)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<65535U>, uint16_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint32WhenValueEqualTo65536)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<65536U>, uint32_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint32WhenValueBetween2p16And2p32)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<81721U>, uint32_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint32WhenValueEqualTo4294967295)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<4294967295U>, uint32_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint64WhenValueEqualTo4294967296)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<4294967296U>, uint64_t>::value));
+}
+
+TEST_F(Helplets_test, bestFittingTypeUsesUint32WhenValueGreater2p32)
+{
+    EXPECT_TRUE((std::is_same<BestFittingType_t<42949672961U>, uint64_t>::value));
+}
+
+template <class T>
+class Helplets_test_isPowerOfTwo : public Helplets_test
+{
+  public:
+    using CurrentType = T;
+
+    static constexpr T MAX = std::numeric_limits<T>::max();
+    static constexpr T MAX_POWER_OF_TWO = MAX / 2U + 1U;
+};
+
+using HelpletsIsPowerOfTwoTypes = Types<uint8_t, uint16_t, uint32_t, uint64_t, size_t>;
+
+/// we require TYPED_TEST since we support gtest 1.8 for our safety targets
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+TYPED_TEST_CASE(Helplets_test_isPowerOfTwo, HelpletsIsPowerOfTwoTypes);
+#pragma GCC diagnostic pop
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, OneIsPowerOfTwo)
+{
+    EXPECT_TRUE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(1)));
+}
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, TwoIsPowerOfTwo)
+{
+    EXPECT_TRUE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(2)));
+}
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, FourIsPowerOfTwo)
+{
+    EXPECT_TRUE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(4)));
+}
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, MaxPossiblePowerOfTwoForTypeIsPowerOfTwo)
+{
+    EXPECT_TRUE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(TestFixture::MAX_POWER_OF_TWO)));
+}
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, ZeroIsNotPowerOfTwo)
+{
+    EXPECT_FALSE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(0)));
+}
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, FourtyTwoIsNotPowerOfTwo)
+{
+    EXPECT_FALSE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(42)));
+}
+
+TYPED_TEST(Helplets_test_isPowerOfTwo, MaxValueForTypeIsNotPowerOfTwo)
+{
+    EXPECT_FALSE(isPowerOfTwo(static_cast<typename TestFixture::CurrentType>(TestFixture::MAX)));
+}
+} // namespace

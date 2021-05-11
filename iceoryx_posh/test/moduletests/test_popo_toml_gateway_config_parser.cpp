@@ -18,19 +18,29 @@
 #include "stubs/stub_toml_gateway_config_parser.hpp"
 
 #include "test.hpp"
+#include "iceoryx/tests/posh/moduletests/test_input_path.hpp"
 
 using namespace ::testing;
 using ::testing::_;
 
 // ======================================== Helpers ======================================== //
-
+namespace
+{
+using ParseErrorInputFile_t = std::pair<iox::config::TomlGatewayConfigParseError, iox::roudi::ConfigFilePathString_t>;
+};
 
 // ======================================== Fixture ======================================== //
-class TomlGatewayConfigParserTest : public Test
+class TomlGatewayConfigParserTest : public TestWithParam<ParseErrorInputFile_t>
 {
   public:
-    void SetUp(){};
+    void SetUp()
+    {
+        // get file path via cmake
+        m_configFilePath = iox::testing::TEST_INPUT_PATH;
+    };
     void TearDown(){};
+
+    iox::roudi::ConfigFilePathString_t m_configFilePath;
 };
 
 // ======================================== Tests ======================================== //
@@ -219,4 +229,29 @@ TEST_F(TomlGatewayConfigParserTest, FailsValidationIfNoServicesInConfig)
     {
         EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INCOMPLETE_CONFIGURATION, result.get_error());
     }
+}
+
+/// we require INSTANTIATE_TEST_CASE_P since we support gtest 1.8 for our safety targets
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+INSTANTIATE_TEST_CASE_P(ParseAllMalformedInputConfigFiles,
+                        TomlGatewayConfigParserTest,
+                        Values(ParseErrorInputFile_t{iox::config::TomlGatewayConfigParseError::INCOMPLETE_CONFIGURATION,
+                                                     "popo_toml_gateway_error_incomplete_configuration.toml"},
+                               ParseErrorInputFile_t{iox::config::TomlGatewayConfigParseError::EXCEPTION_IN_PARSER,
+                                                     "toml_parser_exception.toml"}));
+
+                                                     
+#pragma GCC diagnostic pop
+
+TEST_P(TomlGatewayConfigParserTest, ParseMalformedInputFileCausesError)
+{
+    const auto parseErrorInputFile = GetParam();
+
+    m_configFilePath.append(iox::cxx::TruncateToCapacity, parseErrorInputFile.second);
+
+    auto result = iox::config::TomlGatewayConfigParser::parse(m_configFilePath);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(parseErrorInputFile.first, result.get_error());
 }

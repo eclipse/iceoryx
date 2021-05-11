@@ -22,8 +22,8 @@
 class WaitSetMock : public cpp2c_WaitSet
 {
   public:
-    WaitSetMock(iox::popo::ConditionVariableData* condVarDataPtr) noexcept
-        : cpp2c_WaitSet(condVarDataPtr)
+    WaitSetMock(iox::popo::ConditionVariableData& condVarData) noexcept
+        : cpp2c_WaitSet(condVarData)
     {
     }
 };

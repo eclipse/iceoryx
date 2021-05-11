@@ -1,4 +1,5 @@
-// Copyright (c) 2019, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@
 #include "iceoryx_posh/iceoryx_posh_types.hpp"
 #include "iceoryx_posh/internal/capro/capro_message.hpp"
 #include "iceoryx_posh/internal/popo/building_blocks/typed_unique_id.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
+#include "iceoryx_utils/internal/relocatable_pointer/relative_pointer.hpp"
 
 #include <atomic>
 
@@ -36,11 +37,10 @@ struct BasePortData
 
     /// @brief Constructor
     /// @param[in] serviceDescription creates the service service description
-    /// @param[in] portType Type of port to be created
-    /// @param[in] processName Name of the process
+    /// @param[in] runtimeName Name of the application's runtime
     /// @param[in] nodeName Name of the node
     BasePortData(const capro::ServiceDescription& serviceDescription,
-                 const ProcessName_t& processName,
+                 const RuntimeName_t& runtimeName,
                  const NodeName_t& nodeName) noexcept;
 
     BasePortData(const BasePortData&) = delete;
@@ -50,9 +50,8 @@ struct BasePortData
     ~BasePortData() = default;
 
     capro::ServiceDescription m_serviceDescription;
-    ProcessName_t m_processName;
+    RuntimeName_t m_runtimeName;
     NodeName_t m_nodeName;
-
     UniquePortId m_uniqueId;
     std::atomic_bool m_toBeDestroyed{false};
 };

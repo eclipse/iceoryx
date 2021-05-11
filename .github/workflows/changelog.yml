@@ -1,0 +1,44 @@
+# This is a workflow that is manually triggered to generate a changelog based on given git tags and branch
+
+name: Generate Changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      BranchName:
+        description: 'Branch name to generate changelog'
+        required: true
+      UntilTag:
+        description: 'Until tag v[major].[minor].[patch].[dev]'
+        required: true
+      FutureRelease:
+        description: 'Future release version v[major].[minor].[patch].[dev]'
+        required: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v2.3.4
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        ref: ${{ github.event.inputs.BranchName }}
+    # Generate changelog
+    - name: Generate Changelog using github-changelog-generator
+      uses: heinrichreimer/github-changelog-generator-action@v2.1.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        project: iceoryx
+        user: eclipse-iceoryx
+        releaseBranch: ${{ github.event.inputs.BranchName }}
+        futureRelease: v${{ github.event.inputs.FutureRelease }}
+        dueTag: ${{ github.event.inputs.UntilTag }}
+        pullRequests: False
+        author: False
+        issues: True
+        issuesWoLabels: True
+        stripHeaders: True
+        stripGeneratorNotice: True

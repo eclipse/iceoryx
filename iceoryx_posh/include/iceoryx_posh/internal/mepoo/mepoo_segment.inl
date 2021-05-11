@@ -21,67 +21,69 @@
 #include "iceoryx_posh/mepoo/memory_info.hpp"
 #include "iceoryx_posh/mepoo/mepoo_config.hpp"
 #include "iceoryx_utils/error_handling/error_handling.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
+#include "iceoryx_utils/internal/relocatable_pointer/relative_pointer.hpp"
 
 namespace iox
 {
 namespace mepoo
 {
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
-inline MePooSegment<SharedMemoryObjectType, MemoryManagerType>::MePooSegment(const MePooConfig& f_mempoolConfig,
-                                                                             posix::Allocator* f_managementAllocator,
-                                                                             const posix::PosixGroup& f_readerGroup,
-                                                                             const posix::PosixGroup& f_writerGroup,
-                                                                             const iox::mepoo::MemoryInfo& memoryInfo)
-    : m_sharedMemoryObject(std::move(createSharedMemoryObject(f_mempoolConfig, f_writerGroup)))
-    , m_readerGroup(f_readerGroup)
-    , m_writerGroup(f_writerGroup)
+inline MePooSegment<SharedMemoryObjectType, MemoryManagerType>::MePooSegment(
+    const MePooConfig& mempoolConfig,
+    posix::Allocator& managementAllocator,
+    const posix::PosixGroup& readerGroup,
+    const posix::PosixGroup& writerGroup,
+    const iox::mepoo::MemoryInfo& memoryInfo) noexcept
+    : m_sharedMemoryObject(std::move(createSharedMemoryObject(mempoolConfig, writerGroup)))
+    , m_readerGroup(readerGroup)
+    , m_writerGroup(writerGroup)
     , m_memoryInfo(memoryInfo)
 {
     using namespace posix;
-    AccessController f_accessController;
-    if (!(f_readerGroup == f_writerGroup))
+    AccessController accessController;
+    if (!(readerGroup == writerGroup))
     {
-        f_accessController.addPermissionEntry(
-            AccessController::Category::SPECIFIC_GROUP, AccessController::Permission::READ, f_readerGroup.getName());
+        accessController.addPermissionEntry(
+            AccessController::Category::SPECIFIC_GROUP, AccessController::Permission::READ, readerGroup.getName());
     }
-    f_accessController.addPermissionEntry(
-        AccessController::Category::SPECIFIC_GROUP, AccessController::Permission::READWRITE, f_writerGroup.getName());
-    f_accessController.addPermissionEntry(AccessController::Category::USER, AccessController::Permission::READWRITE);
-    f_accessController.addPermissionEntry(AccessController::Category::GROUP, AccessController::Permission::READWRITE);
-    f_accessController.addPermissionEntry(AccessController::Category::OTHERS, AccessController::Permission::NONE);
+    accessController.addPermissionEntry(
+        AccessController::Category::SPECIFIC_GROUP, AccessController::Permission::READWRITE, writerGroup.getName());
+    accessController.addPermissionEntry(AccessController::Category::USER, AccessController::Permission::READWRITE);
+    accessController.addPermissionEntry(AccessController::Category::GROUP, AccessController::Permission::READWRITE);
+    accessController.addPermissionEntry(AccessController::Category::OTHERS, AccessController::Permission::NONE);
 
-    if (!f_accessController.writePermissionsToFile(m_sharedMemoryObject.getFileHandle()))
+    if (!accessController.writePermissionsToFile(m_sharedMemoryObject.getFileHandle()))
     {
         errorHandler(Error::kMEPOO__SEGMENT_COULD_NOT_APPLY_POSIX_RIGHTS_TO_SHARED_MEMORY);
     }
 
-    m_memoryManager.configureMemoryManager(f_mempoolConfig, f_managementAllocator, m_sharedMemoryObject.getAllocator());
+    m_memoryManager.configureMemoryManager(mempoolConfig, managementAllocator, *m_sharedMemoryObject.getAllocator());
     m_sharedMemoryObject.finalizeAllocation();
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
 inline SharedMemoryObjectType MePooSegment<SharedMemoryObjectType, MemoryManagerType>::createSharedMemoryObject(
-    const MePooConfig& f_mempoolConfig, const posix::PosixGroup& f_writerGroup)
+    const MePooConfig& mempoolConfig, const posix::PosixGroup& writerGroup) noexcept
 {
     // we let the OS decide where to map the shm segments
     constexpr void* BASE_ADDRESS_HINT{nullptr};
 
     // on qnx the current working directory will be added to the /dev/shmem path if the leading slash is missing
-    posix::SharedMemory::Name_t shmName = "/" + f_writerGroup.getName();
+    constexpr char SHARED_MEMORY_NAME_PREFIX[] = "/";
+    posix::SharedMemory::Name_t shmName = SHARED_MEMORY_NAME_PREFIX + writerGroup.getName();
 
     return std::move(
         SharedMemoryObjectType::create(shmName,
-                                       MemoryManager::requiredChunkMemorySize(f_mempoolConfig),
+                                       MemoryManager::requiredChunkMemorySize(mempoolConfig),
                                        posix::AccessMode::READ_WRITE,
                                        posix::OwnerShip::MINE,
                                        BASE_ADDRESS_HINT,
                                        static_cast<mode_t>(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP))
             .and_then([this](auto& sharedMemoryObject) {
-                setSegmentId(iox::RelativePointer::registerPtr(sharedMemoryObject.getBaseAddress(),
-                                                               sharedMemoryObject.getSizeInBytes()));
+                this->setSegmentId(iox::rp::BaseRelativePointer::registerPtr(sharedMemoryObject.getBaseAddress(),
+                                                                             sharedMemoryObject.getSizeInBytes()));
 
-                LogDebug() << "Roudi registered payload segment "
+                LogDebug() << "Roudi registered payload data segment "
                            << iox::log::HexFormat(reinterpret_cast<uint64_t>(sharedMemoryObject.getBaseAddress()))
                            << " with size " << sharedMemoryObject.getSizeInBytes() << " to id " << m_segmentId;
             })
@@ -90,38 +92,38 @@ inline SharedMemoryObjectType MePooSegment<SharedMemoryObjectType, MemoryManager
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
-inline posix::PosixGroup MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getWriterGroup() const
+inline posix::PosixGroup MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getWriterGroup() const noexcept
 {
     return m_writerGroup;
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
-inline posix::PosixGroup MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getReaderGroup() const
+inline posix::PosixGroup MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getReaderGroup() const noexcept
 {
     return m_readerGroup;
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
-inline MemoryManagerType& MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getMemoryManager()
+inline MemoryManagerType& MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getMemoryManager() noexcept
 {
     return m_memoryManager;
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
 inline const SharedMemoryObjectType&
-MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getSharedMemoryObject() const
+MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getSharedMemoryObject() const noexcept
 {
     return m_sharedMemoryObject;
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
-inline uint64_t MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getSegmentId() const
+inline uint64_t MePooSegment<SharedMemoryObjectType, MemoryManagerType>::getSegmentId() const noexcept
 {
     return m_segmentId;
 }
 
 template <typename SharedMemoryObjectType, typename MemoryManagerType>
-inline void MePooSegment<SharedMemoryObjectType, MemoryManagerType>::setSegmentId(const uint64_t segmentId)
+inline void MePooSegment<SharedMemoryObjectType, MemoryManagerType>::setSegmentId(const uint64_t segmentId) noexcept
 {
     m_segmentId = segmentId;
 }

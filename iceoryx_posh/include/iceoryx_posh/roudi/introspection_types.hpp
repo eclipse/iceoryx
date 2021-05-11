@@ -41,7 +41,7 @@ struct MemPoolInfo
     uint32_t m_minFreeChunks{0};
     uint32_t m_numChunks{0};
     uint32_t m_chunkSize{0};
-    uint32_t m_payloadSize{0};
+    uint32_t m_chunkPayloadSize{0};
 };
 
 /// @brief container for MemPoolInfo structs of all available mempools.
@@ -66,7 +66,7 @@ const capro::ServiceDescription IntrospectionPortService(INTROSPECTION_SERVICE_I
 /// @brief container for common port data which is related to the subscriber port as well as the publisher port
 struct PortData
 {
-    ProcessName_t m_name;
+    RuntimeName_t m_name;
     capro::IdString_t m_caproInstanceID;
     capro::IdString_t m_caproServiceID;
     capro::IdString_t m_caproEventMethodID;
@@ -130,7 +130,7 @@ const capro::ServiceDescription IntrospectionProcessService(INTROSPECTION_SERVIC
 struct ProcessIntrospectionData
 {
     int m_pid{0};
-    ProcessName_t m_name;
+    RuntimeName_t m_name;
     cxx::vector<NodeName_t, MAX_NODE_PER_PROCESS> m_nodes;
 };
 

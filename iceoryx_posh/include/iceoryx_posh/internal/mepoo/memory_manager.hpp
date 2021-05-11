@@ -1,4 +1,5 @@
-// Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@
 #include "iceoryx_posh/iceoryx_posh_types.hpp"
 #include "iceoryx_posh/internal/mepoo/mem_pool.hpp"
 #include "iceoryx_posh/internal/mepoo/shared_chunk.hpp"
+#include "iceoryx_posh/mepoo/chunk_settings.hpp"
 #include "iceoryx_utils/cxx/helplets.hpp"
 #include "iceoryx_utils/cxx/vector.hpp"
 
@@ -31,47 +33,49 @@
 
 namespace iox
 {
+namespace log
+{
+class LogStream;
+}
 namespace mepoo
 {
 struct MePooConfig;
 
 class MemoryManager
 {
-    using MaxSize_t = cxx::range<uint32_t, 1, std::numeric_limits<uint32_t>::max() - sizeof(ChunkHeader)>;
+    using MaxChunkPayloadSize_t = cxx::range<uint32_t, 1, std::numeric_limits<uint32_t>::max() - sizeof(ChunkHeader)>;
 
   public:
-    MemoryManager() = default;
+    MemoryManager() noexcept = default;
     MemoryManager(const MemoryManager&) = delete;
     MemoryManager(MemoryManager&&) = delete;
     MemoryManager& operator=(const MemoryManager&) = delete;
     MemoryManager& operator=(MemoryManager&&) = delete;
-    ~MemoryManager() = default;
+    ~MemoryManager() noexcept = default;
 
-    void configureMemoryManager(const MePooConfig& f_mePooConfig,
-                                posix::Allocator* f_managementAllocator,
-                                posix::Allocator* f_payloadAllocator);
+    void configureMemoryManager(const MePooConfig& mePooConfig,
+                                posix::Allocator& managementAllocator,
+                                posix::Allocator& chunkMemoryAllocator) noexcept;
 
-    SharedChunk getChunk(const MaxSize_t f_size);
+    SharedChunk getChunk(const ChunkSettings& chunkSettings) noexcept;
 
-    uint32_t getMempoolChunkSizeForPayloadSize(const uint32_t f_size) const;
+    uint32_t getNumberOfMemPools() const noexcept;
 
-    uint32_t getNumberOfMemPools() const;
+    MemPoolInfo getMemPoolInfo(const uint32_t index) const noexcept;
 
-    MemPoolInfo getMemPoolInfo(uint32_t f_index) const;
-
-    static uint32_t sizeWithChunkHeaderStruct(const MaxSize_t f_size);
-
-    static uint64_t requiredChunkMemorySize(const MePooConfig& f_mePooConfig);
-    static uint64_t requiredManagementMemorySize(const MePooConfig& f_mePooConfig);
-    static uint64_t requiredFullMemorySize(const MePooConfig& f_mePooConfig);
+    static uint64_t requiredChunkMemorySize(const MePooConfig& mePooConfig) noexcept;
+    static uint64_t requiredManagementMemorySize(const MePooConfig& mePooConfig) noexcept;
+    static uint64_t requiredFullMemorySize(const MePooConfig& mePooConfig) noexcept;
 
   private:
-    void printMemPoolVector() const;
-    void addMemPool(posix::Allocator* f_managementAllocator,
-                    posix::Allocator* f_payloadAllocator,
-                    const cxx::greater_or_equal<uint32_t, MemPool::MEMORY_ALIGNMENT> f_payloadSize,
-                    const cxx::greater_or_equal<uint32_t, 1> f_numberOfChunks);
-    void generateChunkManagementPool(posix::Allocator* f_managementAllocator);
+    static uint32_t sizeWithChunkHeaderStruct(const MaxChunkPayloadSize_t size) noexcept;
+
+    void printMemPoolVector(log::LogStream& log) const noexcept;
+    void addMemPool(posix::Allocator& managementAllocator,
+                    posix::Allocator& chunkMemoryAllocator,
+                    const cxx::greater_or_equal<uint32_t, MemPool::CHUNK_MEMORY_ALIGNMENT> chunkPayloadSize,
+                    const cxx::greater_or_equal<uint32_t, 1> numberOfChunks) noexcept;
+    void generateChunkManagementPool(posix::Allocator& managementAllocator) noexcept;
 
   private:
     bool m_denyAddMemPool{false};

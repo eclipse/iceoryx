@@ -20,8 +20,8 @@ namespace iox
 {
 namespace popo
 {
-ApplicationPortData::ApplicationPortData(const ProcessName_t& processName) noexcept
-    : BasePortData(capro::ServiceDescription(), processName, "")
+ApplicationPortData::ApplicationPortData(const RuntimeName_t& runtimeName) noexcept
+    : BasePortData(capro::ServiceDescription(), runtimeName, "")
 {
 }
 } // namespace popo

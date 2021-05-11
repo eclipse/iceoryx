@@ -15,8 +15,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_posh/internal/popo/building_blocks/typed_unique_id.hpp"
+#include "iceoryx_utils/cxx/attributes.hpp"
 #include "iceoryx_utils/cxx/generic_raii.hpp"
 #include "test.hpp"
+
 
 using namespace ::testing;
 using namespace iox::popo;
@@ -35,7 +37,7 @@ TEST(TypedUniqueId_RouDiId, SettingTheRouDiIdTwiceFails)
     uint16_t someId = 1243u;
     bool errorHandlerCalled = false;
     auto errorHandlerGuard = iox::ErrorHandler::SetTemporaryErrorHandler(
-        [&errorHandlerCalled](const iox::Error error [[gnu::unused]],
+        [&errorHandlerCalled](const iox::Error error IOX_MAYBE_UNUSED,
                               const std::function<void()>,
                               const iox::ErrorLevel) { errorHandlerCalled = true; });
 
@@ -50,7 +52,7 @@ TEST(TypedUniqueId_RouDiId, GettingTheRouDiIdWithoutSettingFails)
 {
     bool errorHandlerCalled = false;
     auto errorHandlerGuard = iox::ErrorHandler::SetTemporaryErrorHandler(
-        [&errorHandlerCalled](const iox::Error error [[gnu::unused]],
+        [&errorHandlerCalled](const iox::Error error IOX_MAYBE_UNUSED,
                               const std::function<void()>,
                               const iox::ErrorLevel) { errorHandlerCalled = true; });
 

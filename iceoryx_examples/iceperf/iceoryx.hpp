@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +32,7 @@ class Iceoryx : public IcePerfBase
 
   private:
     void init() noexcept;
-    void sendPerfTopic(uint32_t payloadSizeInBytes, bool runFlag) noexcept override;
+    void sendPerfTopic(const uint32_t payloadSizeInBytes, const RunFlag runFlag) noexcept override;
     PerfTopic receivePerfTopic() noexcept override;
 
     iox::popo::UntypedPublisher m_publisher;

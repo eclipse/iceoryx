@@ -1,4 +1,5 @@
-// Copyright (c) 2019, 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -85,14 +86,18 @@ inline void MemPoolIntrospection<MemoryManager, SegmentManager, PublisherPort>::
     if (m_publisherPort.hasSubscribers())
     {
         uint32_t id = 0U;
-        auto maybeChunkHeader = m_publisherPort.tryAllocateChunk(sizeof(MemPoolIntrospectionInfoContainer));
+        auto maybeChunkHeader = m_publisherPort.tryAllocateChunk(sizeof(MemPoolIntrospectionInfoContainer),
+                                                                 alignof(MemPoolIntrospectionInfoContainer),
+                                                                 CHUNK_NO_USER_HEADER_SIZE,
+                                                                 CHUNK_NO_USER_HEADER_ALIGNMENT);
         if (maybeChunkHeader.has_error())
         {
             LogWarn() << "Cannot allocate chunk for mempool introspection!";
             errorHandler(Error::kMEPOO__CANNOT_ALLOCATE_CHUNK, nullptr, ErrorLevel::MODERATE);
+            return;
         }
 
-        auto sample = static_cast<MemPoolIntrospectionInfoContainer*>(maybeChunkHeader.value()->payload());
+        auto sample = static_cast<MemPoolIntrospectionInfoContainer*>(maybeChunkHeader.value()->userPayload());
         new (sample) MemPoolIntrospectionInfoContainer;
 
         if (sample->emplace_back())
@@ -154,7 +159,7 @@ MemPoolIntrospection<MemoryManager, SegmentManager, PublisherPort>::copyMemPoolI
         dst.m_minFreeChunks = src.m_minFreeChunks;
         dst.m_numChunks = src.m_numChunks;
         dst.m_chunkSize = src.m_chunkSize;
-        dst.m_payloadSize = src.m_chunkSize - static_cast<uint32_t>(sizeof(mepoo::ChunkHeader));
+        dst.m_chunkPayloadSize = src.m_chunkSize - static_cast<uint32_t>(sizeof(mepoo::ChunkHeader));
     }
 }
 

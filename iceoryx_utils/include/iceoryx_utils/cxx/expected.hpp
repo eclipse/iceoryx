@@ -1,4 +1,5 @@
-// Copyright (c) 2019, 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
 #ifndef IOX_UTILS_CXX_EXPECTED_HPP
 #define IOX_UTILS_CXX_EXPECTED_HPP
 
+#include "iceoryx_utils/cxx/attributes.hpp"
 #include "iceoryx_utils/cxx/function_ref.hpp"
 #include "iceoryx_utils/cxx/optional.hpp"
 #include "iceoryx_utils/cxx/variant.hpp"
@@ -44,7 +46,8 @@ template <typename T>
 struct ErrorTypeAdapter
 {
     static_assert(internal::HasInvalidStateMember<T>::value,
-                  "T must have a INVALID_STATE. Alternatively write an ErrorTypeAdapter specialisation for your type");
+                  "T must have an INVALID_STATE value/member. Alternatively write an ErrorTypeAdapter specialisation "
+                  "for your type");
 
     static T getInvalidState() noexcept;
 };
@@ -124,7 +127,7 @@ struct error
 };
 
 template <typename... T>
-class expected;
+class IOX_NO_DISCARD expected;
 
 /// @brief expected implementation from the C++20 proposal with C++11. The interface
 ///         is inspired by the proposal but it has changes since we are not allowed to
@@ -156,7 +159,7 @@ class expected;
 ///     allHailHypnotoad->push_back(7);
 /// @endcode
 template <typename ErrorType>
-class expected<ErrorType>
+class IOX_NO_DISCARD expected<ErrorType>
 {
   public:
     /// @brief default ctor is deleted since you have to clearly state if the
@@ -309,7 +312,7 @@ class expected<ErrorType>
 /// @param ValueType type of the value which can be stored in the expected
 /// @param ErrorType type of the error which can be stored in the expected
 template <typename ValueType, typename ErrorType>
-class expected<ValueType, ErrorType>
+class IOX_NO_DISCARD expected<ValueType, ErrorType>
 {
   public:
     /// @brief default ctor is deleted since you have to clearly state if the
@@ -606,7 +609,7 @@ class expected<ValueType, ErrorType>
 };
 
 template <typename ErrorType>
-class expected<void, ErrorType> : public expected<ErrorType>
+class IOX_NO_DISCARD expected<void, ErrorType> : public expected<ErrorType>
 {
   public:
     using expected<ErrorType>::expected;

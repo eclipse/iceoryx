@@ -1,4 +1,5 @@
 // Copyright (c) 2020, 2021 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,9 +17,9 @@
 
 #include "iceoryx_posh/roudi/memory/roudi_memory_manager.hpp"
 
+#include "iceoryx_utils/testing/mocks/logger_mock.hpp"
 #include "mocks/roudi_memory_block_mock.hpp"
 #include "mocks/roudi_memory_provider_mock.hpp"
-#include "mocks/logger_mock.hpp"
 
 #include "test.hpp"
 
@@ -39,21 +40,17 @@ class RouDiMemoryManager_Test : public Test
 
     static const int32_t nbTestCase = 4;
 
-    RouDiMemoryManagerError m_testCombinationRoudiMemoryManagerError[nbTestCase] =
-    {
+    RouDiMemoryManagerError m_testCombinationRoudiMemoryManagerError[nbTestCase] = {
         RouDiMemoryManagerError::MEMORY_PROVIDER_EXHAUSTED,
         RouDiMemoryManagerError::NO_MEMORY_PROVIDER_PRESENT,
         RouDiMemoryManagerError::MEMORY_CREATION_FAILED,
         RouDiMemoryManagerError::MEMORY_DESTRUCTION_FAILED,
     };
 
-    const char* m_testResultOperatorMethod[nbTestCase] =
-    {
-        "MEMORY_PROVIDER_EXHAUSTED",
-        "NO_MEMORY_PROVIDER_PRESENT",
-        "MEMORY_CREATION_FAILED",
-        "MEMORY_DESTRUCTION_FAILED"
-    };
+    const char* m_testResultOperatorMethod[nbTestCase] = {"MEMORY_PROVIDER_EXHAUSTED",
+                                                          "NO_MEMORY_PROVIDER_PRESENT",
+                                                          "MEMORY_CREATION_FAILED",
+                                                          "MEMORY_DESTRUCTION_FAILED"};
 
     MemoryBlockMock memoryBlock1;
     MemoryBlockMock memoryBlock2;
@@ -86,11 +83,11 @@ TEST_F(RouDiMemoryManager_Test, CallingCreateMemoryWithMemoryProviderSucceeds)
     EXPECT_CALL(memoryBlock2, alignmentMock()).WillRepeatedly(Return(MEMORY_ALIGNMENT_2));
     EXPECT_CALL(memoryBlock2, memoryAvailableMock(_));
 
-    memoryProvider1.addMemoryBlock(&memoryBlock1);
-    memoryProvider2.addMemoryBlock(&memoryBlock2);
+    IOX_DISCARD_RESULT(memoryProvider1.addMemoryBlock(&memoryBlock1));
+    IOX_DISCARD_RESULT(memoryProvider2.addMemoryBlock(&memoryBlock2));
 
-    sut.addMemoryProvider(&memoryProvider1);
-    sut.addMemoryProvider(&memoryProvider2);
+    ASSERT_FALSE(sut.addMemoryProvider(&memoryProvider1).has_error());
+    ASSERT_FALSE(sut.addMemoryProvider(&memoryProvider2).has_error());
 
     EXPECT_THAT(sut.createAndAnnounceMemory().has_error(), Eq(false));
 
@@ -100,13 +97,13 @@ TEST_F(RouDiMemoryManager_Test, CallingCreateMemoryWithMemoryProviderSucceeds)
 
 TEST_F(RouDiMemoryManager_Test, CallingCreateMemoryWithMemoryProviderError)
 {
-    sut.addMemoryProvider(&memoryProvider1);
+    ASSERT_FALSE(sut.addMemoryProvider(&memoryProvider1).has_error());
 
     // If no memory block is added to memory provider, Create and Announce Memory will return a error
     ASSERT_THAT(sut.createAndAnnounceMemory().has_error(), Eq(true));
     EXPECT_THAT(sut.createAndAnnounceMemory().get_error(), Eq(RouDiMemoryManagerError::MEMORY_CREATION_FAILED));
 
-    sut.destroyMemory();
+    ASSERT_FALSE(sut.destroyMemory().has_error());
 }
 
 TEST_F(RouDiMemoryManager_Test, RouDiMemoryManagerDTorTriggersMemoryProviderDestroy)
@@ -117,12 +114,12 @@ TEST_F(RouDiMemoryManager_Test, RouDiMemoryManagerDTorTriggersMemoryProviderDest
     EXPECT_CALL(memoryBlock1, alignmentMock()).WillRepeatedly(Return(MEMORY_ALIGNMENT_1));
     EXPECT_CALL(memoryBlock1, memoryAvailableMock(_));
 
-    memoryProvider1.addMemoryBlock(&memoryBlock1);
+    IOX_DISCARD_RESULT(memoryProvider1.addMemoryBlock(&memoryBlock1));
 
     {
         RouDiMemoryManager sutDestroy;
-        sutDestroy.addMemoryProvider(&memoryProvider1);
-        sutDestroy.createAndAnnounceMemory();
+        ASSERT_FALSE(sutDestroy.addMemoryProvider(&memoryProvider1).has_error());
+        ASSERT_FALSE(sutDestroy.createAndAnnounceMemory().has_error());
         EXPECT_CALL(memoryBlock1, destroyMock()).Times(1);
     }
     EXPECT_CALL(memoryBlock1, destroyMock()).Times(0);
@@ -145,7 +142,7 @@ TEST_F(RouDiMemoryManager_Test, AddMemoryProviderExceedsCapacity)
 
 TEST_F(RouDiMemoryManager_Test, OperatorTest)
 {
-    for(int16_t i = 0; i < nbTestCase; i++)
+    for (int16_t i = 0; i < nbTestCase; i++)
     {
         iox::log::LogStream logStream(loggerMock);
         logStream << m_testCombinationRoudiMemoryManagerError[i];

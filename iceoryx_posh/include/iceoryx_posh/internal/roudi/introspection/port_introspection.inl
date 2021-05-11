@@ -103,10 +103,13 @@ inline void PortIntrospection<PublisherPort, SubscriberPort>::send() noexcept
 template <typename PublisherPort, typename SubscriberPort>
 inline void PortIntrospection<PublisherPort, SubscriberPort>::sendPortData() noexcept
 {
-    auto maybeChunkHeader = m_publisherPort->tryAllocateChunk(sizeof(PortIntrospectionFieldTopic));
+    auto maybeChunkHeader = m_publisherPort->tryAllocateChunk(sizeof(PortIntrospectionFieldTopic),
+                                                              alignof(PortIntrospectionFieldTopic),
+                                                              CHUNK_NO_USER_HEADER_SIZE,
+                                                              CHUNK_NO_USER_HEADER_ALIGNMENT);
     if (!maybeChunkHeader.has_error())
     {
-        auto sample = static_cast<PortIntrospectionFieldTopic*>(maybeChunkHeader.value()->payload());
+        auto sample = static_cast<PortIntrospectionFieldTopic*>(maybeChunkHeader.value()->userPayload());
         new (sample) PortIntrospectionFieldTopic();
 
         m_portData.prepareTopic(*sample); // requires internal mutex (blocks
@@ -118,11 +121,14 @@ inline void PortIntrospection<PublisherPort, SubscriberPort>::sendPortData() noe
 template <typename PublisherPort, typename SubscriberPort>
 inline void PortIntrospection<PublisherPort, SubscriberPort>::sendThroughputData() noexcept
 {
-    auto maybeChunkHeader = m_publisherPortThroughput->tryAllocateChunk(sizeof(PortThroughputIntrospectionFieldTopic));
+    auto maybeChunkHeader = m_publisherPortThroughput->tryAllocateChunk(sizeof(PortThroughputIntrospectionFieldTopic),
+                                                                        alignof(PortThroughputIntrospectionFieldTopic),
+                                                                        CHUNK_NO_USER_HEADER_SIZE,
+                                                                        CHUNK_NO_USER_HEADER_ALIGNMENT);
     if (!maybeChunkHeader.has_error())
     {
         auto throughputSample =
-            static_cast<PortThroughputIntrospectionFieldTopic*>(maybeChunkHeader.value()->payload());
+            static_cast<PortThroughputIntrospectionFieldTopic*>(maybeChunkHeader.value()->userPayload());
         new (throughputSample) PortThroughputIntrospectionFieldTopic();
 
         m_portData.prepareTopic(*throughputSample); // requires internal mutex (blocks
@@ -135,11 +141,14 @@ template <typename PublisherPort, typename SubscriberPort>
 inline void PortIntrospection<PublisherPort, SubscriberPort>::sendSubscriberPortsData() noexcept
 {
     auto maybeChunkHeader =
-        m_publisherPortSubscriberPortsData->tryAllocateChunk(sizeof(SubscriberPortChangingIntrospectionFieldTopic));
+        m_publisherPortSubscriberPortsData->tryAllocateChunk(sizeof(SubscriberPortChangingIntrospectionFieldTopic),
+                                                             alignof(SubscriberPortChangingIntrospectionFieldTopic),
+                                                             CHUNK_NO_USER_HEADER_SIZE,
+                                                             CHUNK_NO_USER_HEADER_ALIGNMENT);
     if (!maybeChunkHeader.has_error())
     {
         auto subscriberPortChangingDataSample =
-            static_cast<SubscriberPortChangingIntrospectionFieldTopic*>(maybeChunkHeader.value()->payload());
+            static_cast<SubscriberPortChangingIntrospectionFieldTopic*>(maybeChunkHeader.value()->userPayload());
         new (subscriberPortChangingDataSample) SubscriberPortChangingIntrospectionFieldTopic();
 
         m_portData.prepareTopic(*subscriberPortChangingDataSample); // requires internal mutex (blocks
@@ -568,9 +577,8 @@ PortIntrospection<PublisherPort, SubscriberPort>::PortData::prepareTopic(PortInt
 }
 
 template <typename PublisherPort, typename SubscriberPort>
-inline void
-PortIntrospection<PublisherPort, SubscriberPort>::PortData::prepareTopic(PortThroughputIntrospectionTopic& topic
-                                                                         [[gnu::unused]]) noexcept
+inline void PortIntrospection<PublisherPort, SubscriberPort>::PortData::prepareTopic(
+    PortThroughputIntrospectionTopic& topic IOX_MAYBE_UNUSED) noexcept
 {
     /// @todo #402 re-add port throughput
 }

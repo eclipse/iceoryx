@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,43 +26,39 @@ namespace iox
 namespace posix
 {
 constexpr uint64_t Allocator::MEMORY_ALIGNMENT;
-Allocator::Allocator(void* const f_startAddress, const uint64_t f_length) noexcept
-    : m_startAddress(static_cast<byte_t*>(f_startAddress))
-    , m_length(f_length)
+Allocator::Allocator(void* const startAddress, const uint64_t length) noexcept
+    : m_startAddress(static_cast<byte_t*>(startAddress))
+    , m_length(length)
 {
     /// @todo memset to set memory and to avoid the usage of unavailable memory
 }
 
-void* Allocator::allocate(const uint64_t f_size, const uint64_t f_alignment) noexcept
+void* Allocator::allocate(const uint64_t size, const uint64_t alignment) noexcept
 {
-    cxx::Expects(f_size > 0);
+    cxx::Expects(size > 0);
 
-    if (m_allocationFinalized)
-    {
-        std::cerr << "allocate() call after finalizeAllocation()! You are not allowed to acquire shared memory chunks "
-                     "anymore!"
-                  << std::endl;
-        std::terminate();
-    }
+    cxx::Expects(
+        !m_allocationFinalized
+        && "allocate() call after finalizeAllocation()! You are not allowed to acquire shared memory chunks anymore");
 
-    uint64_t l_currentAddress = reinterpret_cast<uint64_t>(m_startAddress) + m_currentPosition;
-    uint64_t l_alignedPosition = cxx::align(l_currentAddress, static_cast<uint64_t>(f_alignment));
-    l_alignedPosition -= reinterpret_cast<uint64_t>(m_startAddress);
+    uint64_t currentAddress = reinterpret_cast<uint64_t>(m_startAddress) + m_currentPosition;
+    uint64_t alignedPosition = cxx::align(currentAddress, static_cast<uint64_t>(alignment));
+    alignedPosition -= reinterpret_cast<uint64_t>(m_startAddress);
 
     byte_t* l_returnValue = nullptr;
 
-    if (m_length >= l_alignedPosition + f_size)
+    if (m_length >= alignedPosition + size)
     {
-        l_returnValue = m_startAddress + l_alignedPosition;
-        m_currentPosition = l_alignedPosition + f_size;
+        l_returnValue = m_startAddress + alignedPosition;
+        m_currentPosition = alignedPosition + size;
     }
     else
     {
-        std::cerr << "Trying to allocate additional " << f_size << " bytes in the shared memory of capacity "
-                  << m_length << " when there are already " << l_alignedPosition << " aligned bytes in use."
-                  << std::endl;
-        std::cerr << "Only " << m_length - l_alignedPosition << " bytes left." << std::endl;
-        std::terminate();
+        std::cerr << "Trying to allocate additional " << size << " bytes in the shared memory of capacity " << m_length
+                  << " when there are already " << alignedPosition << " aligned bytes in use." << std::endl;
+        std::cerr << "Only " << m_length - alignedPosition << " bytes left." << std::endl;
+
+        cxx::Expects(false && "Not enough space left in shared memory");
     }
 
     return static_cast<void*>(l_returnValue);

@@ -20,9 +20,17 @@
 #include <thread>
 
 IceoryxC::IceoryxC(const iox::capro::IdString_t& publisherName, const iox::capro::IdString_t& subscriberName) noexcept
-    : m_publisher(iox_pub_init(&m_publisherStorage, "Comedians", publisherName.c_str(), "Duo", 0U, "Slapstick"))
-    , m_subscriber(iox_sub_init(&m_subscriberStorage, "Comedians", subscriberName.c_str(), "Duo", 10U, 0U, "Slapstick"))
 {
+    iox_pub_options_t publisherOptions;
+    iox_pub_options_init(&publisherOptions);
+    publisherOptions.historyCapacity = 1U;
+    m_publisher = iox_pub_init(&m_publisherStorage, "IcePerf", publisherName.c_str(), "C-API", &publisherOptions);
+
+    iox_sub_options_t subscriberOptions;
+    iox_sub_options_init(&subscriberOptions);
+    subscriberOptions.queueCapacity = 1U;
+    subscriberOptions.historyRequest = 1U;
+    m_subscriber = iox_sub_init(&m_subscriberStorage, "IcePerf", subscriberName.c_str(), "C-API", &subscriberOptions);
 }
 
 IceoryxC::~IceoryxC()
@@ -75,16 +83,16 @@ void IceoryxC::shutdown() noexcept
     std::cout << " [ finished ]" << std::endl;
 }
 
-void IceoryxC::sendPerfTopic(uint32_t payloadSizeInBytes, bool runFlag) noexcept
+void IceoryxC::sendPerfTopic(const uint32_t payloadSizeInBytes, const RunFlag runFlag) noexcept
 {
-    void* chunk = nullptr;
-    if (iox_pub_allocate_chunk(m_publisher, &chunk, payloadSizeInBytes) == AllocationResult_SUCCESS)
+    void* userPayload = nullptr;
+    if (iox_pub_loan_chunk(m_publisher, &userPayload, payloadSizeInBytes) == AllocationResult_SUCCESS)
     {
-        auto sendSample = static_cast<PerfTopic*>(chunk);
+        auto sendSample = static_cast<PerfTopic*>(userPayload);
         sendSample->payloadSize = payloadSizeInBytes;
-        sendSample->run = runFlag;
+        sendSample->runFlag = runFlag;
         sendSample->subPackets = 1;
-        iox_pub_send_chunk(m_publisher, chunk);
+        iox_pub_publish_chunk(m_publisher, userPayload);
     }
 }
 
@@ -95,12 +103,12 @@ PerfTopic IceoryxC::receivePerfTopic() noexcept
 
     do
     {
-        const void* sample = nullptr;
-        if (iox_sub_get_chunk(m_subscriber, &sample) == ChunkReceiveResult_SUCCESS)
+        const void* userPayload = nullptr;
+        if (iox_sub_take_chunk(m_subscriber, &userPayload) == ChunkReceiveResult_SUCCESS)
         {
-            receivedSample = *(static_cast<const PerfTopic*>(sample));
+            receivedSample = *(static_cast<const PerfTopic*>(userPayload));
             hasReceivedSample = true;
-            iox_sub_release_chunk(m_subscriber, sample);
+            iox_sub_release_chunk(m_subscriber, userPayload);
         }
     } while (!hasReceivedSample);
 

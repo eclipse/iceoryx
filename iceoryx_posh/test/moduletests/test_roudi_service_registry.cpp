@@ -16,12 +16,8 @@
 
 #include "test.hpp"
 
-#define private public
-#define protected public
 #include "iceoryx_posh/internal/roudi/service_registry.hpp"
 #include "iceoryx_utils/cxx/string.hpp"
-#undef protected
-#undef private
 
 using namespace ::testing;
 using ::testing::Return;

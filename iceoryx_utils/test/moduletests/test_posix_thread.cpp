@@ -1,4 +1,4 @@
-// Copyright (c) 2020 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@
 #include <atomic>
 #include <thread>
 
+namespace
+{
 using namespace ::testing;
 using namespace iox::posix;
 using namespace iox::cxx;
@@ -92,3 +94,4 @@ TEST_F(Thread_test, SetAndGetSmallStringIsWorking)
     EXPECT_THAT(getResult, StrEq(stringShorterThanThreadNameCapacitiy));
 }
 #endif
+} // namespace

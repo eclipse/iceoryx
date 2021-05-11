@@ -1,4 +1,5 @@
 // Copyright (c) 2019, 2021 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +17,8 @@
 
 #include "iceoryx_posh/roudi/memory/memory_block.hpp"
 
-#include "mocks/roudi_memory_provider_mock.hpp"
 #include "mocks/roudi_memory_block_mock.hpp"
+#include "mocks/roudi_memory_provider_mock.hpp"
 
 #include "test.hpp"
 
@@ -52,8 +53,8 @@ TEST_F(MemoryBlock_Test, Initial)
 
 TEST_F(MemoryBlock_Test, MemoryAvailableAfterCreation)
 {
-    memoryProvider.addMemoryBlock(&sut);
-    memoryProvider.create();
+    IOX_DISCARD_RESULT(memoryProvider.addMemoryBlock(&sut));
+    IOX_DISCARD_RESULT(memoryProvider.create());
     EXPECT_THAT(memoryProvider.dummyMemory, Ne(nullptr));
     ASSERT_THAT(sut.memory().has_value(), Eq(true));
     EXPECT_THAT(sut.memory().value(), Eq(memoryProvider.dummyMemory));

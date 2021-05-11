@@ -1,0 +1,83 @@
+@font-face {
+    font-family: "TStar Pro Regular";
+    src: url("../fonts/TSTARPRO-Regular.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "TStar Pro Bold";
+  src: url("../fonts/TSTARPRO-Bold.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "TStar Pro Headline";
+    src: url("../fonts/TSTARPRO-Headline.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "TStar Pro Light";
+  src: url("../fonts/TSTARPRO-Light.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "TStar Pro Medium";
+    src: url("../fonts/TSTARPRO-Medium.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Slate Pro";
+  src: url("../fonts/Monotype-SlatePro.otf") format("opentype");
+}
+
+@font-face {
+    font-family: "Slate Pro Medium";
+    src: url("../fonts/Monotype-SlatePro-Medium.otf") format("opentype");
+}
+
+:root {
+    --md-primary-fg-color:        #2f8db3;
+    --md-primary-fg-color--light: #FFFFFF;
+    --md-primary-fg-color--dark:  #8dc6d9;
+    --md-accent-fg-color: #ff4d00;
+}
+
+body {
+    font-family: "TStar Pro Regular", sans-serif;
+}
+
+.md-grid {
+    max-width: 1920px;
+}
+
+h1 {
+    font-family: "Slate Pro", sans-serif;
+    text-transform: uppercase;
+}
+
+h2 {
+    font-family: "TStar Pro Bold", sans-serif;
+}
+
+strong {
+    font-family: "TStar Pro Bold", sans-serif;
+}
+
+.md-footer-meta {
+    display: flex;
+    flex-direction: row;
+}
+
+.md-footer-meta__inner {
+    flex: 0 0 25%;
+    justify-content: left;
+}
+
+.md-footer-copyright {
+    margin: 0.6rem;
+}
+
+@media screen and (max-width: 800px) {
+    .md-footer-meta {
+        display: flex;
+        flex-direction: column;
+   }
+}

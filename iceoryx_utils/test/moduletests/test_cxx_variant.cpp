@@ -18,7 +18,8 @@
 #include "iceoryx_utils/cxx/variant.hpp"
 #include "test.hpp"
 
-
+namespace
+{
 using namespace testing;
 
 class variant_Test : public Test
@@ -606,3 +607,4 @@ TEST_F(variant_Test, CopyVariantIntoVariantOfDifferentType)
 
     EXPECT_THAT(DoubleDelete::dtorCalls, Eq(1));
 }
+} // namespace

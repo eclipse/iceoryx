@@ -77,13 +77,13 @@ Open three terminals on machine `A` and execute the following commands:
 
 - Terminal 1: `./build/iox-roudi`
 - Terminal 2: `./build/iceoryx_dds/iox-gw-iceoryx2dds` to send all samples from the publisher to DDS
-- Terminal 3: `./build/iceoryx_examples/icedelivery/iox-ex-publisher-typed`
+- Terminal 3: `./build/iceoryx_examples/icedelivery/iox-cpp-publisher`
 
 Open another three terminals on machine `B` and execute the commands:
 
 - Terminal 1: `./build/iox-roudi`
 - Terminal 2: `./build/iceoryx_dds/iox-gw-dds2iceoryx` to receive all samples from the publisher via DDS
-- Terminal 3: `./build/iceoryx_examples/icedelivery/iox-ex-subscriber-typed`
+- Terminal 3: `./build/iceoryx_examples/icedelivery/iox-cpp-subscriber`
 
 If you would like to have a bidirectional communication just run `iox-gw-dds2iceoryx` and 
 `iox-gw-iceoryx2dds` on the same machine.

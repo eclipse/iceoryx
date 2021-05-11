@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_posh/popo/publisher.hpp"
-#include "mocks/chunk_mock.hpp"
+#include "iceoryx_posh/testing/mocks/chunk_mock.hpp"
 #include "mocks/publisher_mock.hpp"
 
 #include "test.hpp"
@@ -44,7 +44,7 @@ struct DummyData
 };
 } // namespace
 
-using TestPublisher = iox::popo::Publisher<DummyData, MockBasePublisher<DummyData>>;
+using TestPublisher = iox::popo::PublisherImpl<DummyData, iox::mepoo::NoUserHeader, MockBasePublisher<DummyData>>;
 
 class PublisherTest : public Test
 {
@@ -70,7 +70,7 @@ class PublisherTest : public Test
 
 TEST_F(PublisherTest, LoansChunkLargeEnoughForTheType)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     // ===== Test ===== //
     auto result = sut.loan();
@@ -82,7 +82,7 @@ TEST_F(PublisherTest, LoansChunkLargeEnoughForTheType)
 
 TEST_F(PublisherTest, LoanedSampleIsDefaultInitialized)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     // ===== Test ===== //
     auto result = sut.loan();
@@ -96,7 +96,7 @@ TEST_F(PublisherTest, LoanedSampleIsDefaultInitialized)
 TEST_F(PublisherTest, LoanWithArgumentsCallsCustomCtor)
 {
     constexpr uint64_t CUSTOM_VALUE{73};
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     // ===== Test ===== //
     auto result = sut.loan(CUSTOM_VALUE);
@@ -107,31 +107,9 @@ TEST_F(PublisherTest, LoanWithArgumentsCallsCustomCtor)
     // ===== Cleanup ===== //
 }
 
-TEST_F(PublisherTest, LoanPreviousSampleSucceeds)
-{
-    EXPECT_CALL(portMock, tryGetPreviousChunk())
-        .WillOnce(Return(ByMove(iox::cxx::optional<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
-    // ===== Test ===== //
-    auto result = sut.loanPreviousSample();
-    // ===== Verify ===== //
-    EXPECT_TRUE(result.has_value());
-    EXPECT_CALL(portMock, releaseChunk(chunkMock.chunkHeader()));
-    // ===== Cleanup ===== //
-}
-
-TEST_F(PublisherTest, LoanPreviousSampleFails)
-{
-    EXPECT_CALL(portMock, tryGetPreviousChunk()).WillOnce(Return(ByMove(iox::cxx::nullopt)));
-    // ===== Test ===== //
-    auto result = sut.loanPreviousSample();
-    // ===== Verify ===== //
-    EXPECT_FALSE(result.has_value());
-    // ===== Cleanup ===== //
-}
-
 TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfALambdaWithAdditionalArguments)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //
@@ -148,7 +126,7 @@ TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfALambdaWithAdditionalAr
 
 TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfALambdaWithNoAdditionalArguments)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //
@@ -171,7 +149,7 @@ TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfACallableStructWithNoAd
             data->val = 777;
         };
     };
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //
@@ -191,7 +169,7 @@ TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfACallableStructWithAddi
             data->val = 777;
         };
     };
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //
@@ -214,7 +192,7 @@ void freeFunctionWithAdditionalArgs(DummyData* allocation, int, float)
 
 TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfFunctionPointerWithNoAdditionalArguments)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //
@@ -226,7 +204,7 @@ TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfFunctionPointerWithNoAd
 
 TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfFunctionPointerWithAdditionalArguments)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //
@@ -238,7 +216,7 @@ TEST_F(PublisherTest, CanLoanSamplesAndPublishTheResultOfFunctionPointerWithAddi
 
 TEST_F(PublisherTest, CanLoanSamplesAndPublishCopiesOfProvidedValues)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     DummyData data(73);
@@ -251,7 +229,7 @@ TEST_F(PublisherTest, CanLoanSamplesAndPublishCopiesOfProvidedValues)
 
 TEST_F(PublisherTest, LoanFailsAndForwardsAllocationErrorsToCaller)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(
             ByMove(iox::cxx::error<iox::popo::AllocationError>(iox::popo::AllocationError::RUNNING_OUT_OF_CHUNKS))));
     // ===== Test ===== //
@@ -265,20 +243,20 @@ TEST_F(PublisherTest, LoanFailsAndForwardsAllocationErrorsToCaller)
 
 TEST_F(PublisherTest, LoanedSamplesContainPointerToChunkHeader)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     // ===== Test ===== //
     auto result = sut.loan();
     // ===== Verify ===== //
     ASSERT_FALSE(result.has_error());
-    EXPECT_EQ(chunkMock.chunkHeader(), result.value().getHeader());
+    EXPECT_EQ(chunkMock.chunkHeader(), result.value().getChunkHeader());
     EXPECT_CALL(portMock, releaseChunk(chunkMock.chunkHeader()));
     // ===== Cleanup ===== //
 }
 
 TEST_F(PublisherTest, PublishingSendsUnderlyingMemoryChunkOnPublisherPort)
 {
-    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData)))
+    EXPECT_CALL(portMock, tryAllocateChunk(sizeof(DummyData), _, _, _))
         .WillOnce(Return(ByMove(iox::cxx::success<iox::mepoo::ChunkHeader*>(chunkMock.chunkHeader()))));
     EXPECT_CALL(portMock, sendChunk(chunkMock.chunkHeader()));
     // ===== Test ===== //

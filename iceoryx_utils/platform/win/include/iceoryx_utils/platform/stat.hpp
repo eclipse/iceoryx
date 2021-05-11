@@ -26,5 +26,8 @@
 #define S_IROTH 4
 #define S_IWOTH 5
 #define S_IRWXU 6
+#define S_IXUSR 7
+#define S_IXGRP 8
+#define S_IRWXO 9
 
 #endif // IOX_UTILS_WIN_PLATFORM_STAT_HPP

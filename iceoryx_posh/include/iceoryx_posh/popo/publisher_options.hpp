@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #define IOX_POSH_POPO_PUBLISHER_OPTIONS_HPP
 
 #include "iceoryx_posh/iceoryx_posh_types.hpp"
+#include "port_queue_policies.hpp"
 #include <cstdint>
 
 namespace iox
@@ -32,6 +33,12 @@ struct PublisherOptions
 
     /// @brief The name of the node where the publisher should belong to
     iox::NodeName_t nodeName{""};
+
+    /// @brief The option whether the publisher should already be offered when creating it
+    bool offerOnCreate{true};
+
+    /// @brief The option whether the publisher should block when the subscriber queue is full
+    SubscriberTooSlowPolicy subscriberTooSlowPolicy{SubscriberTooSlowPolicy::DISCARD_OLDEST_DATA};
 };
 
 } // namespace popo

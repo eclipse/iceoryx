@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,9 +21,9 @@ namespace iox
 {
 namespace runtime
 {
-NodeData::NodeData(const ProcessName_t& process, const NodeName_t& node, const uint64_t nodeDeviceIdentifier) noexcept
-    : m_process(process)
-    , m_node(node)
+NodeData::NodeData(const RuntimeName_t& runtimeName, const NodeName_t& nodeName, const uint64_t nodeDeviceIdentifier) noexcept
+    : m_runtimeName(runtimeName)
+    , m_nodeName(nodeName)
     , m_nodeDeviceIdentifier(nodeDeviceIdentifier)
 {
 }

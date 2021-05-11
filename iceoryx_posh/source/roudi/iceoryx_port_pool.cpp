@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,13 +39,13 @@ cxx::expected<PublisherPortRouDiType::MemberType_t*, PortPoolError>
 IceOryxPortPool::addPublisherPort(const capro::ServiceDescription& serviceDescription,
                                   const uint64_t& historyCapacity,
                                   mepoo::MemoryManager* const memoryManager,
-                                  const ProcessName_t& applicationName,
+                                  const RuntimeName_t& runtimeName,
                                   const mepoo::MemoryInfo& memoryInfo) noexcept
 {
     if (m_portPoolData->m_publisherPortMembers.hasFreeSpace())
     {
         auto publisherPortData = m_portPoolData->m_publisherPortMembers.insert(
-            serviceDescription, applicationName, memoryManager, historyCapacity, memoryInfo);
+            serviceDescription, runtimeName, memoryManager, historyCapacity, memoryInfo);
         return cxx::success<PublisherPortRouDiType::MemberType_t*>(publisherPortData);
     }
     else
@@ -57,13 +58,13 @@ IceOryxPortPool::addPublisherPort(const capro::ServiceDescription& serviceDescri
 cxx::expected<SubscriberPortType::MemberType_t*, PortPoolError>
 IceOryxPortPool::addSubscriberPort(const capro::ServiceDescription& serviceDescription,
                                    const uint64_t& historyRequest,
-                                   const ProcessName_t& applicationName,
+                                   const RuntimeName_t& runtimeName,
                                    const mepoo::MemoryInfo& memoryInfo) noexcept
 {
     if (m_portPoolData->m_subscriberPortMembers.hasFreeSpace())
     {
         auto subscriberPortData = m_portPoolData->m_subscriberPortMembers.insert(
-            serviceDescription, applicationName, SUBSCRIBER_PORT_QUEUE_TYPE, historyRequest, memoryInfo);
+            serviceDescription, runtimeName, SUBSCRIBER_PORT_QUEUE_TYPE, historyRequest, memoryInfo);
         return cxx::success<SubscriberPortType::MemberType_t*>(subscriberPortData);
     }
     else

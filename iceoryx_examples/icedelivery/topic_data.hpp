@@ -16,8 +16,6 @@
 #ifndef IOX_EXAMPLES_ICEDELIVERY_TOPIC_DATA_HPP
 #define IOX_EXAMPLES_ICEDELIVERY_TOPIC_DATA_HPP
 
-#include <cstdint>
-
 struct RadarObject
 {
     RadarObject() noexcept

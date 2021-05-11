@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +29,7 @@ namespace popo
 struct InterfacePortData : public BasePortData
 {
     InterfacePortData() = default;
-    InterfacePortData(const ProcessName_t& processName, const capro::Interfaces interface) noexcept;
+    InterfacePortData(const RuntimeName_t& runtimeName, const capro::Interfaces interface) noexcept;
 
     concurrent::FiFo<capro::CaproMessage, MAX_INTERFACE_CAPRO_FIFO_SIZE> m_caproMessageFiFo;
     bool m_doInitialOfferForward{true};

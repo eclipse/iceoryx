@@ -30,10 +30,10 @@ class IpcRuntimeInterface
   public:
     /// @brief Runtime Interface for the own IPC channel and the one to the RouDi daemon
     /// @param[in] roudiName name of the RouDi IPC channel
-    /// @param[in] appName name of the appplication and its IPC channel
+    /// @param[in] runtimeName name of the application's runtime and its IPC channel
     /// @param[in] roudiWaitingTimeout timeout for searching the RouDi IPC channel
-    IpcRuntimeInterface(const ProcessName_t& roudiName,
-                        const ProcessName_t& appName,
+    IpcRuntimeInterface(const RuntimeName_t& roudiName,
+                        const RuntimeName_t& runtimeName,
                         const units::Duration roudiWaitingTimeout) noexcept;
     ~IpcRuntimeInterface() noexcept = default;
 
@@ -53,14 +53,9 @@ class IpcRuntimeInterface
     /// @return true if communication was successful, false if not
     bool sendRequestToRouDi(const IpcMessage& msg, IpcMessage& answer) noexcept;
 
-    /// @brief send a message to the RouDi daemon
-    /// @param[in] msg message which will be send to RouDi
-    /// @return true if communication was successful, otherwise false
-    bool sendMessageToRouDi(const IpcMessage& msg) noexcept;
-
     /// @brief get the adress offset of the segment manager
-    /// @return address offset as RelativePointer::offset_t
-    RelativePointer::offset_t getSegmentManagerAddressOffset() const noexcept;
+    /// @return address offset as rp::BaseRelativePointer::offset_t
+    rp::BaseRelativePointer::offset_t getSegmentManagerAddressOffset() const noexcept;
 
     /// @brief get the size of the management shared memory object
     /// @return size in bytes
@@ -77,17 +72,13 @@ class IpcRuntimeInterface
         TIMEOUT
     };
 
-    /// @brief
-    /// @return
     void waitForRoudi(cxx::DeadlineTimer& timer) noexcept;
 
-    /// @brief
-    /// @return
     RegAckResult waitForRegAck(const int64_t transmissionTimestamp) noexcept;
 
   private:
-    ProcessName_t m_appName;
-    cxx::optional<RelativePointer::offset_t> m_segmentManagerAddressOffset;
+    RuntimeName_t m_runtimeName;
+    cxx::optional<rp::BaseRelativePointer::offset_t> m_segmentManagerAddressOffset;
     IpcInterfaceCreator m_AppIpcInterface;
     IpcInterfaceUser m_RoudiIpcInterface;
     uint64_t m_shmTopicSize{0U};

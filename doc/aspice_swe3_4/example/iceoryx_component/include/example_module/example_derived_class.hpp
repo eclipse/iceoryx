@@ -1,4 +1,5 @@
-// Copyright (c) 2020, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,6 +38,17 @@ class SomeOtherClass;
 ///     ExampleDerivedClass<uint32_t> fuu(1U, 2U);
 ///     fuu.simpleMethod();
 /// @endcode
+/// @startuml
+/// (*) --> "Init"
+/// if "Condition" then
+///   -->[true] "Action Processing"
+///   --> "Action Errorhandling"
+///   -right-> (*)
+/// else
+///   ->[false] "Do something else"
+///   -->[Finish] (*)
+/// endif
+/// @enduml
 /// @note Important note for user/developer
 /// @swcomponent cpp
 template <typename T>

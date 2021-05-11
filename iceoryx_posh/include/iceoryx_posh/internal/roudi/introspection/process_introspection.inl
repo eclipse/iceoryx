@@ -1,4 +1,5 @@
-// Copyright (c) 2019, 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,11 +44,11 @@ inline ProcessIntrospection<PublisherPort>::~ProcessIntrospection() noexcept
 }
 
 template <typename PublisherPort>
-inline void ProcessIntrospection<PublisherPort>::addProcess(const int f_pid, const ProcessName_t& f_name) noexcept
+inline void ProcessIntrospection<PublisherPort>::addProcess(const int pid, const RuntimeName_t& name) noexcept
 {
     ProcessIntrospectionData procIntrData;
-    procIntrData.m_pid = f_pid;
-    procIntrData.m_name = f_name;
+    procIntrData.m_pid = pid;
+    procIntrData.m_name = name;
 
     {
         std::lock_guard<std::mutex> guard(m_mutex);
@@ -57,13 +58,13 @@ inline void ProcessIntrospection<PublisherPort>::addProcess(const int f_pid, con
 }
 
 template <typename PublisherPort>
-inline void ProcessIntrospection<PublisherPort>::removeProcess(const int f_pid) noexcept
+inline void ProcessIntrospection<PublisherPort>::removeProcess(const int pid) noexcept
 {
     std::lock_guard<std::mutex> guard(m_mutex);
 
     for (auto it = m_processList.begin(); it != m_processList.end(); ++it)
     {
-        if (it->m_pid == f_pid)
+        if (it->m_pid == pid)
         {
             m_processList.erase(it);
             break;
@@ -73,55 +74,55 @@ inline void ProcessIntrospection<PublisherPort>::removeProcess(const int f_pid) 
 }
 
 template <typename PublisherPort>
-inline void ProcessIntrospection<PublisherPort>::addNode(const ProcessName_t& f_process,
-                                                         const NodeName_t& f_node) noexcept
+inline void ProcessIntrospection<PublisherPort>::addNode(const RuntimeName_t& runtimeName,
+                                                         const NodeName_t& nodeName) noexcept
 {
     std::lock_guard<std::mutex> guard(m_mutex);
 
     bool processFound = false;
     for (auto it_process = m_processList.begin(); it_process != m_processList.end(); ++it_process)
     {
-        if (it_process->m_name == f_process)
+        if (it_process->m_name == runtimeName)
         {
             processFound = true;
             bool alreadyInList = false;
             for (auto it_node = it_process->m_nodes.begin(); it_node != it_process->m_nodes.end(); ++it_node)
             {
-                if (*it_node == f_node)
+                if (*it_node == nodeName)
                 {
-                    LogWarn() << "Node " << f_node.c_str() << " already registered";
+                    LogWarn() << "Node " << nodeName.c_str() << " already registered";
                     alreadyInList = true;
                 }
             }
             if (!alreadyInList)
             {
-                it_process->m_nodes.emplace_back(f_node);
+                it_process->m_nodes.emplace_back(nodeName);
             }
         }
     }
     if (!processFound)
     {
-        LogWarn() << "Trying to register node " << f_node.c_str() << " but the related process is not registered";
+        LogWarn() << "Trying to register node " << nodeName.c_str() << " but the related process is not registered";
     }
     m_processListNewData = true;
 }
 
 template <typename PublisherPort>
-inline void ProcessIntrospection<PublisherPort>::removeNode(const ProcessName_t& f_process,
-                                                            const NodeName_t& f_node) noexcept
+inline void ProcessIntrospection<PublisherPort>::removeNode(const RuntimeName_t& runtimeName,
+                                                            const NodeName_t& nodeName) noexcept
 {
     std::lock_guard<std::mutex> guard(m_mutex);
 
     bool processFound = false;
     for (auto it_process = m_processList.begin(); it_process != m_processList.end(); ++it_process)
     {
-        if (it_process->m_name == f_process)
+        if (it_process->m_name == runtimeName)
         {
             processFound = true;
             bool removedFromList = false;
             for (auto it_node = it_process->m_nodes.begin(); it_node != it_process->m_nodes.end(); ++it_node)
             {
-                if (*it_node == f_node)
+                if (*it_node == nodeName)
                 {
                     it_process->m_nodes.erase(it_node);
                     removedFromList = true;
@@ -130,13 +131,13 @@ inline void ProcessIntrospection<PublisherPort>::removeNode(const ProcessName_t&
             }
             if (!removedFromList)
             {
-                LogWarn() << "Trying to remove node " << f_node.c_str() << " but it was not registered";
+                LogWarn() << "Trying to remove node " << nodeName.c_str() << " but it was not registered";
             }
         }
     }
     if (!processFound)
     {
-        LogWarn() << "Trying to remove node " << f_node.c_str() << " but the related process is not registered";
+        LogWarn() << "Trying to remove node " << nodeName.c_str() << " but the related process is not registered";
     }
     m_processListNewData = true;
 }
@@ -170,10 +171,13 @@ inline void ProcessIntrospection<PublisherPort>::send() noexcept
     std::lock_guard<std::mutex> guard(m_mutex);
     if (m_processListNewData)
     {
-        auto maybeChunkHeader = m_publisherPort->tryAllocateChunk(sizeof(ProcessIntrospectionFieldTopic));
+        auto maybeChunkHeader = m_publisherPort->tryAllocateChunk(sizeof(ProcessIntrospectionFieldTopic),
+                                                                  alignof(ProcessIntrospectionFieldTopic),
+                                                                  CHUNK_NO_USER_HEADER_SIZE,
+                                                                  CHUNK_NO_USER_HEADER_ALIGNMENT);
         if (!maybeChunkHeader.has_error())
         {
-            auto sample = static_cast<ProcessIntrospectionFieldTopic*>(maybeChunkHeader.value()->payload());
+            auto sample = static_cast<ProcessIntrospectionFieldTopic*>(maybeChunkHeader.value()->userPayload());
             new (sample) ProcessIntrospectionFieldTopic;
 
             for (auto& intrData : m_processList)

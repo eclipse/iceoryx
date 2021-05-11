@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@
 
 #if !defined(_WIN32) && !defined(__APPLE__)
 #include "iceoryx_posh/internal/runtime/ipc_message.hpp"
-#include "mocks/time_mock.hpp"
+#include "iceoryx_utils/testing/mocks/time_mock.hpp"
 #include "test.hpp"
 
 using namespace ::testing;

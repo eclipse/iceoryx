@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Copyright (c) 2019-2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,7 +56,7 @@ set_sanitizer_options() {
     if [[ ! -f $(which llvm-symbolizer) ]]
     then
         echo "WARNING : llvm-symbolizer not found. Stack trace may not be symbolized!"
-    fi    
+    fi
 }
 
 for arg in "$@"; do
@@ -70,7 +71,7 @@ for arg in "$@"; do
     "continue-on-error")
         CONTINUE_ON_ERROR=true
         ;;
-    "all" | "unit" | "integration")
+    "all" | "unit" | "unit-timing" | "integration")
         TEST_SCOPE="$arg"
         ;;
     *)
@@ -131,11 +132,12 @@ execute_test() {
         ;;
     "unit")
         make module_tests
+        ;;
+    "unit-timing")
         make timing_module_tests
         ;;
     "integration")
         make integration_tests
-        make timing_integration_tests
         ;;
     "timingtest")
         make timing_module_tests

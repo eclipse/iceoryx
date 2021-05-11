@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +19,7 @@
 #include "iceoryx_posh/internal/mepoo/shared_pointer.hpp"
 #include "iceoryx_posh/mepoo/chunk_header.hpp"
 #include "iceoryx_utils/internal/posix_wrapper/shared_memory_object/allocator.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
+#include "iceoryx_utils/internal/relocatable_pointer/base_relative_pointer.hpp"
 #include "test.hpp"
 
 using namespace ::testing;
@@ -102,17 +103,26 @@ class SharedPointer_Test : public Test
 
     void SetUp() override
     {
-        iox::RelativePointer::registerPtr(memory, 4096);
+        iox::rp::BaseRelativePointer::registerPtr(memory, 4096);
     }
     void TearDown() override
     {
-        iox::RelativePointer::unregisterAll();
+        iox::rp::BaseRelativePointer::unregisterAll();
     }
 
     ChunkManagement* GetChunkManagement(void* memoryChunk)
     {
         ChunkManagement* v = static_cast<ChunkManagement*>(chunkMgmtPool.getChunk());
-        ChunkHeader* chunkHeader = new (memoryChunk) ChunkHeader();
+
+        auto chunkSettingsResult = ChunkSettings::create(USER_PAYLOAD_SIZE, iox::CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT);
+        EXPECT_FALSE(chunkSettingsResult.has_error());
+        if (chunkSettingsResult.has_error())
+        {
+            return nullptr;
+        }
+        auto& chunkSettings = chunkSettingsResult.value();
+
+        ChunkHeader* chunkHeader = new (memoryChunk) ChunkHeader(mempool.getChunkSize(), chunkSettings);
         new (v) ChunkManagement{chunkHeader, &mempool, &chunkMgmtPool};
         return v;
     }
@@ -125,10 +135,12 @@ class SharedPointer_Test : public Test
 
     int resetCounter = ResetCounter();
 
-    char memory[4096];
-    iox::posix::Allocator allocator{memory, 4096};
-    MemPool mempool{64, 10, &allocator, &allocator};
-    MemPool chunkMgmtPool{64, 10, &allocator, &allocator};
+    static constexpr uint32_t USER_PAYLOAD_SIZE{64U};
+
+    char memory[4096U];
+    iox::posix::Allocator allocator{memory, 4096U};
+    MemPool mempool{sizeof(ChunkHeader) + USER_PAYLOAD_SIZE, 10U, allocator, allocator};
+    MemPool chunkMgmtPool{64U, 10U, allocator, allocator};
 
     void* memoryChunk{mempool.getChunk()};
     ChunkManagement* chunkManagement = GetChunkManagement(memoryChunk);

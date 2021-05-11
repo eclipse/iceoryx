@@ -2,34 +2,17 @@
 
 ## Introduction
 
-> This Readme.md is slightly outdated and not all functionality of the introspection is available with v1.0
-
 This example teaches you how to make use of the introspection for debugging purposes. With the introspection you can
-look into the machine room of RouDi. The introspection shows live information about the memory usage and all
+look into the machine room of RouDi. It shows live information about the memory usage and all
 registered processes. Additionally, it shows the publisher and subscriber ports that are created inside the shared
 memory.
 
-## Run icecrystal
+## Expected Output
 
-We reuse the binaries from [icedelivery](../icedelivery/). Create four terminals and run one command in each of them.
-```sh
-# If installed and available in PATH environment variable
-iox-roudi
-# If build from scratch with script in tools
-$ICEORYX_ROOT/build/iox-roudi
+We re-use the binaries from
+[icedelivery](https://github.com/eclipse-iceoryx/iceoryx/tree/master/iceoryx_examples/icedelivery).
 
-build/iceoryx_examples/icedelivery/iox-ex-publisher-untyped
-
-build/iceoryx_examples/icedelivery/iox-ex-subscriber-untyped
-
-build/iox-introspection-client --all
-```
-
-<!-- @todo Add expected output of RouDi, publisher, subscriber and introspection with asciinema recording before v1.0-->
-
-## Expected output
-
-![introspection_screenshot](https://user-images.githubusercontent.com/22388003/75041206-672feb80-54bc-11ea-8621-2acf95bf376e.png)
+[![asciicast](https://asciinema.org/a/407442.svg)](https://asciinema.org/a/407442)
 
 ## Feature walkthrough
 
@@ -50,15 +33,10 @@ The process view will show you the processes (incl. PID), which are currently re
 
     --port            Subscribe to port introspection data.
 
-The port view shows both publisher and subscriber ports that are created by RouDi in the shared memory. Their respective
-service description (service, instance, event) is shown to identify them uniquely. The columns `Process` and
-`used by process` display to which process the ports belong and how they are currently connected. Size in bytes of
-both sample size and chunk size (sample size + meta data) and statistical data of `Chunks [/Minute]` is provided as
-well. When a publisher port instantly provides data to a subscriber with the `subscribe()` call, the `Field` column is
-ticked. The service discovery protocol allows you to define the `Propagation scope` of the data. This can enable
-data forwarding to other machines e.g. over network or just consume them internally. When a `Callback` is
-registered on subscriber side, the box is ticked accordingly. `FiFo size / capacity` shows the consumption of chunks
-on the subscriber side and is a useful column to debug potential memleaks.
+The port view shows both publisher and subscriber ports that are created by RouDi in the shared memory. Their respective service
+description (service, instance, event) is shown to identify them uniquely. The columns `Process` and `Node` display to which
+process and node the ports belong. The service discovery protocol allows you to define the `Propagation scope` of the data. This
+can enable data forwarding to other machines e.g. over network or just consume them internally.
 
     --all             Subscribe to all available introspection data.
 

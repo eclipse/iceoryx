@@ -28,6 +28,7 @@ bool killswitch = false;
 
 static void sigHandler(int signalValue)
 {
+    // Ignore unused variable warning
     (void)signalValue;
     // caught SIGINT or SIGTERM, now exit gracefully
     killswitch = true;
@@ -35,26 +36,27 @@ static void sigHandler(int signalValue)
 
 void sending()
 {
-    iox_runtime_init("iox-c-ex-waitset-publisher");
+    iox_runtime_init("iox-c-waitset-publisher");
 
-    const uint64_t historyCapacity = 0U;
-    const char* const nodeName = "iox-c-ex-waitset-publisher-node";
+    iox_pub_options_t options;
+    iox_pub_options_init(&options);
+    options.historyCapacity = 0U;
+    options.nodeName = "iox-c-waitset-publisher-node";
     iox_pub_storage_t publisherStorage;
-    iox_pub_t publisher = iox_pub_init(&publisherStorage, "Radar", "FrontLeft", "Counter", historyCapacity, nodeName);
-
-    iox_pub_offer(publisher);
+    iox_pub_t publisher = iox_pub_init(&publisherStorage, "Radar", "FrontLeft", "Counter", &options);
 
     for (uint32_t counter = 0U; !killswitch; ++counter)
     {
-        void* chunk = NULL;
-        if (AllocationResult_SUCCESS == iox_pub_allocate_chunk(publisher, &chunk, sizeof(struct CounterTopic)))
+        void* userPayload = NULL;
+        if (AllocationResult_SUCCESS == iox_pub_loan_chunk(publisher, &userPayload, sizeof(struct CounterTopic)))
         {
-            struct CounterTopic* sample = (struct CounterTopic*)chunk;
+            struct CounterTopic* sample = (struct CounterTopic*)userPayload;
             sample->counter = counter;
 
             printf("Sending: %u\n", counter);
+            fflush(stdout);
 
-            iox_pub_send_chunk(publisher, chunk);
+            iox_pub_publish_chunk(publisher, userPayload);
 
             sleep_for(1000);
         }
@@ -64,7 +66,6 @@ void sending()
         }
     }
 
-    iox_pub_stop_offer(publisher);
     iox_pub_deinit(publisher);
 }
 

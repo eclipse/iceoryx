@@ -97,7 +97,6 @@ class BasePublisher
     port_t& port() noexcept;
 
     port_t m_port{nullptr};
-    bool m_useDynamicPayloadSize = true;
 };
 
 } // namespace popo

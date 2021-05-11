@@ -19,6 +19,7 @@
 #define IOX_POSH_POPO_BASE_SUBSCRIBER_HPP
 
 #include "iceoryx_posh/internal/popo/ports/subscriber_port_user.hpp"
+#include "iceoryx_posh/popo/enum_trigger_type.hpp"
 #include "iceoryx_posh/popo/sample.hpp"
 #include "iceoryx_posh/popo/subscriber_options.hpp"
 #include "iceoryx_posh/popo/wait_set.hpp"
@@ -33,7 +34,12 @@ namespace popo
 {
 using uid_t = UniquePortId;
 
-enum class SubscriberEvent
+enum class SubscriberEvent : EventEnumIdentifier
+{
+    DATA_RECEIVED
+};
+
+enum class SubscriberState : StateEnumIdentifier
 {
     HAS_DATA
 };
@@ -91,7 +97,7 @@ class BaseSubscriber
     /// @brief Releases any unread queued data.
     void releaseQueuedData() noexcept;
 
-    friend class EventAttorney;
+    friend class NotificationAttorney;
 
   protected:
     /// @brief Only usable by the WaitSet, not for public use. Invalidates the internal triggerHandle.
@@ -116,18 +122,27 @@ class BaseSubscriber
 
     /// @brief Only usable by the WaitSet, not for public use. Attaches the triggerHandle to the internal trigger.
     /// @param[in] triggerHandle rvalue reference to the triggerHandle. This class takes the ownership of that handle.
-    /// @param[in] subscriberEvent the event which should be attached
-    void enableEvent(iox::popo::TriggerHandle&& triggerHandle, const SubscriberEvent subscriberEvent) noexcept;
+    /// @param[in] subscriberState the state which should be attached
+    void enableState(iox::popo::TriggerHandle&& triggerHandle, const SubscriberState subscriberState) noexcept;
 
     /// @brief Only usable by the WaitSet, not for public use. Returns method pointer to the event corresponding
     /// hasTriggered method callback
-    /// @param[in] subscriberEvent the event to which the hasTriggeredCallback is required
-    WaitSetHasTriggeredCallback getHasTriggeredCallbackForEvent(const SubscriberEvent subscriberEvent) const noexcept;
+    /// @param[in] subscriberState the state to which the hasTriggeredCallback is required
+    WaitSetIsConditionSatisfiedCallback
+    getCallbackForIsStateConditionSatisfied(const SubscriberState subscriberState) const noexcept;
+
+    /// @brief Only usable by the WaitSet, not for public use. Resets the internal triggerHandle
+    /// @param[in] subscriberState the state which should be detached
+    void disableState(const SubscriberState subscriberState) noexcept;
+
+    /// @brief Only usable by the WaitSet, not for public use. Attaches the triggerHandle to the internal trigger.
+    /// @param[in] triggerHandle rvalue reference to the triggerHandle. This class takes the ownership of that handle.
+    /// @param[in] subscriberEvent the event which should be attached
+    void enableEvent(iox::popo::TriggerHandle&& triggerHandle, const SubscriberEvent subscriberState) noexcept;
 
     /// @brief Only usable by the WaitSet, not for public use. Resets the internal triggerHandle
     /// @param[in] subscriberEvent the event which should be detached
     void disableEvent(const SubscriberEvent subscriberEvent) noexcept;
-
 
     ///
     /// @brief const accessor of the underlying port

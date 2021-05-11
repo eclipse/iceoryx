@@ -1,0 +1,24 @@
+name: Axivion
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  axivion:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name : Checkout
+        uses: actions/checkout@v2
+
+      - name: Trigger pipeline
+        env:
+          AXIVION_TRIGGER_TOKEN: ${{ secrets.AXIVION_TRIGGER_TOKEN }}
+          AXIVION_READ_API_TOKEN: ${{ secrets.AXIVION_READ_API_TOKEN }}
+        run: |
+          cd $GITHUB_WORKSPACE
+          pip3 install requests
+          PIPELINE_ID="$(./tools/axivion/trigger_pipeline.py)"
+          ./tools/axivion/wait_for_pipeline.py "${PIPELINE_ID}"
+

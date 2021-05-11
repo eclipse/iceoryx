@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,18 +15,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include "test.hpp"
-using namespace ::testing;
+#if !defined(_WIN32)
 
 #define private public
 #include "iceoryx_utils/internal/objectpool/objectpool.hpp"
 #undef private
 
+#include <vector>
+
+#include "test.hpp"
+
+namespace
+{
 using namespace ::testing;
 
 constexpr int INVALID = -1;
 
-#include <vector>
 
 // non primitive type for pool
 class Foo
@@ -915,3 +920,6 @@ TEST_F(ObjectPool_test, iterator)
     // empty pool, begin equals end
     EXPECT_THAT(pool.begin(), Eq(pool.end()));
 }
+} // namespace
+
+#endif

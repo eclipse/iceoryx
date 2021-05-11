@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +44,10 @@ class PublisherPortRouDi : public BasePort
     PublisherPortRouDi(PublisherPortRouDi&& rhs) = default;
     PublisherPortRouDi& operator=(PublisherPortRouDi&& rhs) = default;
     ~PublisherPortRouDi() = default;
+
+    /// @brief Returns behaviour in case of a full delivery queue
+    /// @return SubScriberTooSlowPolicy What happens if the delivery queue is full
+    SubscriberTooSlowPolicy getSubscriberTooSlowPolicy() const noexcept;
 
     /// @brief get an optional CaPro message that changes the offer state of the publisher
     /// @return CaPro message with the new offer state, empty optional if no state change

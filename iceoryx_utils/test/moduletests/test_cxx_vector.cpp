@@ -20,7 +20,8 @@
 
 #include <vector>
 
-
+namespace
+{
 using namespace ::testing;
 using namespace iox::cxx;
 
@@ -1116,3 +1117,175 @@ TEST_F(vector_test, PopBackReturnsTrueTillItsEmpty)
 
     EXPECT_FALSE(sut.pop_back());
 }
+
+TEST_F(vector_test, ResizeFailsWhenCountIsGreaterThanCapacity)
+{
+    EXPECT_FALSE(sut.resize(sut.capacity() + 1U));
+}
+
+TEST_F(vector_test, ResizeWithTemplateValueFailsWhenCountIsGreaterThanCapacity)
+{
+    EXPECT_FALSE(sut.resize(sut.capacity() + 1U, 12));
+}
+
+TEST_F(vector_test, SizeIncreaseWithResizeAndDefaultCTorWorks)
+{
+    class DefaultCTor
+    {
+      public:
+        DefaultCTor()
+            : m_a{1231}
+        {
+        }
+        int m_a;
+    };
+    iox::cxx::vector<DefaultCTor, 10U> sut;
+
+    EXPECT_TRUE(sut.resize(5U));
+    ASSERT_THAT(sut.size(), Eq(5U));
+    for (auto& e : sut)
+    {
+        EXPECT_THAT(e.m_a, Eq(1231));
+    }
+}
+
+TEST_F(vector_test, SizeIncreaseWithResizeAndTemplateValueWorks)
+{
+    EXPECT_TRUE(sut.resize(4U, 421337));
+    ASSERT_THAT(sut.size(), Eq(4U));
+    for (auto& e : sut)
+    {
+        EXPECT_THAT(e, Eq(421337));
+    }
+}
+
+TEST_F(vector_test, SizeDecreaseWithResizeAndDefaultCTorWorks)
+{
+    iox::cxx::vector<CTorTest, 10U> sut;
+    for (uint64_t i = 0U; i < sut.capacity(); ++i)
+    {
+        sut.emplace_back(i);
+    }
+
+    EXPECT_TRUE(sut.resize(7U));
+    EXPECT_THAT(dTor, Eq(3));
+    ASSERT_THAT(dtorOrder.size(), Eq(3U));
+    EXPECT_THAT(dtorOrder[0], Eq(9));
+    EXPECT_THAT(dtorOrder[1], Eq(8));
+    EXPECT_THAT(dtorOrder[2], Eq(7));
+}
+
+TEST_F(vector_test, SizeDecreaseWithResizeAndTemplateValueWorks)
+{
+    iox::cxx::vector<CTorTest, 10U> sut;
+    for (uint64_t i = 0U; i < sut.capacity(); ++i)
+    {
+        sut.emplace_back(i + 10);
+    }
+
+    EXPECT_TRUE(sut.resize(7U, 66807));
+    EXPECT_THAT(dTor, Eq(3));
+    ASSERT_THAT(dtorOrder.size(), Eq(3U));
+    EXPECT_THAT(dtorOrder[0], Eq(19));
+    EXPECT_THAT(dtorOrder[1], Eq(18));
+    EXPECT_THAT(dtorOrder[2], Eq(17));
+}
+
+TEST_F(vector_test, ResizeWithDefaultCTorChangesNothingIfSizeAlreadyFits)
+{
+    sut.emplace_back(5);
+    sut.emplace_back(6);
+    EXPECT_TRUE(sut.resize(2U));
+
+    ASSERT_THAT(sut.size(), Eq(2U));
+    EXPECT_THAT(sut[0], Eq(5));
+    EXPECT_THAT(sut[1], Eq(6));
+}
+
+TEST_F(vector_test, ResizeWithTemplateValueChangesNothingIfSizeAlreadyFits)
+{
+    sut.emplace_back(7);
+    sut.emplace_back(9);
+    EXPECT_TRUE(sut.resize(2U, 421337));
+
+    ASSERT_THAT(sut.size(), Eq(2U));
+    EXPECT_THAT(sut[0], Eq(7));
+    EXPECT_THAT(sut[1], Eq(9));
+}
+
+TEST_F(vector_test, EmplaceInEmptyVectorWorks)
+{
+    EXPECT_TRUE(sut.emplace(0U, 123));
+    ASSERT_THAT(sut.size(), Eq(1U));
+    EXPECT_THAT(sut[0], Eq(123));
+}
+
+TEST_F(vector_test, EmplaceAtFrontTillFullWorks)
+{
+    for (uint64_t i = 0U; i < sut.capacity(); ++i)
+    {
+        EXPECT_TRUE(sut.emplace(0U, i));
+        ASSERT_THAT(sut.size(), Eq(i + 1U));
+
+        for (uint64_t n = 0U; n < sut.size(); ++n)
+        {
+            EXPECT_THAT(sut[n], Eq(sut.size() - n - 1U));
+        }
+    }
+}
+
+TEST_F(vector_test, EmplaceInTheMiddleMovesElementsToTheRight)
+{
+    sut.emplace_back(0);
+    sut.emplace_back(1);
+    sut.emplace_back(2);
+
+    EXPECT_TRUE(sut.emplace(1U, 3));
+
+    ASSERT_THAT(sut.size(), Eq(4));
+
+    EXPECT_THAT(sut[0], Eq(0));
+    EXPECT_THAT(sut[1], Eq(3));
+    EXPECT_THAT(sut[2], Eq(1));
+    EXPECT_THAT(sut[3], Eq(2));
+}
+
+TEST_F(vector_test, EmplaceWhenFullReturnsFalse)
+{
+    for (uint64_t i = 0U; i < sut.capacity(); ++i)
+    {
+        sut.emplace_back(i);
+    }
+
+    auto index = sut.capacity() / 2;
+    EXPECT_FALSE(sut.emplace(index, 5));
+    EXPECT_THAT(sut.size(), Eq(sut.capacity()));
+}
+
+TEST_F(vector_test, EmplaceWhenPositionExceedsCapacityReturnsFalse)
+{
+    EXPECT_FALSE(sut.emplace(sut.capacity() + 10U, 5));
+    EXPECT_THAT(sut.size(), Eq(0));
+}
+
+TEST_F(vector_test, EmplaceAtEndWorks)
+{
+    sut.emplace_back(0);
+    sut.emplace_back(1);
+
+    EXPECT_TRUE(sut.emplace(sut.size(), 3));
+    ASSERT_THAT(sut.size(), Eq(3));
+    EXPECT_THAT(sut[0], Eq(0));
+    EXPECT_THAT(sut[1], Eq(1));
+    EXPECT_THAT(sut[2], Eq(3));
+}
+
+TEST_F(vector_test, EmplaceAtPositionAfterEndBeforeCapacityExceedsFails)
+{
+    sut.emplace_back(0);
+    sut.emplace_back(1);
+
+    EXPECT_FALSE(sut.emplace(sut.size() + 1, 3));
+    ASSERT_THAT(sut.size(), Eq(2));
+}
+} // namespace

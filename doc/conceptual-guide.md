@@ -78,7 +78,7 @@ The number of segments used by an iceoryx system, along with the configuration o
 provided to the system via configuration.
 
 The configuration can be provided at compile time (as a header) or at runtime (as a toml-formatted text file).
-See the [usage guide](website/advanced/installation-guide-for-contributors.md#iceoryx-library-build) for more details.
+See the [configuration guide](https://github.com/eclipse-iceoryx/iceoryx/blob/master/doc/website/advanced/configuration-guide.md#configuring-mempools-for-roudi) for more details.
 
 # Communication Mechanisms
 In this section we will have a look at the concepts employed to structure the communication between
@@ -142,8 +142,8 @@ Memory chunks are returned to the pool once all attached `SubscriberPort`s indic
 ### A Note on Pointers
 As already discussed, shared memory segments may be mapped to different memory areas in the virtual address space of a
 process.
-To deal with this, iceoryx utilizes specialized pointer types: the `iox::RelativePointer` and
-the `iox::RelocatablePointer`.
+To deal with this, iceoryx utilizes specialized pointer types: the `iox::rp::RelativePointer` and
+the `iox::rp::RelocatablePointer`.
 
 Using these types, the difference in memory mapping is not a factor when it comes to locating a memory chunk.
 

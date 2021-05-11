@@ -50,7 +50,7 @@ class Buffer
   private:
     using byte_t = uint8_t;
 
-    alignas(alignof(ElementType)) byte_t m_buffer[Capacity * sizeof(ElementType)];
+    alignas(ElementType) byte_t m_buffer[Capacity * sizeof(ElementType)];
 
     ElementType* toPtr(index_t index) const noexcept;
 };

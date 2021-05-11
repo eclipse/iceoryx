@@ -40,9 +40,10 @@ dynamic memory. In these cases we adjusted the API to our use case.
 Most of the headers are providing some example code on how the
 class should be used.
 
-| class                   | internal | maybe obsolete | description |
+| class/file                   | internal | maybe obsolete | description |
 |:-----------------------:|:--------:|:--------------:|:------------|
 |`algorithm`          |   |   | Implements `min` and `max` for an arbitrary number of values of the same type. For instance `min(1,2,3,4,5);` |
+|`attributes`          |   |   | C++17 and C++20 attributes are sometimes available through compiler extensions. The attribute macros defined in here (like `IOX_FALLTHROUGH`, `IOX_MAYBE_UNUSED` ... ) make sure that we are able to use them if the compiler supports it. |
 |`convert`            |   |   | Converting a number into a string is easy, converting it back can be hard. You can use functions like `strtoll` but you still have to handle errors like under- and overflow, or converting invalid strings into number. Here we abstract all the error handling so that you can convert strings into numbers safely. |
 |`expected`           |   |   | Our base class used in error handling. Every function which can fail should return an expected. With this the user knows that this function can fail and that they have to do some kind of error handling. We got inspired by the [C++ expected proposal]( http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0323r7.html) and by the [rust error handling concept](https://doc.rust-lang.org/std/result/enum.Result.html). |
 |`forward_list`       |   |   | Heap and exception free, relocatable implementation of `std::forward_list` |
@@ -104,7 +105,8 @@ attribute overview of the available Queues:
 
 ### Error handling
 
-The Error-Handler is a central instance for collecting al errors and react to them. In the file `error-handling.hpp` are all error enums collected. The Error-Handler has different error-levels, for more information see [error-handling.md](../doc/design/error-handling.md)
+The Error-Handler is a central instance for collecting al errors and react to them. In the file `error-handling.hpp` are all error enums collected. The Error-Handler has different error-levels, for more information see [error-handling.md](https://github.com/eclipse-iceoryx/iceoryx/blob/master/doc/design/error-handling.md)
+
 | class                   | internal | maybe obsolete | description |
 |:-----------------------:|:--------:|:--------------:|:------------|
 |`errorHandler`            |   | | Free function to call the Error-Handler with a defined error and an error-level, see header file for practical example.|
@@ -112,7 +114,8 @@ The Error-Handler is a central instance for collecting al errors and react to th
 
 ### Log
 
-For information about how to use the logger API see [error-handling.md](../doc/design/error-handling.md)
+For information about how to use the logger API see [error-handling.md](https://github.com/eclipse-iceoryx/iceoryx/blob/master/doc/design/error-handling.md)
+
 | class                   | internal | maybe obsolete | description |
 |:-----------------------:|:--------:|:--------------:|:------------|
 |`logger`             |   | | |
@@ -144,6 +147,7 @@ abstractions or add a new one when using POSIX resources like semaphores, shared
 
 Never use physical properties like speed or time directly as integer or float in your code.
 Otherwise you encounter problems like this function `void setTimeout(int timeout)`. What is the unit of the argument, seconds? minutes? If you use our `Duration` you see it directly in the code.
+
 ```
 void setTimeout(const Duration & timeout);
 
@@ -173,3 +177,7 @@ setTimeout(5_ms); // 5 milliseconds
 | class                   | internal | maybe obsolete | description |
 |:-----------------------:|:--------:|:--------------:|:------------|
 |`FileReader`          | i | x | Wrapper for opening files and reading them. Maybe not needed. |
+
+<center>
+[Check out iceoryx_utils on GitHub :fontawesome-brands-github:](https://github.com/eclipse-iceoryx/iceoryx/tree/master/iceoryx_utils/){ .md-button }
+</center>

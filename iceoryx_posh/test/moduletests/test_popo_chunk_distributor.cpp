@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,24 +49,34 @@ class ChunkDistributor_test : public Test
     {
         ChunkManagement* chunkMgmt = static_cast<ChunkManagement*>(chunkMgmtPool.getChunk());
         auto chunk = mempool.getChunk();
-        ChunkHeader* chunkHeader = new (chunk) ChunkHeader();
+
+        auto chunkSettingsResult = ChunkSettings::create(USER_PAYLOAD_SIZE, iox::CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT);
+        EXPECT_FALSE(chunkSettingsResult.has_error());
+        if (chunkSettingsResult.has_error())
+        {
+            return nullptr;
+        }
+        auto& chunkSettings = chunkSettingsResult.value();
+
+        ChunkHeader* chunkHeader = new (chunk) ChunkHeader(mempool.getChunkSize(), chunkSettings);
         new (chunkMgmt) ChunkManagement{chunkHeader, &mempool, &chunkMgmtPool};
-        *static_cast<uint32_t*>(chunkHeader->payload()) = value;
+        *static_cast<uint32_t*>(chunkHeader->userPayload()) = value;
         return SharedChunk(chunkMgmt);
     }
     uint32_t getSharedChunkValue(const SharedChunk& chunk)
     {
-        return *static_cast<uint32_t*>(chunk.getPayload());
+        return *static_cast<uint32_t*>(chunk.getUserPayload());
     }
 
-    static constexpr size_t MEGABYTE = 1 << 20;
-    static constexpr size_t MEMORY_SIZE = 1 * MEGABYTE;
-    const uint64_t HISTORY_SIZE = 16;
-    static constexpr uint32_t MAX_NUMBER_QUEUES = 128;
+    static constexpr uint32_t USER_PAYLOAD_SIZE{128U};
+    static constexpr size_t MEGABYTE = 1U << 20U;
+    static constexpr size_t MEMORY_SIZE = 1U * MEGABYTE;
+    const uint64_t HISTORY_SIZE = 16U;
+    static constexpr uint32_t MAX_NUMBER_QUEUES = 128U;
     char memory[MEMORY_SIZE];
     iox::posix::Allocator allocator{memory, MEMORY_SIZE};
-    MemPool mempool{128, 20, &allocator, &allocator};
-    MemPool chunkMgmtPool{128, 20, &allocator, &allocator};
+    MemPool mempool{sizeof(ChunkHeader) + USER_PAYLOAD_SIZE, 20U, allocator, allocator};
+    MemPool chunkMgmtPool{128U, 20U, allocator, allocator};
 
     struct ChunkDistributorConfig
     {
@@ -86,23 +97,30 @@ class ChunkDistributor_test : public Test
     void SetUp(){};
     void TearDown(){};
 
-    std::shared_ptr<ChunkQueueData_t> getChunkQueueData()
+    std::shared_ptr<ChunkQueueData_t>
+    getChunkQueueData(const QueueFullPolicy policy = QueueFullPolicy::DISCARD_OLDEST_DATA,
+                      const VariantQueueTypes queueType = VariantQueueTypes::SoFi_SingleProducerSingleConsumer)
     {
-        return std::make_shared<ChunkQueueData_t>(VariantQueueTypes::SoFi_SingleProducerSingleConsumer);
+        return std::make_shared<ChunkQueueData_t>(policy, queueType);
     }
 
-    std::shared_ptr<ChunkDistributorData_t> getChunkDistributorData()
+    std::shared_ptr<ChunkDistributorData_t>
+    getChunkDistributorData(const SubscriberTooSlowPolicy policy = SubscriberTooSlowPolicy::DISCARD_OLDEST_DATA)
     {
-        return std::make_shared<ChunkDistributorData_t>(HISTORY_SIZE);
+        return std::make_shared<ChunkDistributorData_t>(policy, HISTORY_SIZE);
     }
+
+    static constexpr int64_t TIMEOUT_IN_MS = 100;
 };
+template <typename PolicyType>
+constexpr int64_t ChunkDistributor_test<PolicyType>::TIMEOUT_IN_MS;
 
 TYPED_TEST(ChunkDistributor_test, AddingNullptrQueueDoesNotWork)
 {
     auto sutData = this->getChunkDistributorData();
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
-    EXPECT_DEATH(sut.tryAddQueue(nullptr), ".*");
+    EXPECT_DEATH(IOX_DISCARD_RESULT(sut.tryAddQueue(nullptr)), ".*");
 }
 
 TYPED_TEST(ChunkDistributor_test, NewChunkDistributorHasNoQueues)
@@ -139,7 +157,7 @@ TYPED_TEST(ChunkDistributor_test, QueueOverflow)
     for (uint32_t i = 0; i < this->MAX_NUMBER_QUEUES; ++i)
     {
         auto queueData = this->getChunkQueueData();
-        sut.tryAddQueue(queueData.get());
+        ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
         queueVector.push_back(queueData);
     }
 
@@ -158,7 +176,7 @@ TYPED_TEST(ChunkDistributor_test, RemovingExistingQueueWorks)
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
     auto ret = sut.tryRemoveQueue(queueData.get());
     EXPECT_FALSE(ret.has_error());
     EXPECT_THAT(sut.hasStoredQueues(), Eq(false));
@@ -170,7 +188,7 @@ TYPED_TEST(ChunkDistributor_test, RemovingNonExistingQueueChangesNothing)
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto queueData2 = this->getChunkQueueData();
     auto ret = sut.tryRemoveQueue(queueData2.get());
@@ -185,7 +203,7 @@ TYPED_TEST(ChunkDistributor_test, RemoveAllQueuesWhenContainingOne)
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
     sut.removeAllQueues();
 
     EXPECT_THAT(sut.hasStoredQueues(), Eq(false));
@@ -197,9 +215,9 @@ TYPED_TEST(ChunkDistributor_test, RemoveAllQueuesWhenContainingMultipleQueues)
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
     auto queueData2 = this->getChunkQueueData();
-    sut.tryAddQueue(queueData2.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData2.get()).has_error());
     sut.removeAllQueues();
 
     EXPECT_THAT(sut.hasStoredQueues(), Eq(false));
@@ -211,7 +229,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithOneQueue)
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto chunk = this->allocateChunk(4451);
     sut.deliverToAllStoredQueues(chunk);
@@ -229,7 +247,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithOneQueueDeliversOn
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto chunk = this->allocateChunk(4451);
     sut.deliverToAllStoredQueues(chunk);
@@ -245,9 +263,9 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithDuplicatedQueueDel
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
-    sut.tryAddQueue(queueData.get());
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto chunk = this->allocateChunk(4451);
     sut.deliverToAllStoredQueues(chunk);
@@ -264,7 +282,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithOneQueueMultipleCh
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto limit = 10;
     for (auto i = 0; i < limit; ++i)
@@ -286,7 +304,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithOneQueueDeliverMul
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto limit = 10u;
     for (auto i = 0u; i < limit; ++i)
@@ -307,7 +325,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithMultipleQueues)
     for (auto i = 0; i < limit; ++i)
     {
         queueData.emplace_back(this->getChunkQueueData());
-        sut.tryAddQueue(queueData.back().get());
+        ASSERT_FALSE(sut.tryAddQueue(queueData.back().get()).has_error());
     }
 
     auto chunk = this->allocateChunk(24451);
@@ -333,7 +351,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToAllStoredQueuesWithMultipleQueuesMult
     for (auto i = 0u; i < limit; ++i)
     {
         queueData.emplace_back(this->getChunkQueueData());
-        sut.tryAddQueue(queueData.back().get());
+        ASSERT_FALSE(sut.tryAddQueue(queueData.back().get()).has_error());
     }
 
     for (auto i = 0u; i < limit; ++i)
@@ -416,7 +434,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToQueueDirectlyWhenAdded)
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto chunk = this->allocateChunk(451);
     sut.deliverToQueue(queueData.get(), chunk);
@@ -447,7 +465,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverToQueueDirectlyWhenAddedDoesNotChangeHi
     typename TestFixture::ChunkDistributor_t sut(sutData.get());
 
     auto queueData = this->getChunkQueueData();
-    sut.tryAddQueue(queueData.get());
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get()).has_error());
 
     auto chunk = this->allocateChunk(4451);
     sut.deliverToQueue(queueData.get(), chunk);
@@ -469,7 +487,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverHistoryOnAddWithLessThanAvailable)
     // add a queue with a requested history of one must deliver the latest sample
     auto queueData = this->getChunkQueueData();
     ChunkQueuePopper<typename TestFixture::ChunkQueueData_t> queue(queueData.get());
-    sut.tryAddQueue(queueData.get(), 1);
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get(), 1).has_error());
 
     EXPECT_THAT(queue.size(), Eq(1u));
     auto maybeSharedChunk = queue.tryPop();
@@ -492,7 +510,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverHistoryOnAddWithExactAvailable)
     // add a queue with a requested history of 3 must deliver all three in the order oldest to newest
     auto queueData = this->getChunkQueueData();
     ChunkQueuePopper<typename TestFixture::ChunkQueueData_t> queue(queueData.get());
-    sut.tryAddQueue(queueData.get(), 3);
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get(), 3).has_error());
 
     EXPECT_THAT(queue.size(), Eq(3u));
     auto maybeSharedChunk = queue.tryPop();
@@ -520,7 +538,7 @@ TYPED_TEST(ChunkDistributor_test, DeliverHistoryOnAddWithMoreThanAvailable)
     // add a queue with a requested history of 5 must deliver only the three available in the order oldest to newest
     auto queueData = this->getChunkQueueData();
     ChunkQueuePopper<typename TestFixture::ChunkQueueData_t> queue(queueData.get());
-    sut.tryAddQueue(queueData.get(), 5);
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get(), 5).has_error());
 
     EXPECT_THAT(queue.size(), Eq(3u));
     auto maybeSharedChunk = queue.tryPop();
@@ -532,4 +550,98 @@ TYPED_TEST(ChunkDistributor_test, DeliverHistoryOnAddWithMoreThanAvailable)
     maybeSharedChunk = queue.tryPop();
     ASSERT_THAT(maybeSharedChunk.has_value(), Eq(true));
     EXPECT_THAT(this->getSharedChunkValue(*maybeSharedChunk), Eq(3u));
+}
+
+TYPED_TEST(ChunkDistributor_test, DeliverToSingleQueueBlocksWhenOptionsAreSetToBlocking)
+{
+    auto sutData = this->getChunkDistributorData(SubscriberTooSlowPolicy::WAIT_FOR_SUBSCRIBER);
+    typename TestFixture::ChunkDistributor_t sut(sutData.get());
+
+    auto queueData =
+        this->getChunkQueueData(QueueFullPolicy::BLOCK_PUBLISHER, VariantQueueTypes::FiFo_MultiProducerSingleConsumer);
+    ChunkQueuePopper<typename TestFixture::ChunkQueueData_t> queue(queueData.get());
+    queue.setCapacity(1U);
+
+    ASSERT_FALSE(sut.tryAddQueue(queueData.get(), 0U).has_error());
+    sut.deliverToAllStoredQueues(this->allocateChunk(155U));
+
+    auto threadSyncSemaphore = iox::posix::Semaphore::create(iox::posix::CreateUnnamedSingleProcessSemaphore, 0U);
+    std::atomic_bool wasChunkDelivered{false};
+    std::thread t1([&] {
+        ASSERT_FALSE(threadSyncSemaphore->post().has_error());
+        sut.deliverToAllStoredQueues(this->allocateChunk(152U));
+        wasChunkDelivered = true;
+    });
+
+    ASSERT_FALSE(threadSyncSemaphore->wait().has_error());
+    std::this_thread::sleep_for(std::chrono::milliseconds(this->TIMEOUT_IN_MS));
+    EXPECT_THAT(wasChunkDelivered.load(), Eq(false));
+
+    auto maybeSharedChunk = queue.tryPop();
+    ASSERT_THAT(maybeSharedChunk.has_value(), Eq(true));
+    EXPECT_THAT(this->getSharedChunkValue(*maybeSharedChunk), Eq(155U));
+
+    t1.join(); // join needs to be before the load to ensure the wasChunkDelivered store happens before the read
+    EXPECT_THAT(wasChunkDelivered.load(), Eq(true));
+
+    maybeSharedChunk = queue.tryPop();
+    ASSERT_THAT(maybeSharedChunk.has_value(), Eq(true));
+    EXPECT_THAT(this->getSharedChunkValue(*maybeSharedChunk), Eq(152U));
+}
+
+TYPED_TEST(ChunkDistributor_test, MultipleBlockingQueuesWillBeFilledWhenThereBecomesSpaceAvailable)
+{
+    auto sutData = this->getChunkDistributorData(SubscriberTooSlowPolicy::WAIT_FOR_SUBSCRIBER);
+    typename TestFixture::ChunkDistributor_t sut(sutData.get());
+
+    std::vector<std::shared_ptr<typename TestFixture::ChunkQueueData_t>> queueDatas;
+    std::vector<ChunkQueuePopper<typename TestFixture::ChunkQueueData_t>> queues;
+
+    constexpr uint64_t NUMBER_OF_QUEUES = 4U;
+
+    for (uint64_t i = 0U; i < NUMBER_OF_QUEUES; ++i)
+    {
+        queueDatas.emplace_back(this->getChunkQueueData(QueueFullPolicy::BLOCK_PUBLISHER,
+                                                        VariantQueueTypes::FiFo_MultiProducerSingleConsumer));
+        queues.emplace_back(queueDatas.back().get());
+        queues.back().setCapacity(1U);
+        ASSERT_FALSE(sut.tryAddQueue(queueDatas.back().get(), 0U).has_error());
+    }
+
+    sut.deliverToAllStoredQueues(this->allocateChunk(425U));
+
+    auto threadSyncSemaphore = iox::posix::Semaphore::create(iox::posix::CreateUnnamedSingleProcessSemaphore, 0U);
+    std::atomic_bool wasChunkDelivered{false};
+    std::thread t1([&] {
+        ASSERT_FALSE(threadSyncSemaphore->post().has_error());
+        sut.deliverToAllStoredQueues(this->allocateChunk(1152U));
+        wasChunkDelivered = true;
+    });
+
+    ASSERT_FALSE(threadSyncSemaphore->wait().has_error());
+    std::this_thread::sleep_for(std::chrono::milliseconds(this->TIMEOUT_IN_MS));
+    EXPECT_THAT(wasChunkDelivered.load(), Eq(false));
+
+    for (uint64_t i = 0U; i < NUMBER_OF_QUEUES; ++i)
+    {
+        auto maybeSharedChunk = queues[i].tryPop();
+        ASSERT_THAT(maybeSharedChunk.has_value(), Eq(true));
+        EXPECT_THAT(this->getSharedChunkValue(*maybeSharedChunk), Eq(425U));
+
+        if (i + 1U == NUMBER_OF_QUEUES)
+        {
+            // join needs to be before the load to ensure the wasChunkDelivered store happens before the read
+            t1.join();
+            EXPECT_THAT(wasChunkDelivered.load(), Eq(true));
+        }
+        else
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(this->TIMEOUT_IN_MS));
+            EXPECT_THAT(wasChunkDelivered.load(), Eq(false));
+        }
+
+        maybeSharedChunk = queues[i].tryPop();
+        ASSERT_THAT(maybeSharedChunk.has_value(), Eq(true));
+        EXPECT_THAT(this->getSharedChunkValue(*maybeSharedChunk), Eq(1152U));
+    }
 }

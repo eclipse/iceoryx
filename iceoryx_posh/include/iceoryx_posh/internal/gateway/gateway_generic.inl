@@ -110,7 +110,7 @@ template <typename channel_t, typename gateway_t>
 inline cxx::optional<channel_t>
 GatewayGeneric<channel_t, gateway_t>::findChannel(const iox::capro::ServiceDescription& service) const noexcept
 {
-    auto guardedVector = this->m_channels.GetScopeGuard();
+    auto guardedVector = this->m_channels.getScopeGuard();
     auto channel = std::find_if(guardedVector->begin(), guardedVector->end(), [&service](const channel_t& channel) {
         return channel.getServiceDescription() == service;
     });
@@ -128,7 +128,7 @@ template <typename channel_t, typename gateway_t>
 inline void
 GatewayGeneric<channel_t, gateway_t>::forEachChannel(const cxx::function_ref<void(channel_t&)> f) const noexcept
 {
-    auto guardedVector = m_channels.GetScopeGuard();
+    auto guardedVector = m_channels.getScopeGuard();
     for (auto channel = guardedVector->begin(); channel != guardedVector->end(); ++channel)
     {
         f(*channel);
@@ -139,7 +139,7 @@ template <typename channel_t, typename gateway_t>
 inline cxx::expected<GatewayError>
 GatewayGeneric<channel_t, gateway_t>::discardChannel(const capro::ServiceDescription& service) noexcept
 {
-    auto guardedVector = this->m_channels.GetScopeGuard();
+    auto guardedVector = this->m_channels.getScopeGuard();
     auto channel = std::find_if(guardedVector->begin(), guardedVector->end(), [&service](const channel_t& channel) {
         return channel.getServiceDescription() == service;
     });

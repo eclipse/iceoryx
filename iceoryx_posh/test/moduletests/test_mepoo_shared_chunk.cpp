@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,15 +38,25 @@ class SharedChunk_Test : public Test
     ChunkManagement* GetChunkManagement(void* memoryChunk)
     {
         ChunkManagement* v = static_cast<ChunkManagement*>(chunkMgmtPool.getChunk());
-        ChunkHeader* chunkHeader = new (memoryChunk) ChunkHeader();
+        auto chunkSettingsResult = ChunkSettings::create(USER_PAYLOAD_SIZE, iox::CHUNK_DEFAULT_USER_PAYLOAD_ALIGNMENT);
+        EXPECT_FALSE(chunkSettingsResult.has_error());
+        if (chunkSettingsResult.has_error())
+        {
+            return nullptr;
+        }
+        auto& chunkSettings = chunkSettingsResult.value();
+        ChunkHeader* chunkHeader = new (memoryChunk) ChunkHeader(mempool.getChunkSize(), chunkSettings);
+
         new (v) ChunkManagement{chunkHeader, &mempool, &chunkMgmtPool};
         return v;
     }
 
-    char memory[4096];
-    iox::posix::Allocator allocator{memory, 4096};
-    MemPool mempool{64, 10, &allocator, &allocator};
-    MemPool chunkMgmtPool{64, 10, &allocator, &allocator};
+    static constexpr uint32_t USER_PAYLOAD_SIZE{64U};
+
+    char memory[4096U];
+    iox::posix::Allocator allocator{memory, 4096U};
+    MemPool mempool{sizeof(ChunkHeader) + USER_PAYLOAD_SIZE, 10U, allocator, allocator};
+    MemPool chunkMgmtPool{64U, 10U, allocator, allocator};
     void* memoryChunk{mempool.getChunk()};
     ChunkManagement* chunkManagement = GetChunkManagement(memoryChunk);
     iox::mepoo::SharedChunk sut{chunkManagement};
@@ -137,12 +148,12 @@ TEST_F(SharedChunk_Test, CompareWithAnotherSharedChunk)
     EXPECT_THAT(sut2 == sut, Eq(false));
 }
 
-TEST_F(SharedChunk_Test, CompareWithSameMemoryChunkComparesPayload)
+TEST_F(SharedChunk_Test, CompareWithSameMemoryChunkComparesToUserPayload)
 {
-    EXPECT_THAT(sut == sut.getPayload(), Eq(true));
+    EXPECT_THAT(sut == sut.getUserPayload(), Eq(true));
 }
 
-TEST_F(SharedChunk_Test, CompareWithAnotherMemoryChunk)
+TEST_F(SharedChunk_Test, CompareWithAnotherMemoryChunkFails)
 {
     EXPECT_THAT(sut == memoryChunk, Eq(false));
 }
@@ -169,31 +180,27 @@ TEST_F(SharedChunk_Test, boolOperatorIsNotSet)
     EXPECT_THAT(sut2, Eq(false));
 }
 
-TEST_F(SharedChunk_Test, hasNoOtherOwnersForSingleOwner)
-{
-    EXPECT_THAT(sut.hasNoOtherOwners(), Eq(true));
-}
-
-TEST_F(SharedChunk_Test, hasNoOtherOwnersForMultipleOwner)
-{
-    iox::mepoo::SharedChunk sut2(sut);
-    EXPECT_THAT(sut.hasNoOtherOwners(), Eq(false));
-}
-
-TEST_F(SharedChunk_Test, getPayloadWhenInvalid)
+TEST_F(SharedChunk_Test, getUserPayloadWhenInvalidResultsInNullptr)
 {
     SharedChunk sut2(nullptr);
-    EXPECT_THAT(sut2.getPayload(), Eq(nullptr));
+    EXPECT_THAT(sut2.getUserPayload(), Eq(nullptr));
 }
 
-TEST_F(SharedChunk_Test, getPayloadWhenValid)
+TEST_F(SharedChunk_Test, getUserPayloadWhenValidWorks)
 {
+    using DATA_TYPE = uint32_t;
+    constexpr DATA_TYPE USER_DATA{7337U};
     ChunkHeader* newChunk = static_cast<ChunkHeader*>(mempool.getChunk());
-    new (newChunk) ChunkHeader();
-    new (static_cast<int*>(newChunk->payload())) int{1337};
+
+    auto chunkSettingsResult = ChunkSettings::create(sizeof(DATA_TYPE), alignof(DATA_TYPE));
+    ASSERT_FALSE(chunkSettingsResult.has_error());
+    auto& chunkSettings = chunkSettingsResult.value();
+
+    new (newChunk) ChunkHeader(mempool.getChunkSize(), chunkSettings);
+    new (static_cast<DATA_TYPE*>(newChunk->userPayload())) DATA_TYPE{USER_DATA};
 
     iox::mepoo::SharedChunk sut2(GetChunkManagement(newChunk));
-    EXPECT_THAT(*static_cast<int*>(sut2.getPayload()), Eq(1337));
+    EXPECT_THAT(*static_cast<DATA_TYPE*>(sut2.getUserPayload()), Eq(USER_DATA));
 }
 
 TEST_F(SharedChunk_Test, MultipleSharedChunksCleanup)

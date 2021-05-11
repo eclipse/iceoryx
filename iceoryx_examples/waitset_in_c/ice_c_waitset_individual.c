@@ -15,7 +15,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_binding_c/enums.h"
-#include "iceoryx_binding_c/event_info.h"
+#include "iceoryx_binding_c/notification_info.h"
 #include "iceoryx_binding_c/runtime.h"
 #include "iceoryx_binding_c/subscriber.h"
 #include "iceoryx_binding_c/types.h"
@@ -28,7 +28,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define NUMBER_OF_EVENTS 3
+#define NUMBER_OF_NOTIFICATIONS 3
 #define NUMBER_OF_SUBSCRIBERS 2
 
 iox_user_trigger_storage_t shutdownTriggerStorage;
@@ -36,6 +36,7 @@ iox_user_trigger_t shutdownTrigger;
 
 static void sigHandler(int signalValue)
 {
+    // Ignore unused variable warning
     (void)signalValue;
 
     iox_user_trigger_trigger(shutdownTrigger);
@@ -43,7 +44,7 @@ static void sigHandler(int signalValue)
 
 int main()
 {
-    iox_runtime_init("iox-c-ex-waitset-individual");
+    iox_runtime_init("iox-c-waitset-individual");
 
     iox_ws_storage_t waitSetStorage;
     iox_ws_t waitSet = iox_ws_init(&waitSetStorage);
@@ -61,64 +62,63 @@ int main()
     iox_sub_t subscriber[NUMBER_OF_SUBSCRIBERS];
 
     // create two subscribers, subscribe to the service and attach them to the waitset
-    const uint64_t historyRequest = 1U;
-    const uint64_t queueCapacity = 256U;
+    iox_sub_options_t options;
+    iox_sub_options_init(&options);
+    options.historyRequest = 1U;
+    options.queueCapacity = 256U;
+    options.nodeName = "iox-c-waitset-individual-node1";
 
-    const char* const nodeName1 = "iox-c-ex-waitset-individual-node1";
-    const char* const nodeName2 = "iox-c-ex-waitset-individual-node2";
+    subscriber[0] = iox_sub_init(&(subscriberStorage[0]), "Radar", "FrontLeft", "Counter", &options);
 
-    subscriber[0] = iox_sub_init(
-        &(subscriberStorage[0]), "Radar", "FrontLeft", "Counter", queueCapacity, historyRequest, nodeName1);
-    subscriber[1] = iox_sub_init(
-        &(subscriberStorage[1]), "Radar", "FrontLeft", "Counter", queueCapacity, historyRequest, nodeName2);
+    options.nodeName = "iox-c-waitset-individual-node2";
+    subscriber[1] = iox_sub_init(&(subscriberStorage[1]), "Radar", "FrontLeft", "Counter", &options);
 
-    iox_sub_subscribe(subscriber[0]);
-    iox_sub_subscribe(subscriber[1]);
-
-    iox_ws_attach_subscriber_event(waitSet, subscriber[0U], SubscriberEvent_HAS_DATA, 0U, NULL);
-    iox_ws_attach_subscriber_event(waitSet, subscriber[1U], SubscriberEvent_HAS_DATA, 0U, NULL);
+    iox_ws_attach_subscriber_state(waitSet, subscriber[0U], SubscriberState_HAS_DATA, 0U, NULL);
+    iox_ws_attach_subscriber_state(waitSet, subscriber[1U], SubscriberState_HAS_DATA, 0U, NULL);
 
 
     uint64_t missedElements = 0U;
-    uint64_t numberOfEvents = 0U;
+    uint64_t numberOfNotifications = 0U;
 
-    // array where all event infos from iox_ws_wait will be stored
-    iox_event_info_t eventArray[NUMBER_OF_EVENTS];
+    // array where all notification infos from iox_ws_wait will be stored
+    iox_notification_info_t notificationArray[NUMBER_OF_NOTIFICATIONS];
 
     // event loop
     bool keepRunning = true;
     while (keepRunning)
     {
-        numberOfEvents = iox_ws_wait(waitSet, eventArray, NUMBER_OF_EVENTS, &missedElements);
+        numberOfNotifications = iox_ws_wait(waitSet, notificationArray, NUMBER_OF_NOTIFICATIONS, &missedElements);
 
-        for (uint64_t i = 0U; i < numberOfEvents; ++i)
+        for (uint64_t i = 0U; i < numberOfNotifications; ++i)
         {
-            iox_event_info_t event = eventArray[i];
+            iox_notification_info_t notification = notificationArray[i];
 
-            if (iox_event_info_does_originate_from_user_trigger(event, shutdownTrigger))
+            if (iox_notification_info_does_originate_from_user_trigger(notification, shutdownTrigger))
             {
                 // CTRL+c was pressed -> exit
                 keepRunning = false;
             }
             // process sample received by subscriber1
-            else if (iox_event_info_does_originate_from_subscriber(event, subscriber[0U]))
+            else if (iox_notification_info_does_originate_from_subscriber(notification, subscriber[0U]))
             {
-                const void* chunk;
-                if (iox_sub_get_chunk(subscriber[0U], &chunk))
+                const void* userPayload;
+                if (iox_sub_take_chunk(subscriber[0U], &userPayload))
                 {
-                    printf("subscriber 1 received: %u\n", ((struct CounterTopic*)chunk)->counter);
+                    printf("subscriber 1 received: %u\n", ((struct CounterTopic*)userPayload)->counter);
+                    fflush(stdout);
 
-                    iox_sub_release_chunk(subscriber[0U], chunk);
+                    iox_sub_release_chunk(subscriber[0U], userPayload);
                 }
             }
             // dismiss sample received by subscriber2
-            else if (iox_event_info_does_originate_from_subscriber(event, subscriber[1]))
+            else if (iox_notification_info_does_originate_from_subscriber(notification, subscriber[1]))
             {
                 // We need to release the samples to reset the event hasSamples
                 // otherwise the WaitSet would notify us in `iox_ws_wait()` again
                 // instantly.
                 iox_sub_release_queued_chunks(subscriber[1U]);
                 printf("subscriber 2 received something - dont care\n");
+                fflush(stdout);
             }
         }
     }
@@ -126,7 +126,6 @@ int main()
     // cleanup all resources
     for (uint64_t i = 0U; i < NUMBER_OF_SUBSCRIBERS; ++i)
     {
-        iox_sub_unsubscribe((iox_sub_t) & (subscriberStorage[i]));
         iox_sub_deinit((iox_sub_t) & (subscriberStorage[i]));
     }
 

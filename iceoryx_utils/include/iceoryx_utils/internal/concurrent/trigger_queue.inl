@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,115 +17,78 @@
 #ifndef IOX_UTILS_CONCURRENT_TRIGGER_QUEUE_INL
 #define IOX_UTILS_CONCURRENT_TRIGGER_QUEUE_INL
 
-#include "iceoryx_utils/cxx/helplets.hpp"
 #include "iceoryx_utils/internal/concurrent/trigger_queue.hpp"
 
 namespace iox
 {
 namespace concurrent
 {
-template <typename T, uint64_t CAPACITY>
-cxx::optional<TriggerQueue<T, CAPACITY>> TriggerQueue<T, CAPACITY>::CreateTriggerQueue()
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class Queue>
+inline bool QueueAdapter<T, Capacity, Queue>::push(Queue<T, Capacity>& queue, const T& in) noexcept
 {
-    cxx::optional<TriggerQueue<T, CAPACITY>> triggerQueue;
-    triggerQueue.emplace();
-
-    if (triggerQueue->m_isInitialized)
-    {
-        return triggerQueue;
-    }
-    else
-    {
-        return cxx::nullopt_t();
-    }
+    return queue.push(in);
 }
 
-template <typename T, uint64_t CAPACITY>
-inline bool TriggerQueue<T, CAPACITY>::push(const T& in)
+template <typename T, uint64_t Capacity>
+inline bool QueueAdapter<T, Capacity, LockFreeQueue>::push(LockFreeQueue<T, Capacity>& queue, const T& in) noexcept
 {
-    if (stl_queue_push(in))
-    {
-        cxx::Expects(!m_semaphore->post().has_error());
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return queue.tryPush(in);
 }
 
-template <typename T, uint64_t CAPACITY>
-inline bool TriggerQueue<T, CAPACITY>::blocking_pop(T& out)
+template <typename T, uint64_t Capacity>
+inline bool QueueAdapter<T, Capacity, ResizeableLockFreeQueue>::push(ResizeableLockFreeQueue<T, Capacity>& queue,
+                                                                     const T& in) noexcept
 {
-    cxx::Expects(!m_semaphore->wait().has_error());
-    return stl_queue_pop(out);
+    return queue.tryPush(in);
 }
 
-template <typename T, uint64_t CAPACITY>
-inline bool TriggerQueue<T, CAPACITY>::try_pop(T& out)
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline bool TriggerQueue<T, Capacity, QueueType>::push(const T& in) noexcept
 {
-    auto result = m_semaphore->tryWait();
-    cxx::Expects(!result.has_error());
-
-    if (!*result)
+    while (!m_toBeDestroyed.load(std::memory_order_relaxed) && !QueueAdapter<T, Capacity, QueueType>::push(m_queue, in))
     {
-        return false;
+        std::this_thread::yield();
     }
 
-    return stl_queue_pop(out);
+    return !m_toBeDestroyed.load(std::memory_order_relaxed);
 }
 
-template <typename T, uint64_t CAPACITY>
-inline bool TriggerQueue<T, CAPACITY>::empty()
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline cxx::optional<T> TriggerQueue<T, Capacity, QueueType>::pop() noexcept
 {
-    return m_queue->empty();
+    return m_queue.pop();
 }
 
-template <typename T, uint64_t CAPACITY>
-inline uint64_t TriggerQueue<T, CAPACITY>::size()
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline bool TriggerQueue<T, Capacity, QueueType>::empty() const noexcept
 {
-    return m_queue->size();
+    return m_queue.empty();
 }
 
-template <typename T, uint64_t CAPACITY>
-inline uint64_t TriggerQueue<T, CAPACITY>::capacity()
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline uint64_t TriggerQueue<T, Capacity, QueueType>::size() const noexcept
 {
-    return CAPACITY;
+    return m_queue.size();
 }
 
-template <typename T, uint64_t CAPACITY>
-inline void TriggerQueue<T, CAPACITY>::send_wakeup_trigger()
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline constexpr uint64_t TriggerQueue<T, Capacity, QueueType>::capacity() noexcept
 {
-    cxx::Expects(!m_semaphore->post().has_error());
+    return Capacity;
 }
 
-/// @todo remove with lockfree fifo START
-template <typename T, uint64_t CAPACITY>
-inline bool TriggerQueue<T, CAPACITY>::stl_queue_pop(T& out)
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline void TriggerQueue<T, Capacity, QueueType>::destroy() noexcept
 {
-    if (m_queue->empty())
-    {
-        return false;
-    }
-
-    auto guardedQueue = m_queue.GetScopeGuard();
-    out = guardedQueue->front();
-    guardedQueue->pop();
-    return true;
+    m_toBeDestroyed.store(true, std::memory_order_relaxed);
 }
 
-template <typename T, uint64_t CAPACITY>
-bool TriggerQueue<T, CAPACITY>::stl_queue_push(const T& in)
+template <typename T, uint64_t Capacity, template <typename, uint64_t> class QueueType>
+inline bool TriggerQueue<T, Capacity, QueueType>::setCapacity(const uint64_t capacity) noexcept
 {
-    auto guardedQueue = m_queue.GetScopeGuard();
-    if (guardedQueue->size() >= CAPACITY)
-    {
-        return false;
-    }
-    guardedQueue->push(in);
-    return true;
+    return m_queue.setCapacity(capacity);
 }
-/// @todo remove with lockfree fifo END
+
 
 } // namespace concurrent
 } // namespace iox

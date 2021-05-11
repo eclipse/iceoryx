@@ -1,4 +1,5 @@
-// Copyright (c) 2020, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,12 +22,14 @@ namespace iox
 namespace popo
 {
 PublisherPortData::PublisherPortData(const capro::ServiceDescription& serviceDescription,
-                                     const ProcessName_t& processName,
+                                     const RuntimeName_t& runtimeName,
                                      mepoo::MemoryManager* const memoryManager,
                                      const PublisherOptions& publisherOptions,
                                      const mepoo::MemoryInfo& memoryInfo) noexcept
-    : BasePortData(serviceDescription, processName, publisherOptions.nodeName)
-    , m_chunkSenderData(memoryManager, publisherOptions.historyCapacity, memoryInfo)
+    : BasePortData(serviceDescription, runtimeName, publisherOptions.nodeName)
+    , m_chunkSenderData(
+          memoryManager, publisherOptions.subscriberTooSlowPolicy, publisherOptions.historyCapacity, memoryInfo)
+    , m_offeringRequested(publisherOptions.offerOnCreate)
 {
 }
 

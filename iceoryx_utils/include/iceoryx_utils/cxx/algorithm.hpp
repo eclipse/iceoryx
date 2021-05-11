@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +17,7 @@
 #ifndef IOX_UTILS_CXX_ALGORITHM_HPP
 #define IOX_UTILS_CXX_ALGORITHM_HPP
 
+#include <cstdint>
 #include <type_traits>
 
 namespace iox
@@ -94,6 +96,14 @@ constexpr bool doesContainType() noexcept;
 template <typename T, typename CompareType, typename Next, typename... Remainder>
 constexpr bool doesContainType() noexcept;
 
+/// @brief Merging two sorted containers so that the result is a sorted container
+///        where every element is contained only once
+/// @tparam Container container type which has to support emplace_back() and size()
+/// @param[in] v1 the first sorted input container
+/// @param[in] v2 the second sorted input container
+/// @return sorted container which contains the elements of v1 and v2 and where every element is unique
+template <typename Container>
+Container uniqueMergeSortedContainers(const Container& v1, const Container& v2) noexcept;
 } // namespace algorithm
 } // namespace iox
 

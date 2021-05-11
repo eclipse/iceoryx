@@ -1,4 +1,4 @@
-// Copyright (c) 2020 by Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,15 @@
 #include "iceoryx_utils/cxx/function_ref.hpp"
 #include "iceoryx_utils/cxx/method_callback.hpp"
 #include "iceoryx_utils/internal/concurrent/periodic_task.hpp"
-#include "timing_test.hpp"
+#include "iceoryx_utils/testing/timing_test.hpp"
 
 #include "test.hpp"
 
 #include <cstdint>
 #include <functional>
 
+namespace
+{
 using namespace ::testing;
 using namespace iox;
 using namespace iox::concurrent;
@@ -246,3 +248,4 @@ TIMING_TEST_F(PeriodicTask_test, PeriodicTaskWhichIsExecutingTheCallableIsBlocki
 
     EXPECT_THAT(elapsedTime, Ge(SLEEP_TIME));
 });
+} // namespace

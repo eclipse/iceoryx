@@ -1,0 +1,78 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Experimental build
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, release* ]
+
+jobs:
+  build_job_latest_clang:
+    runs-on: ubuntu-latest
+    name: Build on latest Clang Release
+    steps:
+      - name: Install iceoryx dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libacl1-dev libncurses5-dev
+
+      - name: Install latest clang stable release
+        shell: bash
+        run: |
+          REPO_NAME="deb http://apt.llvm.org/focal/ llvm-toolchain-focal main"
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "${REPO_NAME}"
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build sources
+        continue-on-error: true
+        shell: bash
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          echo $(clang --version)
+          sudo $GITHUB_WORKSPACE/tools/add_test_users.sh
+          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh build-test examples out-of-tree build-shared test-add-user
+
+      - name: Run all tests
+        continue-on-error: true
+        run: |
+          cd $GITHUB_WORKSPACE/build
+          tools/run_tests.sh all
+
+  build_job_gcc54:
+    runs-on: ubuntu-16.04
+    name: Build on Ubuntu 16.04
+
+    steps:
+      - name: compiler versions
+        run: |
+          echo $(gcc --version)
+          echo $(clang --version)
+
+      - name: Install iceoryx dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libacl1-dev libncurses5-dev
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build sources
+        run: |
+          sudo $GITHUB_WORKSPACE/tools/add_test_users.sh
+          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh build-all out-of-tree test-add-user
+
+      - name: Run all tests
+        run: |
+          cd $GITHUB_WORKSPACE/build
+          tools/run_tests.sh all

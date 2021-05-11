@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,9 +15,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include "iceoryx_utils/cxx/attributes.hpp"
 #include "iceoryx_utils/cxx/function_ref.hpp"
 #include "test.hpp"
 
+
+namespace
+{
 using namespace ::testing;
 using namespace iox::cxx;
 
@@ -310,6 +315,7 @@ TEST_F(function_refTest, CallOverloadedFunctionResultsInCallOfVoid)
 
 TEST_F(function_refTest, CallOverloadedFunctionResultsInCallOfIntInt)
 {
-    auto value = SameSignature([](int value1, int value2 [[gnu::unused]]) -> int { return value1; });
+    auto value = SameSignature([](int value1, int value2 IOX_MAYBE_UNUSED) -> int { return value1; });
     EXPECT_THAT(value, Eq(sameSignatureIntIntTestValue));
 }
+} // namespace

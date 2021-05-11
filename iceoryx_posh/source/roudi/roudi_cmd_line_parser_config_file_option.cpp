@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,9 +42,14 @@ cxx::expected<CmdLineArgs_t, CmdLineParserResult> CmdLineParserConfigFileOption:
         switch (opt)
         {
         case 'h':
+        {
             // we want to parse the help option again, therefore we need to decrement the option index of getopt
             optind--;
-            CmdLineParser::parse(argc, argv);
+            auto result = CmdLineParser::parse(argc, argv);
+            if (result.has_error())
+            {
+                return cxx::error<CmdLineParserResult>(result.get_error());
+            }
             std::cout << std::endl;
             std::cout << "Config File Option:" << std::endl;
             std::cout << "-c, --config-file                 Path to the RouDi Config File." << std::endl;
@@ -55,6 +61,7 @@ cxx::expected<CmdLineArgs_t, CmdLineParserResult> CmdLineParserConfigFileOption:
             std::cout << "                                  2) hard-coded config" << std::endl;
             m_run = false;
             break;
+        }
         case 'c':
         {
             m_customConfigFilePath = roudi::ConfigFilePathString_t(cxx::TruncateToCapacity, optarg);

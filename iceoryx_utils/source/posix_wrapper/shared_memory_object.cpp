@@ -40,7 +40,8 @@ static std::mutex sigbusHandlerMutex;
 
 static void memsetSigbusHandler(int)
 {
-    DISCARD_RESULT(write(STDERR_FILENO, sigbusErrorMessage, strnlen(sigbusErrorMessage, SIGBUS_ERROR_MESSAGE_LENGTH)));
+    auto result = write(STDERR_FILENO, sigbusErrorMessage, strnlen(sigbusErrorMessage, SIGBUS_ERROR_MESSAGE_LENGTH));
+    IOX_DISCARD_RESULT(result);
     _exit(EXIT_FAILURE);
 }
 

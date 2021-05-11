@@ -22,7 +22,7 @@
 #include "iceoryx_utils/cxx/smart_c.hpp"
 #include "iceoryx_utils/cxx/string.hpp"
 #include "iceoryx_utils/design_pattern/creation.hpp"
-#include "iceoryx_utils/internal/relocatable_pointer/relative_ptr.hpp"
+#include "iceoryx_utils/internal/relocatable_pointer/relative_pointer.hpp"
 #include "iceoryx_utils/internal/units/duration.hpp"
 #include "iceoryx_utils/platform/fcntl.hpp"
 #include "iceoryx_utils/platform/semaphore.hpp"
@@ -189,7 +189,7 @@ class Semaphore : public DesignPattern::Creation<Semaphore, SemaphoreError>
     bool m_isShared = false;
 
     mutable iox_sem_t m_handle;
-    mutable iox::relative_ptr<iox_sem_t> m_handlePtr = &m_handle;
+    mutable iox::rp::RelativePointer<iox_sem_t> m_handlePtr = &m_handle;
 
   private:
     friend class DesignPattern::Creation<Semaphore, SemaphoreError>;

@@ -1,4 +1,5 @@
-# Copyright (c) 2019, 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+# Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,11 +16,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.5)
-file (STRINGS "../../VERSION" iceoryx_introspection_VERSION)
-project(iceoryx_introspection VERSION ${iceoryx_introspection_VERSION})
 
-find_package(iceoryx_posh REQUIRED)
+set(IOX_VERSION_STRING "1.0.0")
+
+project(iceoryx_introspection VERSION ${IOX_VERSION_STRING})
+
 find_package(iceoryx_utils REQUIRED)
+find_package(iceoryx_posh REQUIRED)
 
 include(IceoryxPackageHelper)
 include(IceoryxPlatform)

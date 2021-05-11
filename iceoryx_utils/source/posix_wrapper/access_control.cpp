@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +16,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "iceoryx_utils/internal/posix_wrapper/access_control.hpp"
-
 #include "iceoryx_utils/cxx/smart_c.hpp"
-#include "iceoryx_utils/platform/platform_correction.hpp"
 #include "iceoryx_utils/posix_wrapper/posix_access_rights.hpp"
 
 #include <iostream>
 
+#include "iceoryx_utils/platform/platform_correction.hpp"
 namespace iox
 {
 namespace posix
@@ -34,7 +34,15 @@ bool AccessController::writePermissionsToFile(const int32_t f_fileDescriptor) co
         return false;
     }
 
-    smartAclPointer_t workingACL = createACL((m_permissions.size() + m_useACLMask) ? 1 : 0);
+    auto maybeWorkingACL = createACL((m_permissions.size() + m_useACLMask) ? 1 : 0);
+
+    if (maybeWorkingACL.has_error())
+    {
+        std::cerr << "Error: Creating ACL failed." << std::endl;
+        return false;
+    }
+
+    auto& workingACL = maybeWorkingACL.value();
 
     // add acl entries
     for (const auto& entry : m_permissions)
@@ -73,7 +81,8 @@ bool AccessController::writePermissionsToFile(const int32_t f_fileDescriptor) co
     return true;
 }
 
-AccessController::smartAclPointer_t AccessController::createACL(const int32_t f_numEntries) const
+cxx::expected<AccessController::smartAclPointer_t, AccessController::AccessControllerError>
+AccessController::createACL(const int32_t f_numEntries) const
 {
     // allocate memory for a new ACL
     auto aclInitCall = cxx::makeSmartC(
@@ -81,21 +90,17 @@ AccessController::smartAclPointer_t AccessController::createACL(const int32_t f_
 
     if (aclInitCall.hasErrors())
     {
-        std::cerr << "Error: Could not allocate new ACL." << std::endl;
-        std::terminate();
+        return cxx::error<AccessControllerError>(AccessControllerError::COULD_NOT_ALLOCATE_NEW_ACL);
     }
 
     // define how to free the memory (custom deleter for the smart pointer)
     std::function<void(acl_t)> freeACL = [&](acl_t acl) {
         auto aclFreeCall = cxx::makeSmartC(acl_free, cxx::ReturnMode::PRE_DEFINED_SUCCESS_CODE, {0}, {}, acl);
-        if (aclFreeCall.hasErrors())
-        {
-            std::cerr << "Error: Could not free ACL memory." << std::endl;
-            std::terminate();
-        }
+        // We ensure here instead of returning as this lambda will be called by unique_ptr
+        cxx::Ensures(!aclFreeCall.hasErrors() && "Could not free ACL memory");
     };
 
-    return smartAclPointer_t(reinterpret_cast<acl_t>(aclInitCall.getReturnValue()), freeACL);
+    return cxx::success<smartAclPointer_t>(reinterpret_cast<acl_t>(aclInitCall.getReturnValue()), freeACL);
 }
 
 bool AccessController::addPermissionEntry(const Category f_category,

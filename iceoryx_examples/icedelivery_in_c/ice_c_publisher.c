@@ -26,8 +26,11 @@
 
 bool killswitch = false;
 
+const char APP_NAME[] = "iox-c-publisher";
+
 static void sigHandler(int signalValue)
 {
+    // Ignore unused variable warning
     (void)signalValue;
     // caught SIGINT or SIGTERM, now exit gracefully
     killswitch = true;
@@ -35,31 +38,32 @@ static void sigHandler(int signalValue)
 
 void sending()
 {
-    iox_runtime_init("iox-c-publisher");
+    iox_runtime_init(APP_NAME);
 
-    const uint64_t historyCapacity = 10U;
-    const char* const nodeName = "iox-c-publisher-node";
+    iox_pub_options_t options;
+    iox_pub_options_init(&options);
+    options.historyCapacity = 10U;
+    options.nodeName = "iox-c-publisher-node";
     iox_pub_storage_t publisherStorage;
-    iox_pub_t publisher = iox_pub_init(&publisherStorage, "Radar", "FrontLeft", "Object", historyCapacity, nodeName);
-
-    iox_pub_offer(publisher);
+    iox_pub_t publisher = iox_pub_init(&publisherStorage, "Radar", "FrontLeft", "Object", &options);
 
     double ct = 0.0;
 
     while (!killswitch)
     {
-        void* chunk = NULL;
-        if (AllocationResult_SUCCESS == iox_pub_allocate_chunk(publisher, &chunk, sizeof(struct RadarObject)))
+        void* userPayload = NULL;
+        if (AllocationResult_SUCCESS == iox_pub_loan_chunk(publisher, &userPayload, sizeof(struct RadarObject)))
         {
-            struct RadarObject* sample = (struct RadarObject*)chunk;
+            struct RadarObject* sample = (struct RadarObject*)userPayload;
 
             sample->x = ct;
             sample->y = ct;
             sample->z = ct;
 
-            printf("Sent value: %.0f\n", ct);
+            printf("%s sent value: %.0f\n", APP_NAME, ct);
+            fflush(stdout);
 
-            iox_pub_send_chunk(publisher, chunk);
+            iox_pub_publish_chunk(publisher, userPayload);
 
             ++ct;
 
@@ -71,7 +75,6 @@ void sending()
         }
     }
 
-    iox_pub_stop_offer(publisher);
     iox_pub_deinit(publisher);
 }
 

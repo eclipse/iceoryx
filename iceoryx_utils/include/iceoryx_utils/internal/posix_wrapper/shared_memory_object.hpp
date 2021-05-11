@@ -49,7 +49,7 @@ class SharedMemoryObject : public DesignPattern::Creation<SharedMemoryObject, Sh
     SharedMemoryObject& operator=(SharedMemoryObject&&) = default;
     ~SharedMemoryObject() = default;
 
-    void* allocate(const uint64_t size, const uint64_t alignment = Allocator::MEMORY_ALIGNMENT);
+    void* allocate(const uint64_t size, const uint64_t alignment);
     void finalizeAllocation();
 
     Allocator* getAllocator();
@@ -66,7 +66,7 @@ class SharedMemoryObject : public DesignPattern::Creation<SharedMemoryObject, Sh
                        const AccessMode accessMode,
                        const OwnerShip ownerShip,
                        const void* baseAddressHint,
-                       const mode_t permissions = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+                       const mode_t permissions = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     bool isInitialized() const;
 

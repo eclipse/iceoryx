@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,6 +67,47 @@ template <typename T, typename CompareType, typename Next, typename... Remainder
 inline constexpr bool doesContainType() noexcept
 {
     return doesContainType<T, CompareType>() || doesContainType<T, Next, Remainder...>();
+}
+
+template <typename Container>
+inline Container uniqueMergeSortedContainers(const Container& v1, const Container& v2) noexcept
+{
+    Container mergedContainer;
+    uint64_t indexV1 = 0U, indexV2 = 0U;
+    uint64_t v1Size = v1.size();
+    uint64_t v2Size = v2.size();
+
+    while (indexV1 < v1Size && indexV2 < v2Size)
+    {
+        if (v1[indexV1] == v2[indexV2])
+        {
+            mergedContainer.emplace_back(v1[indexV1]);
+            ++indexV1;
+            ++indexV2;
+        }
+        else if (v1[indexV1] < v2[indexV2])
+        {
+            mergedContainer.emplace_back(v1[indexV1]);
+            ++indexV1;
+        }
+        else
+        {
+            mergedContainer.emplace_back(v2[indexV2]);
+            ++indexV2;
+        }
+    }
+
+    while (indexV2 < v2Size)
+    {
+        mergedContainer.emplace_back(v2[indexV2++]);
+    }
+
+    while (indexV1 < v1Size)
+    {
+        mergedContainer.emplace_back(v1[indexV1++]);
+    }
+
+    return mergedContainer;
 }
 
 

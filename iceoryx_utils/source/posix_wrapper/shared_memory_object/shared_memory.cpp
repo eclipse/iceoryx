@@ -191,7 +191,7 @@ bool SharedMemory::close() noexcept
     if (m_isInitialized)
     {
         auto closeCall =
-            cxx::makeSmartC(closePlatformFileHandle, cxx::ReturnMode::PRE_DEFINED_ERROR_CODE, {-1}, {}, m_handle);
+            cxx::makeSmartC(iox_close, cxx::ReturnMode::PRE_DEFINED_ERROR_CODE, {-1}, {}, m_handle);
         m_handle = -1;
         if (closeCall.hasErrors())
         {

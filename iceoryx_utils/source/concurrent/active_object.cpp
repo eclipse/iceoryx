@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,39 +21,34 @@ namespace iox
 {
 namespace concurrent
 {
-ActiveObject::ActiveObject()
+ActiveObject::ActiveObject() noexcept
     : m_mainLoopThread(&ActiveObject::mainLoop, this)
 {
 }
 
-ActiveObject::~ActiveObject()
+ActiveObject::~ActiveObject() noexcept
 {
     stopRunning();
 }
 
-void ActiveObject::addTask(const std::function<void()> f)
+void ActiveObject::addTask(const std::function<void()> f) noexcept
 {
-    m_tasks->push(f);
+    m_tasks.push(f);
 }
 
-void ActiveObject::mainLoop()
+void ActiveObject::mainLoop() noexcept
 {
     while (m_keepRunning)
     {
-        std::function<void()> task;
-        if (m_tasks->blocking_pop(task) && task)
+        auto task = m_tasks.pop();
+        if (task)
         {
-            task();
+            (*task)();
         }
     }
 }
 
-bool ActiveObject::isInitialized() const
-{
-    return m_isInitialized;
-}
-
-void ActiveObject::stopRunning()
+void ActiveObject::stopRunning() noexcept
 {
     if (m_mainLoopThread.joinable())
     {

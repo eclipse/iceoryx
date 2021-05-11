@@ -1,0 +1,19 @@
+Checks: '-*,readability-*,-readability-named-parameter,-readability-avoid-const-params-in-decls,-readability-else-after-return,performance-*,-readability-redundant-access-specifiers,hicpp-*,-hicpp-named-parameter,-hicpp-avoid-c-arrays,cppcoreguidelines-*,-hicpp-no-array-decay,-hicpp-signed-bitwise,-hicpp-vararg,-cppcoreguidelines-avoid-c-arrays,-cppcoreguidelines-pro-bounds-constant-array-index,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-type-vararg,concurrency-*,clang-analyzer-*,cert-*,bugprone-*'
+CheckOptions:
+  - { key: readability-identifier-naming.ClassCase,               value: CamelCase }
+  - { key: readability-identifier-naming.EnumCase,                value: CamelCase }
+  - { key: readability-identifier-naming.StructCase,              value: CamelCase }
+  - { key: readability-identifier-naming.UnionCase,               value: CamelCase }
+  - { key: readability-identifier-naming.MethodCase,              value: camelBack }
+  - { key: readability-identifier-naming.FunctionCase,            value: camelBack }
+  - { key: readability-identifier-naming.NamespaceCase,           value: lower_case }
+  - { key: readability-identifier-naming.MemberPrefix,            value: m_ }
+  - { key: readability-identifier-naming.MemberCase,              value: camelBack }
+  - { key: readability-identifier-naming.ConstexprVariableCase,   value: UPPER_CASE }
+  - { key: readability-identifier-naming.EnumCase,                value: UPPER_CASE }
+  - { key: readability-identifier-naming.GlobalConstantCase,      value: UPPER_CASE }
+  - { key: readability-identifier-naming.TemplateParameterCase,   value: CamelCase }
+  - { key: readability-function-size.LineThreshold,               value: 200 }
+  - { key: readability-function-size.StatementThreshold,          value: 200 }
+  - { key: readability-function-size.BranchThreshold,             value: 10 }
+  - { key: readability-function-size.ParameterThreshold,          value: 3 }

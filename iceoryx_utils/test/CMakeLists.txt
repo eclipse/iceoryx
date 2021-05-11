@@ -1,4 +1,5 @@
-# Copyright (c) 2019, 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+# Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,13 +20,13 @@ set(test_iceoryx_utils_VERSION 0)
 project(test_iceoryx_utils VERSION ${test_iceoryx_utils_VERSION})
 
 find_package(Threads REQUIRED)
+find_package(iceoryx_utils_testing REQUIRED)
 
 set(PROJECT_PREFIX "utils")
 
 file(GLOB_RECURSE MODULETESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/*.cpp")
 file(GLOB_RECURSE INTEGRATIONTESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/integrationtests/*.cpp")
 file(GLOB_RECURSE COMPONENTTESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/componenttests/*.cpp")
-file(GLOB_RECURSE TESTUTILS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/testutils/*.cpp")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PREFIX}/test)
 
@@ -45,14 +46,14 @@ elseif(QNX)
 elseif(APPLE)
     set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS} -Wno-pedantic -Wno-conversion)
 elseif(WIN32)
-    set(TEST_CXX_FLAGS PRIVATE /bigobj)
+    set(TEST_CXX_FLAGS PRIVATE ${ICEORYX_WARNINGS} /bigobj)
 endif()
 
 
 # set(CMAKE_CURRENT_BINARY_DIR ${CMAKE_BINARY_DIR}/test)
 
 # unittests
-add_executable(${PROJECT_PREFIX}_moduletests ${MODULETESTS_SRC} ${TESTUTILS_SRC})
+add_executable(${PROJECT_PREFIX}_moduletests ${MODULETESTS_SRC})
 target_include_directories(${PROJECT_PREFIX}_moduletests PRIVATE .)
 # TODO: fix conversion warnings
 target_compile_options(${PROJECT_PREFIX}_moduletests PRIVATE ${TEST_CXX_FLAGS})
@@ -64,7 +65,7 @@ set_target_properties(${PROJECT_PREFIX}_moduletests PROPERTIES
 )
 
 # integration tests
-add_executable( ${PROJECT_PREFIX}_integrationtests ${INTEGRATIONTESTS_SRC} ${TESTUTILS_SRC})
+add_executable( ${PROJECT_PREFIX}_integrationtests ${INTEGRATIONTESTS_SRC})
 target_compile_options(${PROJECT_PREFIX}_integrationtests PRIVATE ${TEST_CXX_FLAGS})
 target_include_directories(${PROJECT_PREFIX}_integrationtests PRIVATE .)
 target_link_libraries(${PROJECT_PREFIX}_integrationtests ${TEST_LINK_LIBS})

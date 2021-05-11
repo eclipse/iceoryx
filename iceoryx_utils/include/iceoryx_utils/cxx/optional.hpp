@@ -1,4 +1,5 @@
 // Copyright (c) 2019 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@
 #define IOX_UTILS_CXX_OPTIONAL_HPP
 
 #include "iceoryx_utils/cxx/function_ref.hpp"
+#include "iceoryx_utils/cxx/helplets.hpp"
 #include "iceoryx_utils/cxx/types.hpp"
 
 #include <new> // needed for placement new in the construct_value member function
@@ -69,13 +71,17 @@ class optional
 
     /// @brief Creates an optional which has no value. If you access such an
     ///         optional via .value() or the arrow operator the behavior is
-    ///         undefined.
+    ///         defined in the cxx::Expects handling.
     optional(const nullopt_t&) noexcept;
 
     /// @brief Creates an optional by forwarding value to the constructor of
     ///         T. This optional has a value.
     /// @param[in] value rvalue of type T which will be moved into the optional
     optional(T&& value) noexcept;
+
+    /// @brief Creates an optional by using the copy constructor of T.
+    /// @param[in] value lvalue of type T which will be copy constructed into the optional
+    optional(const T& value) noexcept;
 
     /// @brief The destructor will call the destructor of T if a value is set.
     ~optional() noexcept;
@@ -180,25 +186,25 @@ class optional
     void reset() noexcept;
 
     /// @brief Returns a reference to the underlying value. If the optional has no
-    ///         value the behavior is undefined. You need to verify that the
+    ///         value the application terminates. You need to verify that the
     ///         optional has a value by calling has_value() before using it.
     /// @return reference to the underlying type
     T& value() & noexcept;
 
     /// @brief Returns a const reference to the underlying value. If the optional has no
-    ///         value the behavior is undefined. You need to verify that the
+    ///         value the application terminates. You need to verify that the
     ///         optional has a value by calling has_value() before using it.
     /// @return const reference to the underlying type
     const T& value() const& noexcept;
 
     /// @brief Returns a rvalue reference to the underlying value. If the optional has no
-    ///         value the behavior is undefined. You need to verify that the
+    ///         value the application terminates. You need to verify that the
     ///         optional has a value by calling has_value() before using it.
     /// @return rvalue reference to the underlying type
     T&& value() && noexcept;
 
     /// @brief Returns a const rvalue reference to the underlying value. If the optional has no
-    ///         value the behavior is undefined. You need to verify that the
+    ///         value the application terminates. You need to verify that the
     ///         optional has a value by calling has_value() before using it.
     /// @return const rvalue reference to the underlying type
     const T&& value() const&& noexcept;
@@ -233,7 +239,7 @@ class optional
     const optional& or_else(const cxx::function_ref<void()>& callable) const noexcept;
 
   private:
-    alignas(alignof(T)) byte_t m_data[sizeof(T)];
+    alignas(T) byte_t m_data[sizeof(T)];
     bool m_hasValue{false};
 
   private:

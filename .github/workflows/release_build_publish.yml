@@ -1,0 +1,77 @@
+# This workflow only runs manually to build an iceoryx release and publish it into an existing Github Release
+
+name: iceoryx build & create release
+
+on:
+  workflow_dispatch:
+    inputs:
+      ReleaseTag:
+        description: 'Git Tag to create v[major].[minor].[patch]'
+        required: true
+
+jobs:
+  build-ubuntu-release:
+    if: github.actor == 'budrus' || github.actor == 'MatthiasKillat' || github.actor == 'mossmaurice' ||
+        github.actor == 'elfenpfiff' || github.actor == 'elboberido' || github.actor == 'marthtz' ||
+        github.actor == 'ariexi' || github.actor == 'ithier' || github.actor == 'dkroenke'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+      - name: Install iceoryx dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libacl1-dev libncurses5-dev doxygen graphviz texlive-font-utils
+          sudo apt-get install -y plantuml texlive-latex-base texlive-latex-extra texlive-latex-recommended texlive-fonts-recommended
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.ReleaseTag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build sources
+        run: |
+          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh build-strict build-all out-of-tree
+
+      - name: Run all tests
+        run: |
+          cd $GITHUB_WORKSPACE/build
+          tools/run_tests.sh all
+
+      - name: Build debian package
+        run: |
+          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh clean dds-gateway package
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: release_artifacts
+          path: ./build_package/iceoryx*.deb
+
+# This job must be put at the end to collect all release assets from the previous jobs
+  release:
+    name: Create Release
+    needs: build-ubuntu-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: release_artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.ReleaseTag }}
+          name: Release ${{ github.event.inputs.ReleaseTag }}
+          draft: true
+          prerelease: true
+          files: |
+            ./iceoryx*.deb

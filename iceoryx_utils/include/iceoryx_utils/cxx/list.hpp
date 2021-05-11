@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +17,8 @@
 
 #ifndef IOX_UTILS_CXX_LIST_HPP
 #define IOX_UTILS_CXX_LIST_HPP
+
+#include "iceoryx_utils/cxx/helplets.hpp"
 
 #include <cstdint>
 #include <iostream>
@@ -344,8 +347,7 @@ class list
     const T* getDataPtrFromIdx(const size_type idx) const noexcept;
 
     bool isValidElementIdx(const size_type idx) const noexcept;
-    bool handleInvalidElement(const size_type idx) const noexcept;
-    bool handleInvalidIterator(const const_iterator& iter) const noexcept;
+    bool isInvalidIterator(const const_iterator& iter) const noexcept;
     bool isInvalidIterOrDifferentLists(const const_iterator& iter) const noexcept;
     size_type& getPrevIdx(const size_type idx) noexcept;
     size_type& getNextIdx(const size_type idx) noexcept;
@@ -379,7 +381,7 @@ class list
     // first used list element (begin())
     NodeLink m_links[NODE_LINK_COUNT];
     using element_t = uint8_t[sizeof(T)];
-    alignas(alignof(T)) element_t m_data[Capacity];
+    alignas(T) element_t m_data[Capacity];
 
     size_type m_size{0U};
 }; // list

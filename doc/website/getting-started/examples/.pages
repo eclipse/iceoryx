@@ -1,4 +1,15 @@
 nav:
-  - basic-examples.md
-  - intermediate-examples.md
-  - advanced-examples.md
+  - index.md
+  - icehello.md
+  - icedelivery.md
+  - icedelivery_in_c.md
+  - iceoptions.md
+  - callbacks.md
+  - callbacks_in_c.md
+  - waitset.md
+  - waitset_in_c.md
+  - iceensemble.md
+  - singleprocess.md
+  - ice_access_control.md
+  - iceperf.md
+  - icecrystal.md

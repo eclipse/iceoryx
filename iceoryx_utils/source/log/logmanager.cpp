@@ -16,6 +16,7 @@
 
 #include "iceoryx_utils/log/logmanager.hpp"
 
+#include "iceoryx_utils/cxx/attributes.hpp"
 #include "iceoryx_utils/cxx/helplets.hpp"
 #include "iceoryx_utils/log/logger.hpp"
 #include "logging_internal.hpp"
@@ -32,8 +33,8 @@ LogManager& LogManager::GetLogManager()
     return manager;
 }
 
-Logger& LogManager::CreateLogContext(std::string ctxId [[gnu::unused]],
-                                     std::string ctxDescription [[gnu::unused]],
+Logger& LogManager::CreateLogContext(IOX_MAYBE_UNUSED std::string ctxId,
+                                     IOX_MAYBE_UNUSED std::string ctxDescription,
                                      LogLevel appDefLogLevel) noexcept
 {
     static std::mutex mtx;

@@ -30,4 +30,4 @@ fi
 
 /usr/bin/iox-roudi &
 /usr/bin/iox-gw-dds2iceoryx &
-/usr/bin/iox-ex-subscriber-simple 
+/usr/bin/iox-cpp-subscriber

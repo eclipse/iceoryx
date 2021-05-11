@@ -43,6 +43,7 @@ class UnixDomainSocket : public DesignPattern::Creation<UnixDomainSocket, IpcCha
     ///  the same behavior on every platform we use 2048.
     static constexpr size_t MAX_MESSAGE_SIZE = 2048U;
     static constexpr size_t SHORTEST_VALID_NAME = 2U;
+    static constexpr size_t NULL_TERMINATOR_SIZE = 1;
     /// @brief The name length is limited by the size of the sockaddr_un::sun_path buffer and the path prefix
     static constexpr size_t LONGEST_VALID_NAME = sizeof(sockaddr_un::sun_path) - 1;
     static constexpr int32_t ERROR_CODE = -1;
@@ -138,7 +139,7 @@ class UnixDomainSocket : public DesignPattern::Creation<UnixDomainSocket, IpcCha
 
     /// @brief create an IpcChannelError from the provides error code
     /// @return IpcChannelError if error occured
-    cxx::error<IpcChannelError> createErrorFromErrnum(const int32_t errnum) const noexcept;
+    IpcChannelError convertErrnoToIpcChannelError(const int32_t errnum) const noexcept;
 
     static bool isNameValid(const UdsName_t& name) noexcept;
 

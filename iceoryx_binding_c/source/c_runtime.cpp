@@ -1,4 +1,5 @@
-// Copyright (c) 2020 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,16 +28,16 @@ void iox_runtime_init(const char* const name)
 {
     if (name == nullptr)
     {
-        LogError() << "Application name is a nullptr!";
+        LogError() << "Runtime name is a nullptr!";
         std::terminate();
     }
-    else if (strnlen(name, iox::MAX_PROCESS_NAME_LENGTH + 1) > MAX_PROCESS_NAME_LENGTH)
+    else if (strnlen(name, iox::MAX_RUNTIME_NAME_LENGTH + 1) > MAX_RUNTIME_NAME_LENGTH)
     {
-        LogError() << "Application name has more than 100 characters!";
+        LogError() << "Runtime name has more than 100 characters!";
         std::terminate();
     }
 
-    PoshRuntime::initRuntime(ProcessName_t(iox::cxx::TruncateToCapacity, name));
+    PoshRuntime::initRuntime(RuntimeName_t(iox::cxx::TruncateToCapacity, name));
 }
 
 uint64_t iox_runtime_get_instance_name(char* const name, const uint64_t nameLength)
@@ -51,4 +52,9 @@ uint64_t iox_runtime_get_instance_name(char* const name, const uint64_t nameLeng
     name[nameLength - 1U] = '\0'; // strncpy doesn't add a null-termination if destination is smaller than source
 
     return instanceName.size();
+}
+
+void iox_runtime_shutdown()
+{
+    PoshRuntime::getInstance().shutdown();
 }

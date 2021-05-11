@@ -1,4 +1,5 @@
 // Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,5 +18,7 @@
 #define IOX_UTILS_MAC_PLATFORM_FCNTL_HPP
 
 #include <fcntl.h>
+
+int iox_open(const char* pathname, int flags, mode_t mode);
 
 #endif // IOX_UTILS_MAC_PLATFORM_FCNTL_HPP

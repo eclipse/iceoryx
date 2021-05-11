@@ -1,4 +1,5 @@
-// Copyright (c) 2020, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+// Copyright (c) 2020 by Robert Bosch GmbH,. All rights reserved.
+// Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,12 +33,13 @@ namespace popo
 struct ServerPortData : public BasePortData
 {
     ServerPortData(const capro::ServiceDescription& serviceDescription,
-                   const ProcessName_t& processName,
+                   const RuntimeName_t& runtimeName,
                    const NodeName_t& nodeName,
                    mepoo::MemoryManager* const memoryManager,
                    const mepoo::MemoryInfo& memoryInfo = mepoo::MemoryInfo()) noexcept;
 
-
+    static constexpr SubscriberTooSlowPolicy SERVER_SUBSCRIBER_POLICY = SubscriberTooSlowPolicy::DISCARD_OLDEST_DATA;
+    static constexpr QueueFullPolicy SERVER_PUBLISHER_POLICY = QueueFullPolicy::DISCARD_OLDEST_DATA;
     ServerChunkSenderData_t m_chunkSenderData;
     ServerChunkReceiverData_t m_chunkReceiverData;
     std::atomic_bool m_offeringRequested{false};
