@@ -21,7 +21,7 @@ services:
       dockerfile: publisher_node.dockerfile
     shm_size: '300M'
     image: iceoryx-publisher-node:latest
-    networks: 
+    networks:
       - iceoryx-dds
   subscriber-node:
     build:
@@ -29,7 +29,7 @@ services:
       dockerfile: subscriber_node.dockerfile
     shm_size: '300M'
     image: iceoryx-subscriber-node:latest
-    networks: 
+    networks:
       - iceoryx-dds
 networks:
   iceoryx-dds:

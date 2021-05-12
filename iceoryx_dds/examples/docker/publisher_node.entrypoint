@@ -24,10 +24,10 @@ if [[ ! -f "$GATEWAY_CONF_PATH" ]]; then
 	[[services]]
 	service = "Radar"
 	instance = "FrontLeft"
-	event = "Counter"
+	event = "Object"
 EOF
 fi
 
 /usr/bin/iox-roudi &
 /usr/bin/iox-gw-iceoryx2dds &
-/usr/bin/iox-cpp-publisher
+/usr/bin/iox-cpp-publisher-untyped
