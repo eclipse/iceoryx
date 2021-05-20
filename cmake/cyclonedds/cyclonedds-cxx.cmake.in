@@ -20,8 +20,8 @@ project(cyclonedds-cxx-download NONE)
 
 include(ExternalProject)
 ExternalProject_Add(ext_cyclonedds_cxx
-  GIT_REPOSITORY    https://github.com/ApexAI/cyclonedds-cxx.git
-  GIT_TAG           fix-sample-ref
+  GIT_REPOSITORY    https://github.com/eclipse-cyclonedds/cyclonedds-cxx.git
+  GIT_TAG           idlcxx
   SOURCE_DIR        "${CMAKE_BINARY_DIR}/dependencies/cyclonedds-cxx/src"
   BINARY_DIR        "${CMAKE_BINARY_DIR}/dependencies/cyclonedds-cxx/build"
   CONFIGURE_COMMAND ""

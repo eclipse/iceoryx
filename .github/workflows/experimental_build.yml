@@ -41,7 +41,7 @@ jobs:
         run: |
           echo $(clang --version)
           sudo $GITHUB_WORKSPACE/tools/add_test_users.sh
-          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh build-test examples out-of-tree build-shared test-add-user
+          $GITHUB_WORKSPACE/tools/iceoryx_build_test.sh build-all out-of-tree build-shared test-add-user
 
       - name: Run all tests
         continue-on-error: true
