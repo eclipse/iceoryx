@@ -1,0 +1,31 @@
+@startuml
+object ProcessManager {
+    creates objects and
+    handles discovery
+}
+object ProcessAlice
+object ProcessBob
+object NodeSubscriber
+object NodePublisher
+object PublisherRadar
+object PublisherVideo
+object SubscriberRadar
+object SubscriberVideo
+object WaitSet
+object Listener
+object EventVariableA
+object EventVariableB
+
+ProcessManager o-- ProcessAlice : <<creates>>
+ProcessManager o-- ProcessBob : <<creates>>
+ProcessBob "1" *-- "1..*" NodePublisher
+NodeSubscriber "1" *-- "0..*" PublisherRadar
+NodeSubscriber "1" *-- "0..*" PublisherVideo
+ProcessAlice "1" *-- "1..*" NodeSubscriber
+NodePublisher "1" *-- "0..*" SubscriberRadar
+NodePublisher "1" *-- "0..*" SubscriberVideo
+NodePublisher "1" *-- "0..*" WaitSet
+NodePublisher "1" *-- "0..*" Listener
+WaitSet "1" *-- "1" EventVariableA
+Listener "1" *-- "1" EventVariableB
+@enduml
