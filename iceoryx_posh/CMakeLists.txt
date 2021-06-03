@@ -399,7 +399,7 @@ if(ROUDI_ENVIRONMENT OR BUILD_TEST)
     ######### posh roudi environment ##########
     #
     setup_package_name_and_create_files(
-        NAME ${PROJECT_NAME}_roudi_environment
+        NAME ${PROJECT_NAME}_testing
         NAMESPACE iceoryx_posh_testing
         PROJECT_PREFIX ${PREFIX}
     )
