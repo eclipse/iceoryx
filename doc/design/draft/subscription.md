@@ -55,7 +55,7 @@ The subscriber will not be provided with samples from the history.
 
 #### Subscription with _HistorySize_ 1
 
-The subscriber cache contains the one sample ordered after _DeliveryTime_.
+The subscriber cache contains the one sample ordered by _DeliveryTime_.
 
 | Publisher | Timepoint | Sample |
 |:---------:|:---------:|:------:|
@@ -63,7 +63,7 @@ The subscriber cache contains the one sample ordered after _DeliveryTime_.
 
 #### Subscription with _HistorySize_ 6
 
-The subscriber cache contains the six samples ordered after _DeliveryTime_.
+The subscriber cache contains the six samples ordered by _DeliveryTime_.
 
 | Publisher | Timepoint | Sample |
 |:---------:|:---------:|:------:|
