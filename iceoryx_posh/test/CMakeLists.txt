@@ -1,4 +1,4 @@
-# Copyright (c) 2019 - 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2019 - 2021 by Robert Bosch GmbH. All rights reserved.
 # Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,7 @@ file(GLOB_RECURSE MODULETESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/moduletests/*.cpp
 file(GLOB_RECURSE INTEGRATIONTESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/integrationtests/*.cpp")
 file(GLOB_RECURSE COMPONENTTESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/componenttests/*.cpp")
 file(GLOB_RECURSE MOCKS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/mocks/*.cpp")
-
+file(GLOB_RECURSE FUZZTESTS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/fuzztests/*.cpp")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_PREFIX}/test)
 
@@ -89,4 +89,15 @@ set_target_properties(${PROJECT_PREFIX}_integrationtests PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD ${ICEORYX_CXX_STANDARD}
     POSITION_INDEPENDENT_CODE ON
+)
+
+# fuzz test
+add_executable( ${PROJECT_PREFIX}_fuzztests ${FUZZTESTS_SRC} ${TESTUTILS_SRC} ${MOCKS_SRC})
+target_compile_options(${PROJECT_PREFIX}_fuzztests PRIVATE ${TEST_CXX_FLAGS})
+target_include_directories(${PROJECT_PREFIX}_fuzztests PRIVATE .)
+target_link_libraries(${PROJECT_PREFIX}_fuzztests ${TEST_LINK_LIBS})
+set_target_properties(${PROJECT_PREFIX}_fuzztests PROPERTIES
+  CXX_STANDARD_REQUIRED ON
+  CXX_STANDARD ${ICEORYX_CXX_STANDARD}
+  POSITION_INDEPENDENT_CODE ON
 )
