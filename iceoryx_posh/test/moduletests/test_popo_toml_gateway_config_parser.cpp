@@ -1,4 +1,4 @@
-// Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+// Copyright (c) 2020 - 2021 by Robert Bosch GmbH. All rights reserved.
 // Copyright (c) 2021 by Apex.AI. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
 #include "iceoryx/tests/posh/moduletests/test_input_path.hpp"
 #include "iceoryx_posh/gateway/toml_gateway_config_parser.hpp"
 #include "stubs/stub_toml_gateway_config_parser.hpp"
-
 #include "test.hpp"
 
 namespace
@@ -26,11 +25,24 @@ namespace
 using namespace ::testing;
 using ::testing::_;
 
+using namespace iox::config;
+
 // ======================================== Helpers ======================================== //
 namespace
 {
 using ParseErrorInputFile_t = std::pair<iox::config::TomlGatewayConfigParseError, iox::roudi::ConfigFilePathString_t>;
-};
+
+using CheckCharactersValidity_t = std::tuple<std::string, bool>;
+}; // namespace
+
+const std::string TestFile = "gwconfig_test.tmp";
+#ifndef _WIN32
+const std::string TempPath = "/tmp";
+const std::string TestFilePath = TempPath + "/" + TestFile;
+#else
+const std::string TempPath = std::getenv("TEMP");
+const std::string TestFilePath = TempPath + "\\" + TestFile;
+#endif
 
 // ======================================== Fixture ======================================== //
 class TomlGatewayConfigParserTest : public TestWithParam<ParseErrorInputFile_t>
@@ -46,192 +58,255 @@ class TomlGatewayConfigParserTest : public TestWithParam<ParseErrorInputFile_t>
     iox::roudi::ConfigFilePathString_t m_configFilePath;
 };
 
-// ======================================== Tests ======================================== //
-TEST_F(TomlGatewayConfigParserTest, PassesValidationIfValidCharactersUsedInServiceDescription)
+class TomlGatewayConfigParserSuiteTest : public TestWithParam<CheckCharactersValidity_t>
 {
-    // ===== Setup
-    // Prepare configuration to test with
+  public:
+    void SetUp(){};
+    void TearDown()
+    {
+        if (std::remove(TestFilePath.c_str()) != 0)
+        {
+            std::cerr << "Failed to remove temporary file '" << TestFilePath
+                      << "'. You'll have to remove it by yourself." << std::endl;
+        }
+    };
+    void CreateTmpTomlFile(std::shared_ptr<cpptoml::table> toml)
+    {
+        std::fstream fs(TestFilePath, std::fstream::out | std::fstream::trunc);
+        if (fs.std::fstream::is_open())
+        {
+            fs << *toml;
+        }
+        else
+        {
+            ASSERT_STREQ("expected open fstream", "fstream not open");
+        }
+        fs.close();
+    }
+};
+
+// ======================================== Tests ======================================== //
+/// we require INSTANTIATE_TEST_CASE since we support gtest 1.8 for our safety targets
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+INSTANTIATE_TEST_CASE_P(ValidTest,
+                        TomlGatewayConfigParserSuiteTest,
+                        ::testing::Values(CheckCharactersValidity_t{std::make_tuple("validcharacters", false)},
+                                          CheckCharactersValidity_t{std::make_tuple("UPPERCASECHARACTERS", false)},
+                                          CheckCharactersValidity_t{std::make_tuple("lowercasecharacters", false)},
+                                          CheckCharactersValidity_t{std::make_tuple("Number1234567890", false)},
+                                          CheckCharactersValidity_t{std::make_tuple("Under_score_Characters", false)},
+                                          CheckCharactersValidity_t{std::make_tuple("_BeginsWithUnderscore", false)},
+                                          CheckCharactersValidity_t{std::make_tuple("Hyphen-InService", true)},
+                                          CheckCharactersValidity_t{std::make_tuple("1234567890", true)}));
+
+#pragma GCC diagnostic pop
+
+TEST_P(TomlGatewayConfigParserSuiteTest, CheckCharactersUsedInServiceDescription)
+{
     auto toml = cpptoml::make_table();
     auto serviceArray = cpptoml::make_table_array();
 
     auto serviceEntry = cpptoml::make_table();
-    serviceEntry->insert("service", "service");
-    serviceEntry->insert("instance", "instance");
-    serviceEntry->insert("event", "event");
-    serviceEntry->insert("size", 0);
+    std::string stringentry = std::get<0>(GetParam());
+    serviceEntry->insert("service", stringentry);
+    serviceEntry->insert("instance", stringentry);
+    serviceEntry->insert("event", stringentry);
     serviceArray->push_back(serviceEntry);
-
-    auto serviceEntryUppercase = cpptoml::make_table();
-    serviceEntryUppercase->insert("service", "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    serviceEntryUppercase->insert("instance", "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    serviceEntryUppercase->insert("event", "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
-    serviceEntryUppercase->insert("size", 0);
-    serviceArray->push_back(serviceEntryUppercase);
-
-    auto serviceEntryLowercase = cpptoml::make_table();
-    serviceEntryLowercase->insert("service", "abcdefghijklmnopqrstuvwxyz");
-    serviceEntryLowercase->insert("instance", "abcdefghijklmnopqrstuvwxyz");
-    serviceEntryLowercase->insert("event", "abcdefghijklmnopqrstuvwxyz");
-    serviceEntryLowercase->insert("size", 0);
-    serviceArray->push_back(serviceEntryLowercase);
-
-    auto serviceEntryNumbers = cpptoml::make_table();
-    serviceEntryNumbers->insert("service", "Number1234567890");
-    serviceEntryNumbers->insert("instance", "Number1234567890");
-    serviceEntryNumbers->insert("event", "Number1234567890");
-    serviceEntryNumbers->insert("size", 0);
-    serviceArray->push_back(serviceEntryNumbers);
-
-    auto serviceEntryUnderscore = cpptoml::make_table();
-    serviceEntryUnderscore->insert("service", "service_name");
-    serviceEntryUnderscore->insert("instance", "instance_name");
-    serviceEntryUnderscore->insert("event", "event_name");
-    serviceEntryUnderscore->insert("size", 0);
-    serviceArray->push_back(serviceEntryUnderscore);
-
-    auto serviceEntryBeginsWithUnderscore = cpptoml::make_table();
-    serviceEntryBeginsWithUnderscore->insert("service", "_service_name");
-    serviceEntryBeginsWithUnderscore->insert("instance", "_instance_name");
-    serviceEntryBeginsWithUnderscore->insert("event", "_event_name");
-    serviceEntryBeginsWithUnderscore->insert("size", 0);
-    serviceArray->push_back(serviceEntryBeginsWithUnderscore);
-
     toml->insert("services", serviceArray);
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(false, result.has_error());
+    auto result = StubbedTomlGatewayConfigParser::validate(*toml);
+    ASSERT_EQ(std::get<1>(GetParam()), result.has_error());
+    if (result.has_error())
+    {
+        EXPECT_EQ(TomlGatewayConfigParseError::INVALID_SERVICE_DESCRIPTION, result.get_error());
+    }
 }
 
-TEST_F(TomlGatewayConfigParserTest, FailsValidationIfNoServiceNameInServiceDescription)
+TEST_P(TomlGatewayConfigParserSuiteTest, CheckCharactersUsedForServiceDescriptionToParseInTomlConfigFile)
 {
-    // ===== Setup
-    // Prepare configuration to test with
+    auto toml = cpptoml::make_table();
+    auto serviceArray = cpptoml::make_table_array();
+
+    auto serviceEntry = cpptoml::make_table();
+    std::string stringentry = std::get<0>(GetParam());
+    serviceEntry->insert("service", stringentry);
+    serviceEntry->insert("instance", stringentry);
+    serviceEntry->insert("event", stringentry);
+    serviceArray->push_back(serviceEntry);
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+
+    ASSERT_EQ(std::get<1>(GetParam()), result.has_error());
+    if (!result.has_error())
+    {
+        GatewayConfig config = result.value();
+        EXPECT_FALSE(config.m_configuredServices.empty());
+    }
+    else
+    {
+        EXPECT_EQ(TomlGatewayConfigParseError::INVALID_SERVICE_DESCRIPTION, result.get_error());
+    }
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest, NoServiceNameInServiceDescriptionReturnIncompleteServiceDescriptionError)
+{
     auto toml = cpptoml::make_table();
     auto serviceArray = cpptoml::make_table_array();
 
     auto serviceEntryNoServiceName = cpptoml::make_table();
     serviceEntryNoServiceName->insert("instance", "instance");
     serviceEntryNoServiceName->insert("event", "event");
-    serviceEntryNoServiceName->insert("size", 0);
     serviceArray->push_back(serviceEntryNoServiceName);
     toml->insert("services", serviceArray);
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(true, result.has_error());
-    if (result.has_error())
-    {
-        EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
-    }
+    auto result = StubbedTomlGatewayConfigParser::validate(*toml);
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
 }
 
-TEST_F(TomlGatewayConfigParserTest, FailsValidationIfNoInstanceNameInServiceDescription)
+TEST_F(TomlGatewayConfigParserSuiteTest, NoInstanceNameInServiceDescriptionReturnIncompleteServiceDescriptionError)
 {
-    // ===== Setup
-    // Prepare configuration to test with
     auto toml = cpptoml::make_table();
     auto serviceArray = cpptoml::make_table_array();
 
     auto serviceEntryNoInstanceName = cpptoml::make_table();
     serviceEntryNoInstanceName->insert("service", "service");
     serviceEntryNoInstanceName->insert("event", "event");
-    serviceEntryNoInstanceName->insert("size", 0);
     serviceArray->push_back(serviceEntryNoInstanceName);
     toml->insert("services", serviceArray);
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(true, result.has_error());
-    if (result.has_error())
-    {
-        EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
-    }
+    auto result = StubbedTomlGatewayConfigParser::validate(*toml);
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
 }
 
-TEST_F(TomlGatewayConfigParserTest, FailsValidationIfNoEventNameInServiceDescription)
+TEST_F(TomlGatewayConfigParserSuiteTest, NoEventNameInServiceDescriptionReturnIncompleteServiceDescriptionError)
 {
-    // ===== Setup
-    // Prepare configuration to test with
     auto toml = cpptoml::make_table();
     auto serviceArray = cpptoml::make_table_array();
 
     auto serviceEntryNoEventName = cpptoml::make_table();
     serviceEntryNoEventName->insert("service", "service");
     serviceEntryNoEventName->insert("instance", "instance");
-    serviceEntryNoEventName->insert("size", 0);
     serviceArray->push_back(serviceEntryNoEventName);
     toml->insert("services", serviceArray);
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(true, result.has_error());
-    if (result.has_error())
-    {
-        EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
-    }
+    auto result = StubbedTomlGatewayConfigParser::validate(*toml);
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
 }
 
-TEST_F(TomlGatewayConfigParserTest, FailsValidationIfServiceDescriptionBeginsWithNumber)
+TEST_F(TomlGatewayConfigParserSuiteTest, NoServicesInConfigReturnIncompleteConfigurationError)
 {
-    // ===== Setup
-    // Prepare configuration to test with
+    auto toml = cpptoml::make_table();
+
+    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_CONFIGURATION, result.get_error());
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest, ParseWithoutParameterTakeDefaultPathReturnNoError)
+{
+    auto result = TomlGatewayConfigParser::parse();
+    ASSERT_FALSE(result.has_error());
+
+    GatewayConfig config = result.value();
+    EXPECT_TRUE(config.m_configuredServices.empty());
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest, ParseWithEmptyPathReturnEmptyConfig)
+{
+    iox::roudi::ConfigFilePathString_t path = "";
+
+    auto result = TomlGatewayConfigParser::parse(path);
+    GatewayConfig config = result.value();
+
+    EXPECT_FALSE(result.has_error());
+    EXPECT_TRUE(config.m_configuredServices.empty());
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest,
+       ParseWithoutServiceNameInServiceDescriptionInTomlConfigFileReturnIncompleteServiceDescriptionError)
+{
     auto toml = cpptoml::make_table();
     auto serviceArray = cpptoml::make_table_array();
 
-    auto serviceBeginsWithNumber = cpptoml::make_table();
-    serviceBeginsWithNumber->insert("service", "0000");
-    serviceBeginsWithNumber->insert("instance", "0000");
-    serviceBeginsWithNumber->insert("event", "0000");
-    serviceBeginsWithNumber->insert("size", 0);
-    serviceArray->push_back(serviceBeginsWithNumber);
+    auto serviceEntryNoServiceName = cpptoml::make_table();
+    serviceEntryNoServiceName->insert("instance", "instance");
+    serviceEntryNoServiceName->insert("event", "event");
+    serviceArray->push_back(serviceEntryNoServiceName);
     toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(true, result.has_error());
-    if (result.has_error())
-    {
-        EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INVALID_SERVICE_DESCRIPTION, result.get_error());
-    }
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
 }
 
-TEST_F(TomlGatewayConfigParserTest, FailsValidationIfHyphenInServiceDescription)
+TEST_F(TomlGatewayConfigParserSuiteTest,
+       ParseWithoutInstanceNameInServiceDescriptionInTomlConfigFileReturnIncompleteServiceDescriptionError)
 {
-    // ===== Setup
-    // Prepare configuration to test with
     auto toml = cpptoml::make_table();
     auto serviceArray = cpptoml::make_table_array();
-    auto serviceEntry = cpptoml::make_table();
-    serviceEntry->insert("service", "service-name");
-    serviceEntry->insert("instance", "instance-name");
-    serviceEntry->insert("event", "event-name");
-    serviceEntry->insert("size", 0);
-    serviceArray->push_back(serviceEntry);
-    toml->insert("services", serviceArray);
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(true, result.has_error());
-    if (result.has_error())
-    {
-        EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INVALID_SERVICE_DESCRIPTION, result.get_error());
-    }
+    auto serviceEntryNoInstanceName = cpptoml::make_table();
+    serviceEntryNoInstanceName->insert("service", "service");
+    serviceEntryNoInstanceName->insert("event", "event");
+    serviceArray->push_back(serviceEntryNoInstanceName);
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
 }
 
-TEST_F(TomlGatewayConfigParserTest, FailsValidationIfNoServicesInConfig)
+TEST_F(TomlGatewayConfigParserSuiteTest,
+       ParseWithoutEventNameInServiceDescriptionInTomlConfigFileReturnIncompleteServiceDescriptionError)
 {
-    // ===== Setup
-    // Prepare configuration to test with
     auto toml = cpptoml::make_table();
+    auto serviceArray = cpptoml::make_table_array();
 
-    // ===== Test
-    auto result = iox::config::StubbedTomlGatewayConfigParser::validate(*toml);
-    EXPECT_EQ(true, result.has_error());
-    if (result.has_error())
-    {
-        EXPECT_EQ(iox::config::TomlGatewayConfigParseError::INCOMPLETE_CONFIGURATION, result.get_error());
-    }
+    auto serviceEntryNoEventName = cpptoml::make_table();
+    serviceEntryNoEventName->insert("service", "service");
+    serviceEntryNoEventName->insert("instance", "instance");
+    serviceArray->push_back(serviceEntryNoEventName);
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_SERVICE_DESCRIPTION, result.get_error());
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest,
+       ParseWithoutServicesConfigurationInTomlConfigFileReturnIncompleteConfigurationError)
+{
+    auto toml = cpptoml::make_table();
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(TomlGatewayConfigParseError::INCOMPLETE_CONFIGURATION, result.get_error());
 }
 
 /// we require INSTANTIATE_TEST_CASE_P since we support gtest 1.8 for our safety targets
@@ -257,6 +332,113 @@ TEST_P(TomlGatewayConfigParserTest, ParseMalformedInputFileCausesError)
 
     ASSERT_TRUE(result.has_error());
     EXPECT_EQ(parseErrorInputFile.first, result.get_error());
+}
+
+
+TEST_F(TomlGatewayConfigParserSuiteTest, DuplicatedServicesDescriptionInTomlFileReturnOnlyOneEntry)
+{
+    auto toml = cpptoml::make_table();
+    auto serviceArray = cpptoml::make_table_array();
+
+    auto serviceEntry = cpptoml::make_table();
+    serviceEntry->insert("service", "service");
+    serviceEntry->insert("instance", "instance");
+    serviceEntry->insert("event", "event");
+
+    auto serviceEntry1 = cpptoml::make_table();
+    serviceEntry1->insert("service", "service");
+    serviceEntry1->insert("instance", "instance");
+    serviceEntry1->insert("event", "event");
+    serviceArray->push_back(serviceEntry1);
+
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+    GatewayConfig config = result.value();
+    EXPECT_FALSE(result.has_error());
+    EXPECT_FALSE(config.m_configuredServices.empty());
+    EXPECT_EQ(config.m_configuredServices.size(), 1);
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest, ParseValidConfigFileWithMaximumAllowedNumberOfConfiguredServicesReturnNoError)
+{
+    auto toml = cpptoml::make_table();
+    auto serviceArray = cpptoml::make_table_array();
+
+    for (uint32_t i = 1U; i <= iox::MAX_GATEWAY_SERVICES; ++i)
+    {
+        auto serviceEntry = cpptoml::make_table();
+        std::string stringentry = "validservice" + std::to_string(i);
+        serviceEntry->insert("service", stringentry);
+        serviceEntry->insert("instance", stringentry);
+        serviceEntry->insert("event", stringentry);
+        serviceArray->push_back(serviceEntry);
+    }
+
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+    GatewayConfig config = result.value();
+
+    EXPECT_EQ(config.m_configuredServices.size(), iox::MAX_GATEWAY_SERVICES);
+    EXPECT_FALSE(result.has_error());
+    EXPECT_FALSE(config.m_configuredServices.empty());
+
+    uint32_t count = 1;
+    for (auto configuredService : config.m_configuredServices)
+    {
+        std::string stringentry = "validservice" + std::to_string(count);
+        EXPECT_EQ(configuredService.m_serviceDescription.getServiceIDString(), stringentry);
+        EXPECT_EQ(configuredService.m_serviceDescription.getInstanceIDString(), stringentry);
+        EXPECT_EQ(configuredService.m_serviceDescription.getEventIDString(), stringentry);
+        ++count;
+    }
+}
+
+TEST_F(TomlGatewayConfigParserSuiteTest,
+       ParseValidConfigFileWithMoreThanMaximumAllowedNumberOfConfiguredServicesReturnError)
+{
+    auto toml = cpptoml::make_table();
+    auto serviceArray = cpptoml::make_table_array();
+    auto serviceEntry = cpptoml::make_table();
+
+    for (uint32_t i = 1U; i <= iox::MAX_GATEWAY_SERVICES; ++i)
+    {
+        std::string stringentry = "validservice" + std::to_string(i);
+        serviceEntry->insert("service", stringentry);
+        serviceEntry->insert("instance", stringentry);
+        serviceEntry->insert("event", stringentry);
+        serviceArray->push_back(serviceEntry);
+    }
+
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    iox::roudi::ConfigFilePathString_t Path =
+        iox::roudi::ConfigFilePathString_t(iox::cxx::TruncateToCapacity, TestFilePath);
+    auto result = TomlGatewayConfigParser::parse(Path);
+    GatewayConfig config = result.value();
+    ASSERT_FALSE(result.has_error());
+
+    std::string stringentry = "validservice" + std::to_string(iox::MAX_GATEWAY_SERVICES);
+    serviceEntry->insert("service", stringentry);
+    serviceEntry->insert("instance", stringentry);
+    serviceEntry->insert("event", stringentry);
+    serviceArray->push_back(serviceEntry);
+
+    toml->insert("services", serviceArray);
+    CreateTmpTomlFile(toml);
+
+    result = TomlGatewayConfigParser::parse(Path);
+
+    ASSERT_TRUE(result.has_error());
+    EXPECT_EQ(result.get_error(), MAXIMUM_NUMBER_OF_ENTRIES_EXCEEDED);
 }
 
 } // namespace
