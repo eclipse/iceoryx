@@ -16,18 +16,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 #
-# Generates all message definitions required by iceoryx_dds and packages 
+# Generates all message definitions required by iceoryx_dds and packages
 # them into a single library.
 #
 cmake_minimum_required(VERSION 3.5)
 project(idlcxx-generator)
 
-find_package(CycloneDDS CONFIG REQUIRED)
-find_package(CycloneDDS-CXX CONFIG REQUIRED)
-
-if(NOT TARGET CycloneDDS-CXX::ddscxx)
-  find_package(CycloneDDS-CXX REQUIRED)
-endif()
+find_package(CycloneDDS-CXX REQUIRED)
 
 add_library(iceoryx_dds_messages)
 
@@ -40,6 +35,7 @@ target_link_libraries(iceoryx_dds_messages
 )
 
 set_target_properties(iceoryx_dds_messages PROPERTIES
+    LINKER_LANGUAGE CXX
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD 14
     POSITION_INDEPENDENT_CODE ON

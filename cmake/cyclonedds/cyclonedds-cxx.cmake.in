@@ -21,7 +21,7 @@ project(cyclonedds-cxx-download NONE)
 include(ExternalProject)
 ExternalProject_Add(ext_cyclonedds_cxx
   GIT_REPOSITORY    https://github.com/eclipse-cyclonedds/cyclonedds-cxx.git
-  GIT_TAG           b68944232945ce2164a4daef67291564c83cc604
+  GIT_TAG           ca478d5d1e3b1cfe6b5791248feb7d79d4af3ce0
   SOURCE_DIR        "${CMAKE_BINARY_DIR}/dependencies/cyclonedds-cxx/src"
   BINARY_DIR        "${CMAKE_BINARY_DIR}/dependencies/cyclonedds-cxx/build"
   CONFIGURE_COMMAND ""

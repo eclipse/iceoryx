@@ -1,0 +1,27 @@
+diff --git a/src/ddscxx/include/dds/sub/detail/SampleRef.hpp b/src/ddscxx/include/dds/sub/detail/SampleRef.hpp
+index 0e2f80e..73b30d5 100644
+--- a/src/ddscxx/include/dds/sub/detail/SampleRef.hpp
++++ b/src/ddscxx/include/dds/sub/detail/SampleRef.hpp
+@@ -61,7 +61,10 @@ public:
+
+     virtual ~SampleRef()
+     {
+-        ddsi_serdata_unref(reinterpret_cast<ddsi_serdata*>(data_));
++        if (data_ != nullptr)
++        {
++            ddsi_serdata_unref(reinterpret_cast<ddsi_serdata*>(data_));
++        }
+     }
+
+     SampleRef& operator=(const SampleRef& other)
+@@ -76,6 +79,10 @@ public:
+ public:
+     const T& data() const
+     {
++        if (data_ == nullptr)
++        {
++            throw dds::core::Error("Data is Null");
++        }
+         return *data_->getT();
+     }
+

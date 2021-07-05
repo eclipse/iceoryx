@@ -50,13 +50,13 @@ cpptoml library (v0.1.1)
  * Usage: as-is, static-linking
  * enabled by default build
 
-Eclipse Cyclone DDS (Branch idlcxx)
+Eclipse Cyclone DDS (Branch master)
  * License: Eclipse Public License v. 2.0 or the Eclipse Distribution License v. 1.0
  * Project: https://github.com/eclipse-cyclonedds/cyclonedds
  * Source: https://github.com/eclipse-cyclonedds/cyclonedds/tree/idlcxx
  * Usage: as-is, static-linking
 
-C++ binding for Eclipse Cyclone DDS (Branch idlcxx)
+C++ binding for Eclipse Cyclone DDS (Branch master)
  * License: Eclipse Public License v. 2.0 or the Eclipse Distribution License v. 1.0
  * Project: https://github.com/eclipse-cyclonedds/cyclonedds-cxx
  * Source: https://github.com/eclipse-cyclonedds/cyclonedds-cxx/tree/idlcxx

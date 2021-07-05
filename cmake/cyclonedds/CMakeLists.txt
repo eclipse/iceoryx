@@ -61,6 +61,17 @@ function(fetch_and_install name)
         message(FATAL_ERROR "Build step [download] for ${name} failed: ${result}")
     endif()
 
+    if("${name}" STREQUAL "cyclonedds-cxx")
+        execute_process(
+            COMMAND git apply -p1 --ignore-space-change --whitespace=nowarn
+            INPUT_FILE "${CMAKE_CURRENT_LIST_DIR}/0001_cyclonedds_cxx_sampleref.patch"
+            WORKING_DIRECTORY "${SOURCE_DIR}"
+            RESULT_VARIABLE result)
+        if(result)
+            message(WARNING "CMake step [patch] for cyclonedds-cxx failed: ${result}! Build of cyclonedds-cxx might fail")
+        endif()
+    endif()
+
     # Build
     execute_process(COMMAND ${CREATE_PATH_COMMAND} "${BUILD_DIR}"
         RESULT_VARIABLE result
@@ -93,5 +104,5 @@ endfunction()
 
 # ===== Install
 
-fetch_and_install(cyclonedds -DBUILD_IDLC=OFF)
+fetch_and_install(cyclonedds -DBUILD_IDLC=ON)
 fetch_and_install(cyclonedds-cxx)
