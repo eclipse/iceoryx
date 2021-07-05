@@ -162,6 +162,7 @@ add_library(iceoryx_hoofs
     source/posix_wrapper/access_control.cpp
     source/posix_wrapper/mutex.cpp
     source/posix_wrapper/file_lock.cpp
+    source/posix_wrapper/periodic_timer.cpp
     source/posix_wrapper/semaphore.cpp
     source/posix_wrapper/timer.cpp
     source/posix_wrapper/timespec.cpp
