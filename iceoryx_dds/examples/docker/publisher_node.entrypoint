@@ -23,11 +23,11 @@ if [[ ! -f "$GATEWAY_CONF_PATH" ]]; then
     cat <<EOF >> /etc/iceoryx/gateway_config.toml
 	[[services]]
 	service = "Radar"
-	instance = "FrontRight"
-	event = "Counter"
+	instance = "FrontLeft"
+	event = "Object"
 EOF
 fi
 
 /usr/bin/iox-roudi &
 /usr/bin/iox-gw-iceoryx2dds &
-/usr/bin/iox-cpp-publisher
+/usr/bin/iox-cpp-publisher-untyped

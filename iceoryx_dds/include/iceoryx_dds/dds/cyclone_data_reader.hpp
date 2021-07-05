@@ -20,7 +20,7 @@
 
 #include "iceoryx_dds/dds/data_reader.hpp"
 
-#include <Mempool_DCPS.hpp>
+#include <Mempool.hpp>
 #include <atomic>
 #include <dds/dds.hpp>
 

@@ -20,7 +20,7 @@
 #include "iceoryx_dds/internal/log/logging.hpp"
 #include "iceoryx_posh/mepoo/chunk_header.hpp"
 
-#include <Mempool_DCPS.hpp>
+#include <Mempool.hpp>
 #include <string>
 
 iox::dds::CycloneDataWriter::CycloneDataWriter(const capro::IdString_t serviceId,

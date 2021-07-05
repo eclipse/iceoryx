@@ -25,7 +25,7 @@ jobs:
         # https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md
         run: |
           sudo apt-get update
-          sudo apt-get install -y libacl1-dev libncurses5-dev git cmake build-essential doxygen graphviz texlive-font-utils lcov
+          sudo apt-get install -y libacl1-dev libncurses5-dev bison doxygen graphviz texlive-font-utils lcov
           sudo apt-get install -y plantuml texlive-latex-base texlive-latex-extra texlive-latex-recommended texlive-fonts-recommended
 
       - name : Checkout

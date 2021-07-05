@@ -1,4 +1,5 @@
 # Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,6 +61,17 @@ function(fetch_and_install name)
         message(FATAL_ERROR "Build step [download] for ${name} failed: ${result}")
     endif()
 
+    if("${name}" STREQUAL "cyclonedds-cxx")
+        execute_process(
+            COMMAND git apply -p1 --ignore-space-change --whitespace=nowarn
+            INPUT_FILE "${CMAKE_CURRENT_LIST_DIR}/0001_cyclonedds_cxx_sampleref.patch"
+            WORKING_DIRECTORY "${SOURCE_DIR}"
+            RESULT_VARIABLE result)
+        if(result)
+            message(WARNING "CMake step [patch] for cyclonedds-cxx failed: ${result}! Build of cyclonedds-cxx might fail")
+        endif()
+    endif()
+
     # Build
     execute_process(COMMAND ${CREATE_PATH_COMMAND} "${BUILD_DIR}"
         RESULT_VARIABLE result
@@ -90,8 +102,7 @@ function(fetch_and_install name)
     endif()
 endfunction()
 
-# ===== Install 
+# ===== Install
 
-fetch_and_install(idlpp-cxx)
-fetch_and_install(cyclonedds)
-fetch_and_install(cyclonedds-cxx -DBUILD_TESTING=OFF)
+fetch_and_install(cyclonedds -DBUILD_IDLC=ON)
+fetch_and_install(cyclonedds-cxx)

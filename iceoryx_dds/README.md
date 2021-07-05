@@ -20,15 +20,14 @@ Applications may instead directly embed the gateway by using the exported lib.
 The DDS stack used by the gateway is abstracted and needs to made explicit at compile time. 
 
 ## Pre-requisites
-* Java is installed
-* Maven is installed
+* Bison is installed
 * CMake is installed
 
 ```bash
-sudo apt install cmake maven openjdk-14-jdk-headless
+sudo apt install cmake bison
 ```
 
-## CMake Build 
+## CMake Build
 You can use the standard iceoryx cmake build approach with an activated `-DDDS_GATEWAY=ON`
 switch.
 ```sh

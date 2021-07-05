@@ -20,7 +20,7 @@
 
 #include "iceoryx_dds/dds/data_writer.hpp"
 
-#include <Mempool_DCPS.hpp>
+#include <Mempool.hpp>
 #include <dds/dds.hpp>
 
 namespace iox

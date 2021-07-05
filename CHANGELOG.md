@@ -18,6 +18,7 @@
 - Fix warnings for gcc-11.1[\#838](https://github.com/eclipse-iceoryx/iceoryx/issues/838)
 - Incremental builds with the build script are broken[\#821](https://github.com/eclipse-iceoryx/iceoryx/issues/821)
 - Compile failed because of missing <limits> for GCC 11[\#811](https://github.com/eclipse-iceoryx/iceoryx/issues/811) thanks to @homalozoa
+- Unable to build cyclone dds idlpp-cxx [\#736](https://github.com/eclipse-iceoryx/iceoryx/issues/736)
 
 **Refactoring:**
 
@@ -31,6 +32,8 @@
 - Clean-up std::terminate usage[\#261](https://github.com/eclipse-iceoryx/iceoryx/issues/261)
 
 **API Breaking Changes:**
+
+Dependency for building the iceoryx_dds gateway changed from `openjdk` (Java) to `bison`
 
 Rename utils to hoofs:
 

@@ -1,4 +1,5 @@
-# Copyright (c) 2020, 2021 by Robert Bosch GmbH, Apex.AI Inc. All rights reserved.
+# Copyright (c) 2020 by Robert Bosch GmbH. All rights reserved.
+# Copyright (c) 2020 - 2021 by Apex.AI Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,19 +16,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 #
-# Generates all message definitions required by iceoryx_dds and packages 
+# Generates all message definitions required by iceoryx_dds and packages
 # them into a single library.
 #
 cmake_minimum_required(VERSION 3.5)
-project(idlpp-cxx-generator)
+project(idlcxx-generator)
 
-find_package(CycloneDDS CONFIG REQUIRED)
-find_package(Idlpp-cxx CONFIG REQUIRED)
-find_package(CycloneDDS-CXX CONFIG REQUIRED)
+find_package(CycloneDDS-CXX REQUIRED)
 
 add_library(iceoryx_dds_messages)
 
-idl_ddscxx_generate(mempool_messages "${MESSAGE_DEFINITION_DIR}/Mempool.idl")
+idlcxx_generate(TARGET mempool_messages FILES "${MESSAGE_DEFINITION_DIR}/Mempool.idl")
+
 target_link_libraries(iceoryx_dds_messages
     PUBLIC
     CycloneDDS-CXX::ddscxx
@@ -35,6 +35,7 @@ target_link_libraries(iceoryx_dds_messages
 )
 
 set_target_properties(iceoryx_dds_messages PROPERTIES
+    LINKER_LANGUAGE CXX
     CXX_STANDARD_REQUIRED ON
     CXX_STANDARD 14
     POSITION_INDEPENDENT_CODE ON

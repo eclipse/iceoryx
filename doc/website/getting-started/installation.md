@@ -21,11 +21,7 @@ The Cyclone DDS gateway depends currently on [Cyclone DDS](https://github.com/ec
 When building it with the CMake option `-DDDS_GATEWAY=ON` it will be automatically installed as a dependency.
 Furthermore, you have to install:
 
-- [Apache Maven](http://maven.apache.org/download.cgi), 3.5 or later
-- [OpenJDK](http://jdk.java.net/11/), 11.0 or later. Alternatively, Java JDK version 8 or later
-
-!!! hint
-    If you are behind a corporate firewall you may have to adjust the proxy settings of maven in `/etc/maven/settings.xml`. See: [Maven Proxy Configuration](https://maven.apache.org/settings.html#proxies)
+- [GNU Bison](https://www.gnu.org/software/bison/manual/), 3.0.4 or later
 
 ### :material-apple: Mac OS
 
