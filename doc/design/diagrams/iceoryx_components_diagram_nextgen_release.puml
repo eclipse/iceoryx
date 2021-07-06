@@ -1,0 +1,119 @@
+@startuml Eclipse iceoryx Component Overview
+skinparam BackgroundColor transparent
+skinparam componentStyle uml2
+
+skinparam component {
+   backgroundColor<<namespace>> yellow
+}
+
+skinparam package {
+   backgroundColor green
+}
+
+skinparam frame {
+   backgroundColor chocolate
+}
+
+' PlantUML package: CMake package
+' PlantUML frame: CMake library
+
+' @todo #590
+' RouDi split, separate files and namespaces for static/dynamic discovery
+' Implement exported libraries (add_library in iceoryx_posh/CMakeLists.txt)
+' RouDiEnvironment shall not be in roudi namespace, but in testing
+
+header Eclipse iceoryx component overview
+
+' POSH: POSIX SHared memory
+' Publish/subscribe IPC communication infrastructure
+package iceoryx_posh {
+   frame "core library" {
+      component popo <<namespace>>
+      component capro <<namespace>>
+      component mepoo <<namespace>>
+      component version <<namespace>>
+   }
+
+   frame "runtime library" {
+      component runtime <<namespace>>
+   }
+
+   frame "gateway library" {
+      component gw <<namespace>>
+   }
+
+   frame "RouDi library" {
+      component roudi <<namespace>>
+      component build <<namespace>>
+   }
+
+   frame "config library" {
+      component config <<namespace>>
+      component helper <<namespace>>
+   }
+   component errors <<namespace>>
+}
+
+' HOOFS: Helpful Objects Optimised For Safety
+' Library containing modern C++ STL constructs
+package iceoryx_hoofs  {
+   frame "hoofs library" {
+      component concurrent <<namespace>>
+      component cxx <<namespace>> {
+         component newtype <<namespace>>
+         component set <<namespace>>
+         component algorithm <<namespace>>
+      }
+      component DesignPattern <<namespace>>
+      component errors <<namespace>>
+      component log <<namespace>> {
+         component ffbb <<namespace>>
+      }
+      component units <<namespace>> {
+         component duration_literals <<namespace>>
+
+      }
+      component posix <<namespace>>
+      component threading <<namespace>>
+   }
+}
+
+' DDS: Data Distribution Service
+'
+package iceoryx_dds  {
+   component dds <<namespace>>
+   component gw <<namespace>> as gateway_dds
+}
+
+' C-Binding
+package iceoryx_binding_c  {
+   component enums.h <<file>>
+   component event_info.h <<file>>
+   component publisher.h <<file>>
+   component subscriber.h <<file>>
+   component node.h <<file>>
+   component types.h <<file>>
+   component wait_set.h <<file>>
+   component user_trigger.h <<file>>
+   component cpp2c <<namespace>>
+}
+
+' CALF: Can Also Left (un) Finished
+' New C++ building blocks which only meet quality level 5
+package iceoryx_calf  {
+   component calf <<namespace>>
+}
+
+' Introspection
+package iceoryx_introspection  {
+   component client <<namespace>> {
+      component introspection <<namespace>>
+   }
+}
+
+iceoryx_posh  ..>  iceoryx_hoofs  : use
+iceoryx_dds  ..>  iceoryx_posh  : use
+iceoryx_binding_c  ..>  iceoryx_posh  : use
+iceoryx_calf  ..>  iceoryx_hoofs  : use
+introspection  ..>  iceoryx_posh  : use
+@enduml

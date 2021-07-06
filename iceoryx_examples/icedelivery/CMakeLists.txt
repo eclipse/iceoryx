@@ -35,7 +35,7 @@ target_compile_options(iox-cpp-publisher PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_S
 
 add_executable(iox-cpp-publisher-untyped ./iox_publisher_untyped.cpp)
 target_link_libraries(iox-cpp-publisher-untyped
-    iceoryx_posh::iceoryx_posh
+    iceoryx_posh::iceoryx_posh # @todo #590 Should link against iceoryx_runtime (which depends on iceoryx_posh)
 )
 target_compile_options(iox-cpp-publisher-untyped PRIVATE ${ICEORYX_WARNINGS} ${ICEORYX_SANITIZER_FLAGS})
 
