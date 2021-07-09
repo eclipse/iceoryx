@@ -17,45 +17,149 @@
 
 #include "iceoryx_posh/internal/roudi/service_registry.hpp"
 
+#include <algorithm>
+
 namespace iox
 {
 namespace roudi
 {
-void ServiceRegistry::add(const capro::IdString_t& service, const capro::IdString_t& instance)
+cxx::expected<ServiceRegistry::Error> ServiceRegistry::add(const capro::ServiceDescription& serviceDescription) noexcept
 {
-    cxx::set::add(m_serviceMap[service].instanceSet, instance);
-}
-
-void ServiceRegistry::remove(const capro::IdString_t& service, const capro::IdString_t& instance)
-{
-    cxx::set::remove(m_serviceMap[service].instanceSet, instance);
-}
-
-void ServiceRegistry::find(InstanceSet_t& instances,
-                           const capro::IdString_t& service,
-                           const capro::IdString_t& instance) const
-{
-    if (instance == Wildcard)
+    if (!serviceDescription.isValid())
     {
-        for (auto& instance : m_serviceMap[service].instanceSet)
+        return cxx::error<Error>(Error::SERVICE_DESCRIPTION_INVALID);
+    }
+
+    // Forbid duplicate service descriptions entries
+    for (auto& element : m_serviceDescriptionVector)
+    {
+        if (element == serviceDescription)
         {
-            instances.push_back(instance);
+            return cxx::error<Error>(Error::SERVICE_DESCRIPTION_ALREADY_ADDED);
+        }
+    }
+
+    if (!m_serviceDescriptionVector.push_back(serviceDescription))
+    {
+        return cxx::error<Error>(Error::SERVICE_REGISTRY_FULL);
+    }
+    m_serviceMap.insert({serviceDescription.getServiceIDString(), m_serviceDescriptionVector.size() - 1});
+    m_instanceMap.insert({serviceDescription.getInstanceIDString(), m_serviceDescriptionVector.size() - 1});
+    return cxx::success<>();
+}
+
+bool ServiceRegistry::remove(const capro::ServiceDescription& serviceDescription) noexcept
+{
+    if (!serviceDescription.isValid())
+    {
+        return false;
+    }
+
+    bool removedElement{false};
+    uint64_t index = 0U;
+    for (auto iterator = m_serviceDescriptionVector.begin(); iterator != m_serviceDescriptionVector.end();)
+    {
+        if (m_serviceDescriptionVector[index] == serviceDescription)
+        {
+            m_serviceDescriptionVector.erase(iterator);
+            removedElement = true;
+            // There can be not more than one element
+            break;
+        }
+        index++;
+        iterator++;
+    }
+
+    auto removeIndexFromMap = [](std::multimap<capro::IdString_t, uint64_t>& map, uint64_t index) {
+        for (auto it = map.begin(); it != map.end();)
+        {
+            if (it->second == index)
+            {
+                it = map.erase(it);
+                continue;
+            }
+            else if (it->second > index)
+            {
+                // update index due to removed element
+                it->second--;
+            }
+            it++;
+        }
+    };
+
+    removeIndexFromMap(m_serviceMap, index);
+    removeIndexFromMap(m_instanceMap, index);
+
+    return removedElement;
+}
+
+void ServiceRegistry::find(ServiceDescriptionVector_t& searchResult,
+                           const capro::IdString_t& service,
+                           const capro::IdString_t& instance) const noexcept
+{
+    cxx::vector<uint64_t, MAX_SERVICE_DESCRIPTIONS> intersection;
+
+    // Find (K1, K2)
+    // O(log n + log n + max(#PossibleServices + #possiblesInstances) + #intersection)
+    if (instance != Wildcard && service != Wildcard)
+    {
+        cxx::vector<uint64_t, MAX_SERVICE_DESCRIPTIONS> possibleServices;
+        cxx::vector<uint64_t, MAX_SERVICE_DESCRIPTIONS> possibleInstances;
+
+        auto rangeServiceMap = m_serviceMap.equal_range(service);
+        for (auto entry = rangeServiceMap.first; entry != rangeServiceMap.second; ++entry)
+        {
+            possibleServices.push_back(entry->second);
+        }
+
+        auto rangeInstanceMap = m_instanceMap.equal_range(instance);
+        for (auto entry = rangeInstanceMap.first; entry != rangeInstanceMap.second; ++entry)
+        {
+            possibleInstances.push_back(entry->second);
+        }
+
+        ::std::set_intersection(possibleServices.begin(),
+                                possibleServices.end(),
+                                possibleInstances.begin(),
+                                possibleInstances.end(),
+                                ::std::back_inserter(intersection));
+
+        for (auto& value : intersection)
+        {
+            searchResult.push_back(m_serviceDescriptionVector[value]);
+        }
+    }
+    // Find (*, K2)
+    // O(log n + #result)
+    else if (service == Wildcard && instance != Wildcard)
+    {
+        auto range = m_instanceMap.equal_range(instance);
+        for (auto entry = range.first; entry != range.second; ++entry)
+        {
+            searchResult.push_back(m_serviceDescriptionVector[entry->second]);
+        }
+    }
+    // Find (K1, *)
+    // O(log n + #result)
+    else if (instance == Wildcard && service != Wildcard)
+    {
+        auto range = m_serviceMap.equal_range(service);
+        for (auto entry = range.first; entry != range.second; ++entry)
+        {
+            searchResult.push_back(m_serviceDescriptionVector[entry->second]);
         }
     }
     else
     {
-        auto& instanceSet = m_serviceMap[service].instanceSet;
-        auto iter = std::find(instanceSet.begin(), instanceSet.end(), instance);
-        if (iter != instanceSet.end())
-        {
-            instances.push_back(*iter);
-        }
+        // Find (*, *)
+        // O(1)
+        searchResult = m_serviceDescriptionVector;
     }
 }
 
-const ServiceRegistry::serviceMap_t& ServiceRegistry::getServiceMap() const
+const ServiceRegistry::ServiceDescriptionVector_t ServiceRegistry::getServices() const noexcept
 {
-    return m_serviceMap;
+    return m_serviceDescriptionVector;
 }
 } // namespace roudi
 } // namespace iox

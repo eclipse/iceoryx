@@ -120,7 +120,7 @@ bool IpcInterfaceBase::send(const IpcMessage& msg) const noexcept
         {
             const size_t messageSize =
                 static_cast<size_t>(msg.getMessage().size()) + platform::IoxIpcChannelType::NULL_TERMINATOR_SIZE;
-            LogError() << "msg size of " << messageSize << "bigger than configured max message size";
+            LogError() << "msg size of " << messageSize << " bigger than configured max message size";
         }
     };
     return !m_ipcChannel.send(msg.getMessage()).or_else(logLengthError).has_error();
@@ -140,7 +140,7 @@ bool IpcInterfaceBase::timedSend(const IpcMessage& msg, units::Duration timeout)
         {
             const size_t messageSize =
                 static_cast<size_t>(msg.getMessage().size()) + platform::IoxIpcChannelType::NULL_TERMINATOR_SIZE;
-            LogError() << "msg size of " << messageSize << "bigger than configured max message size";
+            LogError() << "msg size of " << messageSize << " bigger than configured max message size";
         }
     };
     return !m_ipcChannel.timedSend(msg.getMessage(), timeout).or_else(logLengthError).has_error();

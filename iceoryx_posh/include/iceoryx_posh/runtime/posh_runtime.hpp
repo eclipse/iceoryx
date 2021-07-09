@@ -47,12 +47,12 @@ class NodeData;
 enum class FindServiceError
 {
     INVALID_STATE,
-    UNABLE_TO_WRITE_TO_ROUDI_CHANNEL,
-    INSTANCE_CONTAINER_OVERFLOW
+    UNABLE_TO_WRITE_TO_ROUDI_CHANNEL, /// @todo #415 remove as IPC channel won't be used
+    INSTANCE_CONTAINER_OVERFLOW /// @todo #415 set container to iox::MAX_NUMBER_OF_SERVICES and remove error
 };
 
-/// @brief Used to search for any string (wildcard)
-struct Any_t
+/// @brief Used to search for any string
+struct Wildcard_t
 {
 };
 
@@ -89,12 +89,12 @@ class PoshRuntime
     /// @brief find all services that match the provided service description
     /// @param[in] service service string to search for (wildcards allowed)
     /// @param[in] instance instance string to search for (wildcards allowed)
-    /// @return cxx::expected<InstanceContainer, FindServiceError>
-    /// InstanceContainer: on success, container that is filled with all matching instances
+    /// @return cxx::expected<ServiceContainer, FindServiceError>
+    /// ServiceContainer: on success, container that is filled with all matching instances
     /// FindServiceError: if any, encountered during the operation
-    virtual cxx::expected<InstanceContainer, FindServiceError>
-    findService(const cxx::variant<Any_t, capro::IdString_t> service,
-                const cxx::variant<Any_t, capro::IdString_t> instance) noexcept = 0;
+    virtual cxx::expected<ServiceContainer, FindServiceError>
+    findService(const cxx::variant<Wildcard_t, capro::IdString_t> service,
+                const cxx::variant<Wildcard_t, capro::IdString_t> instance) noexcept = 0;
 
     /// @brief offer the provided service, sends the offer from application to RouDi daemon
     /// @param[in] service valid ServiceDescription to offer

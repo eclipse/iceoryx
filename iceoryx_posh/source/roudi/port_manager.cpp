@@ -155,13 +155,11 @@ void PortManager::doDiscoveryForPublisherPort(PublisherPortRouDiType& publisherP
         m_portIntrospection.reportMessage(caproMessage);
         if (capro::CaproMessageType::OFFER == caproMessage.m_type)
         {
-            this->addEntryToServiceRegistry(caproMessage.m_serviceDescription.getServiceIDString(),
-                                            caproMessage.m_serviceDescription.getInstanceIDString());
+            this->addEntryToServiceRegistry(caproMessage.m_serviceDescription);
         }
         else if (capro::CaproMessageType::STOP_OFFER == caproMessage.m_type)
         {
-            this->removeEntryFromServiceRegistry(caproMessage.m_serviceDescription.getServiceIDString(),
-                                                 caproMessage.m_serviceDescription.getInstanceIDString());
+            this->removeEntryFromServiceRegistry(caproMessage.m_serviceDescription);
         }
         else
         {
@@ -268,21 +266,19 @@ void PortManager::handleInterfaces() noexcept
             }
         }
         // also forward services from service registry
-        auto serviceMap = m_serviceRegistry.getServiceMap();
+        /// @todo #415 do we still need this? yes but return a copy here to be stored in shared memory via new
+        /// StatusPort's
+        auto serviceVector = m_serviceRegistry.getServices();
 
         caproMessage.m_subType = capro::CaproMessageSubType::SERVICE;
 
-        for (auto const& x : serviceMap)
+        for (auto const& element : serviceVector)
         {
-            for (auto& instance : x.second.instanceSet)
-            {
-                caproMessage.m_serviceDescription = capro::ServiceDescription(x.first, instance, roudi::Wildcard);
+            caproMessage.m_serviceDescription = element;
 
-                for (auto& interfacePortData : interfacePortsForInitialForwarding)
-                {
-                    auto interfacePort = popo::InterfacePort(interfacePortData);
-                    interfacePort.dispatchCaProMessage(caproMessage);
-                }
+            for (auto& interfacePortData : interfacePortsForInitialForwarding)
+            {
+                popo::InterfacePort(interfacePortData).dispatchCaProMessage(caproMessage);
             }
         }
     }
@@ -306,14 +302,12 @@ void PortManager::handleApplications() noexcept
             {
             case capro::CaproMessageType::OFFER:
             {
-                addEntryToServiceRegistry(serviceDescription.getServiceIDString(),
-                                          serviceDescription.getInstanceIDString());
+                addEntryToServiceRegistry(caproMessage.m_serviceDescription);
                 break;
             }
             case capro::CaproMessageType::STOP_OFFER:
             {
-                removeEntryFromServiceRegistry(serviceDescription.getServiceIDString(),
-                                               serviceDescription.getInstanceIDString());
+                removeEntryFromServiceRegistry(caproMessage.m_serviceDescription);
                 break;
             }
             default:
@@ -550,8 +544,7 @@ void PortManager::destroyPublisherPort(PublisherPortRouDiType::MemberType_t* con
         cxx::Ensures(caproMessage.m_type == capro::CaproMessageType::STOP_OFFER);
 
         m_portIntrospection.reportMessage(caproMessage);
-        this->removeEntryFromServiceRegistry(caproMessage.m_serviceDescription.getServiceIDString(),
-                                             caproMessage.m_serviceDescription.getInstanceIDString());
+        this->removeEntryFromServiceRegistry(caproMessage.m_serviceDescription);
         this->sendToAllMatchingSubscriberPorts(caproMessage, publisherPortRoudi);
         this->sendToAllMatchingInterfacePorts(caproMessage);
     });
@@ -600,17 +593,16 @@ runtime::IpcMessage PortManager::findService(const capro::IdString_t& service,
         interfacePort.dispatchCaProMessage(caproMessage);
     }
 
-    // add all found instances to instanceString
-    runtime::IpcMessage instanceMessage;
+    runtime::IpcMessage response;
 
-    ServiceRegistry::InstanceSet_t instances;
-    m_serviceRegistry.find(instances, service, instance);
-    for (auto& instance : instances)
+    ServiceRegistry::ServiceDescriptionVector_t searchResult;
+    m_serviceRegistry.find(searchResult, service, instance);
+    for (auto& service : searchResult)
     {
-        instanceMessage << instance;
+        response << static_cast<cxx::Serialization>(service).toString();
     }
 
-    return instanceMessage;
+    return response;
 }
 
 const std::atomic<uint64_t>* PortManager::serviceRegistryChangeCounter() noexcept
@@ -721,17 +713,18 @@ popo::ApplicationPortData* PortManager::acquireApplicationPortData(const Runtime
     }
 }
 
-void PortManager::addEntryToServiceRegistry(const capro::IdString_t& service,
-                                            const capro::IdString_t& instance) noexcept
+void PortManager::addEntryToServiceRegistry(const capro::ServiceDescription& service) noexcept
 {
-    m_serviceRegistry.add(service, instance);
+    m_serviceRegistry.add(service).or_else([&](auto&) {
+        LogWarn() << "Could not add service " << service.getServiceIDString() << " to service registry!";
+        errorHandler(Error::kPOSH__PORT_MANAGER_COULD_NOT_ADD_SERVICE_TO_REGISTRY, nullptr, ErrorLevel::MODERATE);
+    });
     m_portPool->serviceRegistryChangeCounter()->fetch_add(1, std::memory_order_relaxed);
 }
 
-void PortManager::removeEntryFromServiceRegistry(const capro::IdString_t& service,
-                                                 const capro::IdString_t& instance) noexcept
+void PortManager::removeEntryFromServiceRegistry(const capro::ServiceDescription& service) noexcept
 {
-    m_serviceRegistry.remove(service, instance);
+    m_serviceRegistry.remove(service);
     m_portPool->serviceRegistryChangeCounter()->fetch_add(1, std::memory_order_relaxed);
 }
 

@@ -352,11 +352,10 @@ void ProcessManager::findServiceForProcess(const RuntimeName_t& name,
     searchForProcessAndThen(
         name,
         [&](Process& process) {
-            runtime::IpcMessage instanceString({m_portManager.findService(service, instance)});
-            process.sendViaIpcChannel(instanceString);
-            LogDebug() << "Sent InstanceString to application " << name;
+            process.sendViaIpcChannel({m_portManager.findService(service, instance)});
+            LogDebug() << "Sent all found services to application " << name;
         },
-        [&]() { LogWarn() << "Unknown process " << name << " requested an InstanceString."; });
+        [&]() { LogWarn() << "Unknown process " << name << " requested to find services."; });
 }
 
 void ProcessManager::addInterfaceForProcess(const RuntimeName_t& name,

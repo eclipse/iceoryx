@@ -43,23 +43,121 @@ class ServiceRegistry_test : public Test
         }
     }
     iox::roudi::ServiceRegistry registry;
-    iox::roudi::ServiceRegistry::InstanceSet_t searchResults;
+
+    iox::roudi::ServiceRegistry::ServiceDescriptionVector_t searchResults;
 };
 
-TEST_F(ServiceRegistry_test, SingleAdd)
+TEST_F(ServiceRegistry_test, AddNoServiceDescriptionsAndWildcardSearchReturnsNothing)
 {
-    registry.add("a", "b");
+    registry.find(searchResults, Wildcard, Wildcard);
+
+    EXPECT_THAT(searchResults.size(), Eq(0));
+}
+
+TEST_F(ServiceRegistry_test, AddMaximumNumberOfServiceDescriptionsWorks)
+{
+    iox::cxx::vector<ServiceDescription, ServiceRegistry::MAX_SERVICE_DESCRIPTIONS> services;
+
+    for (uint64_t i = 0U; i < ServiceRegistry::MAX_SERVICE_DESCRIPTIONS; i++)
+    {
+        services.push_back(iox::capro::ServiceDescription(
+            "Foo", "Bar", iox::capro::IdString_t(iox::cxx::TruncateToCapacity, iox::cxx::convert::toString(i))));
+    }
+
+    for (auto& service : services)
+    {
+        auto result = registry.add(service);
+        ASSERT_FALSE(result.has_error());
+    }
+}
+
+TEST_F(ServiceRegistry_test, AddMoreThanMaximumNumberOfServiceDescriptionsFails)
+{
+    iox::cxx::vector<ServiceDescription, ServiceRegistry::MAX_SERVICE_DESCRIPTIONS> services;
+
+    for (uint64_t i = 0U; i < ServiceRegistry::MAX_SERVICE_DESCRIPTIONS; i++)
+    {
+        services.push_back(iox::capro::ServiceDescription(
+            "Foo", "Bar", iox::capro::IdString_t(iox::cxx::TruncateToCapacity, iox::cxx::convert::toString(i))));
+    }
+
+    for (auto& service : services)
+    {
+        auto result = registry.add(service);
+        ASSERT_FALSE(result.has_error());
+    }
+
+    auto result = registry.add(iox::capro::ServiceDescription("Foo", "Bar", "Baz"));
+    ASSERT_TRUE(result.has_error());
+    EXPECT_THAT(result.get_error(), Eq(ServiceRegistry::Error::SERVICE_REGISTRY_FULL));
+}
+
+TEST_F(ServiceRegistry_test, AddServiceDescriptionsWhichWasAlreadyAddedDoesNotWork)
+{
+    auto result1 = registry.add(ServiceDescription("Li", "La", "Launebaer"));
+    ASSERT_FALSE(result1.has_error());
+
+    auto result2 = registry.add(ServiceDescription("Li", "La", "Launebaer"));
+    ASSERT_TRUE(result2.has_error());
+    EXPECT_THAT(result2.get_error(), Eq(ServiceRegistry::Error::SERVICE_DESCRIPTION_ALREADY_ADDED));
+}
+
+TEST_F(ServiceRegistry_test, AddInvalidServiceDescriptionsFails)
+{
+    auto result = registry.add(ServiceDescription());
+    ASSERT_TRUE(result.has_error());
+    EXPECT_THAT(result.get_error(), Eq(ServiceRegistry::Error::SERVICE_DESCRIPTION_INVALID));
+}
+
+TEST_F(ServiceRegistry_test, RemovingServiceDescriptionsWhichWasntAddedFails)
+{
+    EXPECT_FALSE(registry.remove(ServiceDescription("Sim", "Sa", "Lambim")));
+}
+
+TEST_F(ServiceRegistry_test, RemovingInvalidServiceDescriptionsFails)
+{
+    EXPECT_FALSE(registry.remove(ServiceDescription()));
+}
+
+TEST_F(ServiceRegistry_test, SingleServiceDescriptionCanBeFoundWithWildcardSearch)
+{
+    auto result = registry.add(ServiceDescription("Foo", "Bar", "Baz"));
+    ASSERT_FALSE(result.has_error());
+    registry.find(searchResults, Wildcard, Wildcard);
+
+    EXPECT_THAT(searchResults.size(), Eq(1));
+    EXPECT_THAT(searchResults[0], Eq(ServiceDescription("Foo", "Bar", "Baz")));
+}
+
+TEST_F(ServiceRegistry_test, SingleServiceDescriptionCanBeFoundWithInstanceName)
+{
+    auto result = registry.add(ServiceDescription("Baz", "Bar", "Foo"));
+    ASSERT_FALSE(result.has_error());
+    registry.find(searchResults, Wildcard, "Bar");
+
+    EXPECT_THAT(searchResults.size(), Eq(1));
+    EXPECT_THAT(searchResults[0], Eq(ServiceDescription("Baz", "Bar", "Foo")));
+}
+
+TEST_F(ServiceRegistry_test, SingleServiceDescriptionCanBeFoundWithServiceName)
+{
+    iox::capro::ServiceDescription service1("a", "b", "c");
+    ASSERT_FALSE(registry.add(service1).has_error());
     registry.find(searchResults, "a", Wildcard);
 
     EXPECT_THAT(searchResults.size(), Eq(1));
-    EXPECT_THAT(searchResults[0], Eq(iox::cxx::string<100>("b")));
+    EXPECT_THAT(searchResults[0], Eq(service1));
 }
 
-TEST_F(ServiceRegistry_test, SingleMultiAdd)
+TEST_F(ServiceRegistry_test, MultipleServiceDescriptionWithSameServiceNameCanAllBeFound)
 {
-    registry.add("a", "b");
-    registry.add("a", "c");
-    registry.add("a", "d");
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("a", "c", "c");
+    iox::capro::ServiceDescription service3("a", "d", "d");
+
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
     registry.find(searchResults, "a", Wildcard);
 
     EXPECT_THAT(searchResults.size(), Eq(3));
@@ -70,123 +168,177 @@ TEST_F(ServiceRegistry_test, SingleMultiAdd)
 
     for (auto& e : searchResults)
     {
-        if (e == iox::cxx::string<100>("b"))
+        if (e == service1)
             hasFoundB = true;
-        if (e == iox::cxx::string<100>("c"))
+        if (e == service2)
             hasFoundC = true;
-        if (e == iox::cxx::string<100>("d"))
+        if (e == service3)
             hasFoundD = true;
     }
 
     EXPECT_THAT(hasFoundB && hasFoundC && hasFoundD, Eq(true));
 }
 
-TEST_F(ServiceRegistry_test, SingleAddMultiService)
+TEST_F(ServiceRegistry_test, MultipleServiceDescriptionWithDifferentServiceNameCanAllBeFound)
 {
-    registry.add("a", "b");
-    registry.add("c", "d");
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("c", "d", "d");
+
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
     registry.find(searchResults, "a", Wildcard);
 
     EXPECT_THAT(searchResults.size(), Eq(1));
-    EXPECT_THAT(searchResults[0], Eq(iox::cxx::string<100>("b")));
+    EXPECT_THAT(searchResults[0], Eq(service1));
     searchResults.clear();
 
     registry.find(searchResults, "c", Wildcard);
     EXPECT_THAT(searchResults.size(), Eq(1));
-    EXPECT_THAT(searchResults[0], Eq(iox::cxx::string<100>("d")));
+    EXPECT_THAT(searchResults[0], Eq(service2));
 }
 
-TEST_F(ServiceRegistry_test, FindSpecificInstance)
+TEST_F(ServiceRegistry_test, MultipleServiceDescriptionWithSameServiceNameFindsSpecificService)
 {
-    registry.add("a", "b");
-    registry.add("a", "c");
-    registry.add("a", "d");
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("a", "c", "c");
+    iox::capro::ServiceDescription service3("a", "d", "d");
+
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
     registry.find(searchResults, "a", "c");
 
     EXPECT_THAT(searchResults.size(), Eq(1));
-    EXPECT_THAT(searchResults[0], Eq(iox::cxx::string<100>("c")));
+    EXPECT_THAT(searchResults[0], Eq(service2));
 }
 
-TEST_F(ServiceRegistry_test, FindSpecificNonExistingInstance)
+TEST_F(ServiceRegistry_test, MultipleServiceDescriptionAddedInNonLinearOrderFindsCorrectServices)
 {
-    registry.add("a", "b");
-    registry.add("a", "c");
-    registry.add("a", "d");
+    iox::capro::ServiceDescription service1("a", "1", "moep");
+    iox::capro::ServiceDescription service2("b", "2", "moep");
+    iox::capro::ServiceDescription service3("c", "3", "moep");
+    iox::capro::ServiceDescription service4("d", "4", "moep");
+    iox::capro::ServiceDescription service5("e", "5", "moep");
+
+    ASSERT_FALSE(registry.add(service5).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
+    ASSERT_FALSE(registry.add(service4).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service1).has_error());
+
+    ASSERT_TRUE(registry.remove(service5));
+    ASSERT_TRUE(registry.remove(service1));
+    registry.find(searchResults, "a", Wildcard);
+
+    EXPECT_THAT(searchResults.size(), Eq(0));
+}
+
+TEST_F(ServiceRegistry_test, FindSpecificNonExistingServiceDescriptionFails)
+{
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("a", "c", "c");
+    iox::capro::ServiceDescription service3("a", "d", "d");
+
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
     registry.find(searchResults, "a", "g");
 
     EXPECT_THAT(searchResults.size(), Eq(0));
 }
 
-TEST_F(ServiceRegistry_test, RemoveSingle)
+TEST_F(ServiceRegistry_test, AddingMultipleServiceDescriptionWithSameServicesAndRemovingSpecificDoesNotFindSpecific)
 {
-    registry.add("a", "b");
-    registry.add("a", "c");
-    registry.add("a", "d");
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("a", "c", "c");
+    iox::capro::ServiceDescription service3("a", "d", "d");
 
-    registry.remove("a", "c");
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
+
+    EXPECT_TRUE(registry.remove(service2));
 
     registry.find(searchResults, "a", "c");
     EXPECT_THAT(searchResults.size(), Eq(0));
 }
 
-TEST_F(ServiceRegistry_test, RemoveSingleFromMultipleServices)
+TEST_F(ServiceRegistry_test,
+       AddingMultipleServiceDescriptionWithDifferentServicesAndRemovingSpecificDoesNotFindSpecific)
 {
-    registry.add("a", "b");
-    registry.add("b", "c");
-    registry.add("c", "d");
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("b", "c", "c");
+    iox::capro::ServiceDescription service3("c", "d", "d");
 
-    registry.remove("b", "c");
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
+
+    EXPECT_TRUE(registry.remove(service2));
 
     registry.find(searchResults, "b", "c");
     EXPECT_THAT(searchResults.size(), Eq(0));
 }
 
-TEST_F(ServiceRegistry_test, RemoveAll)
+TEST_F(ServiceRegistry_test, AddingMultipleServiceDescriptionAndRemovingAllDoesNotFindAnything)
 {
-    registry.add("a", "b");
-    registry.add("a", "c");
-    registry.add("a", "d");
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("a", "c", "c");
+    iox::capro::ServiceDescription service3("a", "d", "d");
 
-    registry.remove("a", "b");
-    registry.remove("a", "c");
-    registry.remove("a", "d");
+    ASSERT_FALSE(registry.add(service1).has_error());
+    ASSERT_FALSE(registry.add(service2).has_error());
+    ASSERT_FALSE(registry.add(service3).has_error());
+
+    EXPECT_TRUE(registry.remove(service1));
+    EXPECT_TRUE(registry.remove(service2));
+    EXPECT_TRUE(registry.remove(service3));
 
     registry.find(searchResults, "a", Wildcard);
     EXPECT_THAT(searchResults.size(), Eq(0));
 }
 
-TEST_F(ServiceRegistry_test, GetServiceMap)
+TEST_F(ServiceRegistry_test, AddingVariousServiceDescriptionAndGetServicesDoesNotReturnDuplicate)
 {
-    iox::roudi::ServiceRegistry::serviceMap_t serviceMap;
+    iox::capro::ServiceDescription service1("a", "b", "b");
+    iox::capro::ServiceDescription service2("a", "c", "c");
+    iox::capro::ServiceDescription service3("a", "d", "d");
+    iox::capro::ServiceDescription service4("e", "f", "f");
 
-    registry.add("a", "b");
+    ASSERT_FALSE(registry.add(service1).has_error());
     // add same service a, instance c to check if in registry only one entry is created
-    registry.add("a", "c");
-    registry.add("a", "c");
-    registry.add("a", "d");
-    registry.add("e", "f");
+    ASSERT_FALSE(registry.add(service2).has_error());
+    auto result = registry.add(service2);
+    ASSERT_TRUE(result.has_error());
+    EXPECT_THAT(result.get_error(), Eq(iox::roudi::ServiceRegistry::Error::SERVICE_DESCRIPTION_ALREADY_ADDED));
+    ASSERT_FALSE(registry.add(service3).has_error());
+    ASSERT_FALSE(registry.add(service4).has_error());
 
-    serviceMap = registry.getServiceMap();
+    auto serviceDescriptionVector = registry.getServices();
 
-    bool mapA = false;
-    bool mapE = false;
+    bool service1Found = false;
+    bool service2Found = false;
+    bool service4Found = false;
 
-    for (auto const& x : serviceMap)
+    for (auto const& element : serviceDescriptionVector)
     {
-        if (x.first == iox::cxx::string<100>("a"))
+        if (element == service1)
         {
-            ASSERT_THAT(x.second.instanceSet.size(), Eq(3));
-            mapA = true;
-            EXPECT_THAT(x.second.instanceSet[0], Eq(iox::cxx::string<100>("b")));
-            EXPECT_THAT(x.second.instanceSet[1], Eq(iox::cxx::string<100>("c")));
-            EXPECT_THAT(x.second.instanceSet[2], Eq(iox::cxx::string<100>("d")));
+            service1Found = true;
         }
 
-        if (x.first == iox::cxx::string<100>("e"))
-            mapE = true;
-    }
+        if (element == service2)
+        {
+            service2Found = true;
+        }
 
-    EXPECT_THAT(mapA && mapE, Eq(true));
+        if (element == service4)
+        {
+            service4Found = true;
+        }
+    }
+    EXPECT_THAT(serviceDescriptionVector.size(), Eq(4));
+    EXPECT_THAT(service1Found && service2Found && service4Found, Eq(true));
 }
 
 } // namespace

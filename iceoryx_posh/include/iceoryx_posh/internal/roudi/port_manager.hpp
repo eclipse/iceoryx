@@ -132,8 +132,8 @@ class PortManager
 
     void sendToAllMatchingInterfacePorts(const capro::CaproMessage& message) noexcept;
 
-    void addEntryToServiceRegistry(const capro::IdString_t& service, const capro::IdString_t& instance) noexcept;
-    void removeEntryFromServiceRegistry(const capro::IdString_t& service, const capro::IdString_t& instance) noexcept;
+    void addEntryToServiceRegistry(const capro::ServiceDescription& service) noexcept;
+    void removeEntryFromServiceRegistry(const capro::ServiceDescription& service) noexcept;
 
     template <typename T, std::enable_if_t<std::is_same<T, iox::build::OneToManyPolicy>::value>* = nullptr>
     cxx::optional<RuntimeName_t> doesViolateCommunicationPolicy(const capro::ServiceDescription& service) const

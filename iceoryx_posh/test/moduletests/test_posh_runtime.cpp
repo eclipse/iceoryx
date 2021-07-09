@@ -672,15 +672,22 @@ TEST_F(PoshRuntime_test, OfferEmptyServiceIsInvalid)
     EXPECT_FALSE(isServiceOffered);
 }
 
-TEST_F(PoshRuntime_test, FindServiceReturnsNoInstanceForDefaultDescription)
+TEST_F(PoshRuntime_test, FindServiceWithWildcardsReturnsOnlyIntrospectionServices)
 {
     PoshRuntime* m_receiverRuntime{&iox::runtime::PoshRuntime::initRuntime("subscriber")};
 
-    m_runtime->offerService(iox::capro::ServiceDescription());
+    EXPECT_FALSE(m_runtime->offerService(iox::capro::ServiceDescription()));
     this->InterOpWait();
-    auto instanceContainer = m_receiverRuntime->findService(iox::runtime::Any_t(), iox::runtime::Any_t());
 
-    EXPECT_THAT(0u, instanceContainer.value().size());
+    auto serviceContainer = m_receiverRuntime->findService(iox::runtime::Wildcard_t(), iox::runtime::Wildcard_t());
+    ASSERT_FALSE(serviceContainer.has_error());
+
+    auto searchResult = serviceContainer.value();
+
+    for (auto& service : searchResult)
+    {
+        EXPECT_THAT(service.getServiceIDString().c_str(), StrEq("Introspection"));
+    }
 }
 
 TEST_F(PoshRuntime_test, ShutdownUnblocksBlockingPublisher)
