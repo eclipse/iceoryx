@@ -85,6 +85,9 @@ namespace iox
     error(POPO__CHUNK_LOCKING_ERROR) \
     error(POPO__CHUNK_UNLOCKING_ERROR) \
     error(POPO__CAPRO_PROTOCOL_ERROR) \
+    error(POPO__CLIENT_PORT_INVALID_REQUEST_TO_FREE_FROM_USER) \
+    error(POPO__CLIENT_PORT_INVALID_REQUEST_TO_SEND_FROM_USER) \
+    error(POPO__CLIENT_PORT_INVALID_RESPONSE_TO_RELEASE_FROM_USER) \
     error(POPO__CONDITION_VARIABLE_DATA_FAILED_TO_CREATE_SEMAPHORE) \
     error(POPO__CONDITION_LISTENER_SEMAPHORE_CORRUPTED_IN_WAS_TRIGGERED) \
     error(POPO__CONDITION_LISTENER_SEMAPHORE_CORRUPTED_IN_WAIT) \
@@ -172,6 +175,12 @@ enum class Error : uint32_t
 {
     ICEORYX_ERRORS(CREATE_ICEORYX_ERROR_ENUM)
 };
+
+/// @brief Convenience stream operator to easily use the Error enum with std::ostream
+/// @param[in] stream sink to write the message to
+/// @param[in] value to convert to a string literal
+/// @return the reference to `stream` which was provided as input parameter
+std::ostream& operator<<(std::ostream& stream, Error value);
 
 /// @brief the available error levels
 /// FATAL

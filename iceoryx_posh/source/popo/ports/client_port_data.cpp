@@ -41,6 +41,7 @@ ClientPortData::ClientPortData(const capro::ServiceDescription& serviceDescripti
                           static_cast<QueueFullPolicy>(clientOptions.responseQueueFullPolicy))
     , m_connectRequested(clientOptions.connectOnCreate)
 {
+    m_chunkReceiverData.m_queue.setCapacity(clientOptions.responseQueueCapacity);
 }
 
 } // namespace popo

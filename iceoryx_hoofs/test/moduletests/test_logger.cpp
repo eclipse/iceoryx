@@ -122,6 +122,28 @@ TEST_F(IoxLogger_test, Output)
     EXPECT_THAT(output, Eq(expected));
 }
 
+TEST_F(IoxLogger_test, SettingTheLogLevelWorks)
+{
+    constexpr auto LOG_LEVEL{iox::log::LogLevel::kInfo};
+    EXPECT_THAT(m_sut.GetLogLevel(), Ne(LOG_LEVEL));
+
+    m_sut.SetLogLevel(LOG_LEVEL);
+    EXPECT_THAT(m_sut.GetLogLevel(), Eq(LOG_LEVEL));
+}
+
+TEST_F(IoxLogger_test, SettingTheLogLevelForScopeResetsLogLevelAtEndOfScope)
+{
+    constexpr auto LOG_LEVEL{iox::log::LogLevel::kInfo};
+    auto initialLogLevel{m_sut.GetLogLevel()};
+    EXPECT_THAT(initialLogLevel, Ne(LOG_LEVEL));
+
+    {
+        auto logLevelScopeGuard = m_sut.SetLogLevelForScope(LOG_LEVEL);
+        EXPECT_THAT(m_sut.GetLogLevel(), Eq(LOG_LEVEL));
+    }
+
+    EXPECT_THAT(m_sut.GetLogLevel(), Eq(initialLogLevel));
+}
 
 class IoxLoggerLogLevel_test : public TestWithParam<iox::log::LogLevel>, public IoxLogger_testBase
 {

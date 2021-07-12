@@ -22,18 +22,20 @@
 
 namespace iox
 {
-struct LoggingComponent
+struct LoggingComponentPosh
 {
     static constexpr char Ctx[] = "POSH";
     static constexpr char Description[] = "Log context of the POSH component!";
 };
 
-static constexpr auto LogFatal = iox::log::ffbb::LogFatal<LoggingComponent>;
-static constexpr auto LogError = iox::log::ffbb::LogError<LoggingComponent>;
-static constexpr auto LogWarn = iox::log::ffbb::LogWarn<LoggingComponent>;
-static constexpr auto LogInfo = iox::log::ffbb::LogInfo<LoggingComponent>;
-static constexpr auto LogDebug = iox::log::ffbb::LogDebug<LoggingComponent>;
-static constexpr auto LogVerbose = iox::log::ffbb::LogVerbose<LoggingComponent>;
+static constexpr auto LoggerPosh = iox::log::ffbb::ComponentLogger<LoggingComponentPosh>;
+
+static constexpr auto LogFatal = iox::log::ffbb::LogFatal<LoggingComponentPosh>;
+static constexpr auto LogError = iox::log::ffbb::LogError<LoggingComponentPosh>;
+static constexpr auto LogWarn = iox::log::ffbb::LogWarn<LoggingComponentPosh>;
+static constexpr auto LogInfo = iox::log::ffbb::LogInfo<LoggingComponentPosh>;
+static constexpr auto LogDebug = iox::log::ffbb::LogDebug<LoggingComponentPosh>;
+static constexpr auto LogVerbose = iox::log::ffbb::LogVerbose<LoggingComponentPosh>;
 
 } // namespace iox
 

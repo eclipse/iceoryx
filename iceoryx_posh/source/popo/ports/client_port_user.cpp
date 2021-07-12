@@ -57,7 +57,14 @@ ClientPortUser::allocateRequest(const uint32_t userPayloadSize, const uint32_t u
 
 void ClientPortUser::freeRequest(RequestHeader* const requestHeader) noexcept
 {
-    m_chunkSender.release(requestHeader->getChunkHeader());
+    if (requestHeader)
+    {
+        m_chunkSender.release(requestHeader->getChunkHeader());
+    }
+    else
+    {
+        errorHandler(Error::kPOPO__CLIENT_PORT_INVALID_REQUEST_TO_FREE_FROM_USER, nullptr, ErrorLevel::SEVERE);
+    }
 }
 
 void ClientPortUser::sendRequest(RequestHeader* const requestHeader) noexcept
@@ -66,7 +73,14 @@ void ClientPortUser::sendRequest(RequestHeader* const requestHeader) noexcept
 
     if (connectRequested)
     {
-        m_chunkSender.send(requestHeader->getChunkHeader());
+        if (requestHeader)
+        {
+            m_chunkSender.send(requestHeader->getChunkHeader());
+        }
+        else
+        {
+            errorHandler(Error::kPOPO__CLIENT_PORT_INVALID_REQUEST_TO_SEND_FROM_USER, nullptr, ErrorLevel::SEVERE);
+        }
     }
     else
     {
@@ -110,7 +124,14 @@ cxx::expected<const ResponseHeader*, ChunkReceiveResult> ClientPortUser::getResp
 
 void ClientPortUser::releaseResponse(const ResponseHeader* const responseHeader) noexcept
 {
-    m_chunkReceiver.release(responseHeader->getChunkHeader());
+    if (responseHeader)
+    {
+        m_chunkReceiver.release(responseHeader->getChunkHeader());
+    }
+    else
+    {
+        errorHandler(Error::kPOPO__CLIENT_PORT_INVALID_RESPONSE_TO_RELEASE_FROM_USER, nullptr, ErrorLevel::SEVERE);
+    }
 }
 
 bool ClientPortUser::hasNewResponses() const noexcept

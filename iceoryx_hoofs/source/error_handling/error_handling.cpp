@@ -32,6 +32,12 @@ HandlerFunction ErrorHandler::handler = {ErrorHandler::DefaultHandler};
 
 std::mutex ErrorHandler::handler_mutex;
 
+std::ostream& operator<<(std::ostream& stream, Error value)
+{
+    stream << ErrorHandler::ToString(value);
+    return stream;
+}
+
 void ErrorHandler::DefaultHandler(const Error error, const std::function<void()> errorCallBack, const ErrorLevel level)
 {
     if (errorCallBack)
@@ -41,7 +47,7 @@ void ErrorHandler::DefaultHandler(const Error error, const std::function<void()>
     else
     {
         std::stringstream ss;
-        ss << "ICEORYX error! " << ErrorHandler::ToString(error);
+        ss << "ICEORYX error! " << error;
 
         ReactOnErrorLevel(level, ss.str().c_str());
     }

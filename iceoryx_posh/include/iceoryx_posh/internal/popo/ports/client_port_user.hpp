@@ -35,12 +35,15 @@ namespace popo
 /// is divided in the three parts ClientPortData, ClientPortRouDi and ClientPortUser. The ClientPortUser
 /// uses the functionality of a ChunkSender and ChunReceiver for sending requests and receiving responses.
 /// Additionally it provides the connect / disconnect API which controls whether the client port shall connect to the
-/// server
+/// server.
+/// @note This class is not thread-safe and must be guarded by a mutex if used in a multithreaded context.
 class ClientPortUser : public BasePort
 {
   public:
     using MemberType_t = ClientPortData;
 
+    /// @brief Creates a ClientPortUser from ClientPortData which are shared with ClientPortRouDi
+    /// @param[in] clientPortData to be are accessed by the ClientPortUser interface
     explicit ClientPortUser(MemberType_t& clientPortData) noexcept;
 
     ClientPortUser(const ClientPortUser& other) = delete;

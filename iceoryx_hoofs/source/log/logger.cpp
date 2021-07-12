@@ -52,9 +52,21 @@ Logger& Logger::operator=(Logger&& rhs)
     return *this;
 }
 
+LogLevel Logger::GetLogLevel() const noexcept
+{
+    return m_logLevel.load(std::memory_order_relaxed);
+}
+
 void Logger::SetLogLevel(const LogLevel logLevel) noexcept
 {
     m_logLevel.store(logLevel, std::memory_order_relaxed);
+}
+
+cxx::GenericRAII Logger::SetLogLevelForScope(const LogLevel logLevel) noexcept
+{
+    m_logLevelPredecessor.store(m_logLevel.load(std::memory_order_relaxed), std::memory_order_relaxed);
+    SetLogLevel(logLevel);
+    return cxx::GenericRAII([] {}, [&] { this->SetLogLevel(m_logLevelPredecessor.load(std::memory_order_relaxed)); });
 }
 
 void Logger::SetLogMode(const LogMode logMode) noexcept

@@ -17,6 +17,7 @@
 #ifndef IOX_HOOFS_LOG_LOGGER_HPP
 #define IOX_HOOFS_LOG_LOGGER_HPP
 
+#include "iceoryx_hoofs/cxx/generic_raii.hpp"
 #include "iceoryx_hoofs/log/logcommon.hpp"
 #include "iceoryx_hoofs/log/logstream.hpp"
 
@@ -45,7 +46,20 @@ class Logger
     Logger(const Logger& other) = delete;
     Logger& operator=(const Logger& rhs) = delete;
 
+    /// @brief Getter method for the current LogLevel
+    /// @return the current LogLevel
+    LogLevel GetLogLevel() const noexcept;
+
+    /// @brief Sets the LogLevel for the Logger
+    /// @param[in] logLevel to be set
     void SetLogLevel(const LogLevel logLevel) noexcept;
+
+    /// @brief Sets the LogLevel to the given level for the lifetime of the GenericRAII object and then sets it back to
+    /// the previous one
+    /// @param[in] logLevel to be set temporarily
+    /// @return a scope guard which resets the LogLevel to the value at the time when this method was called
+    cxx::GenericRAII SetLogLevelForScope(const LogLevel logLevel) noexcept;
+
     void SetLogMode(const LogMode logMode) noexcept;
     bool IsEnabled(const LogLevel logLevel) const noexcept;
 
@@ -66,6 +80,7 @@ class Logger
     void Print(const LogEntry entry) const;
 
     std::atomic<LogLevel> m_logLevel{LogLevel::kVerbose};
+    std::atomic<LogLevel> m_logLevelPredecessor{LogLevel::kVerbose};
     std::atomic<LogMode> m_logMode{LogMode::kConsole};
 };
 

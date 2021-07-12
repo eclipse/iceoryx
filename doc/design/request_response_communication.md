@@ -110,6 +110,19 @@ A client can ask a server to block if its response queue is full.
 The server will obey if the corresponding `clientTooSlowPolicy` is set to `ConsumerTooSlowPolicy::WAIT_FOR_CONSUMER`.
 If the options don't match, the client will not be connected to the server, similar to the behavior of publisher and subscriber.
 
+#### Client Service Discovery
+
+The client is guided by the following state machine.
+
+![client state machine](diagrams/request_response/client_state_machine.svg)
+
+Similar to the subscriber state machine, the client passes it's response queue with the `CONNECT` CaPro message to the server.
+The server will pass its request queue with the `ACK` CaPro message to the client.
+
+Following is a sequence diagram which shows all this cases
+
+![client and server service discovery](diagrams/request_response/client_and_server_service_discovery.svg)
+
 ### Code example
 
 ## Open issues

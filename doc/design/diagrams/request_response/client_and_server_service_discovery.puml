@@ -1,0 +1,65 @@
+@startuml
+
+== Client tries to connect (Server not present) ==
+
+PortManager -> ClientPortRouDi ++ : tryGetCaProMessage
+return CaproMessageType::CONNECT
+
+PortManager -> PortManager ++ : sendToAllMatchingServerPorts
+
+PortManager -> ClientPortRouDi ++ : dispatchCaProMessageAndGetPossibleResponse(CaproMessageType::NACK)
+return cxx::nullopt
+
+return
+
+...
+
+== Server offers service (Client not present) ==
+
+PortManager -> ServerPortRouDi ++ : tryGetCaProMessage
+return CaproMessageType::OFFER
+
+PortManager -> PortManager ++ : sendToAllMatchingClientPorts
+
+return
+
+...
+
+== Client tries to connect (Server present) ==
+
+PortManager -> ClientPortRouDi ++ : tryGetCaProMessage
+return CaproMessageType::CONNECT
+
+PortManager -> PortManager ++ : sendToAllMatchingServerPorts
+
+PortManager -> ServerPortRouDi ++ : dispatchCaProMessageAndGetPossibleResponse(CaproMessageType::CONNECT)
+return CaproMessageType::ACK
+
+PortManager -> ClientPortRouDi ++ : dispatchCaProMessageAndGetPossibleResponse(CaproMessageType::ACK)
+return cxx::nullopt
+
+return
+
+...
+
+== Server offers service (Client present) ==
+
+PortManager -> ServerPortRouDi ++ : tryGetCaProMessage
+return CaproMessageType::OFFER
+
+PortManager -> PortManager ++ : sendToAllMatchingClientPorts
+
+PortManager -> ClientPortRouDi ++ : dispatchCaProMessageAndGetPossibleResponse(CaproMessageType::OFFER)
+return CaproMessageType::CONNECT
+
+PortManager -> ServerPortRouDi ++ : dispatchCaProMessageAndGetPossibleResponse(CaproMessageType::CONNECT)
+return CaproMessageType::ACK
+
+PortManager -> ClientPortRouDi ++ : dispatchCaProMessageAndGetPossibleResponse(CaproMessageType::ACK)
+return cxx::nullopt
+
+return
+
+...
+
+@enduml
